@@ -118,7 +118,6 @@ export interface AuctionCategory {
     basePrice: number;
     minPerTeam: number;
     maxPerTeam: number;
-    requiredPlayers?: number;
     bidIncrement: number;
     bidLimit: number;
     slabs: BidIncrementSlab[];

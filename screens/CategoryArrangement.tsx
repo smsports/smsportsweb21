@@ -1275,7 +1275,8 @@ const CategoryArrangement: React.FC = () => {
         if (availablePlayers.length === 0) return;
 
         const newSlots = { ...slots };
-        const totalRequired = cat.requiredPlayers || 6;
+        const totalInCategory = players.filter(p => p.category === cat.name).length;
+        const totalRequired = totalInCategory || 6;
         const rows = Math.ceil(totalRequired / 6);
         const cols = 6;
 
@@ -1316,7 +1317,8 @@ const CategoryArrangement: React.FC = () => {
     const isAllrounderTable = currentCategory?.name.toLowerCase() === 'allrounder';
     
     const config = customConfig[activeCategory] || { rows: 0, cols: 0 };
-    const totalRequired = currentCategory?.requiredPlayers || 6;
+    const totalInCategory = players.filter(p => p.category === currentCategory?.name).length;
+    const totalRequired = totalInCategory || 6;
     
     // Transpose logic for All Categories
     const rowCount = (isAllCategories 

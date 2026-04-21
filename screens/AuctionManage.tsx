@@ -469,6 +469,71 @@ const AuctionManage: React.FC = () => {
         };
 
         try {
+            const batch = db.batch();
+            
+            // Handle Category Renaming Propagation
+            if (modalType === 'CATEGORY' && editItem.id) {
+                const oldCategory = categories.find(c => c.id === editItem.id);
+                if (oldCategory && oldCategory.name !== itemData.name) {
+                    const oldName = oldCategory.name;
+                    const newName = itemData.name;
+                    const oldPrefix = oldName.substring(0, 3).toUpperCase();
+                    const newPrefix = newName.substring(0, 3).toUpperCase();
+
+                    // 1. Update all players who were in the old category
+                    players.filter(p => p.category === oldName).forEach(p => {
+                        batch.update(db.collection('auctions').doc(id).collection('players').doc(String(p.id)), {
+                            category: newName,
+                            updatedAt: Date.now()
+                        });
+                    });
+
+                    // 2. Update all arrangement drafts to reflect the new category name in slots
+                    const draftsSnap = await db.collection('auctions').doc(id).collection('arrangementDrafts').get();
+                    draftsSnap.docs.forEach(draftDoc => {
+                        if (draftDoc.id === 'SETTINGS') return;
+
+                        const draftData = draftDoc.data();
+                        const draftSlots = draftData.slots || {};
+                        const draftCategory = categories.find(c => c.id === draftDoc.id);
+                        const isThisDraftAllRounder = draftCategory?.name.toLowerCase() === 'allrounder';
+                        
+                        let changed = false;
+                        const updatedDraftSlots: any = {};
+
+                        Object.entries(draftSlots).forEach(([slotId, slot]: [string, any]) => {
+                            let newSlotId = slotId;
+                            const newSlot = { ...slot };
+
+                            if (slot.category === oldName) {
+                                newSlot.category = newName;
+                                changed = true;
+                            }
+
+                            if (draftDoc.id === editItem.id && oldPrefix !== newPrefix && !isThisDraftAllRounder) {
+                                if (slotId.startsWith(oldPrefix)) {
+                                    newSlotId = slotId.replace(oldPrefix, newPrefix);
+                                    changed = true;
+                                }
+                            }
+                            
+                            if (isThisDraftAllRounder) {
+                                if (slotId.startsWith(oldName + "_")) {
+                                    newSlotId = slotId.replace(oldName + "_", newName + "_");
+                                    changed = true;
+                                }
+                            }
+
+                            updatedDraftSlots[newSlotId] = newSlot;
+                        });
+
+                        if (changed) {
+                            batch.update(draftDoc.ref, { slots: updatedDraftSlots });
+                        }
+                    });
+                }
+            }
+
             // Auto-generate GLOBAL Team ID for new teams
             if (modalType === 'TEAM' && !editItem.id) {
                 await db.runTransaction(async (transaction) => {
@@ -486,13 +551,16 @@ const AuctionManage: React.FC = () => {
                 });
             }
             
+            const docRef = db.collection('auctions').doc(id).collection(col).doc(itemData.id);
             if (editItem.id) {
-                await db.collection('auctions').doc(id).collection(col).doc(editItem.id).set(itemData, { merge: true });
+                batch.set(docRef, itemData, { merge: true });
             } else {
-                await db.collection('auctions').doc(id).collection(col).doc(itemData.id).set({ ...itemData, createdAt: Date.now() });
+                batch.set(docRef, { ...itemData, createdAt: Date.now() });
             }
+
+            await batch.commit();
             closeModal();
-            showNotification(`New ${modalType.toLowerCase()} saved successfully!`, "success");
+            showNotification(`${modalType} saved and synced successfully!`, "success");
         } catch (err: any) { 
             console.error(err);
             showNotification("Save failed: " + err.message); 
@@ -2634,7 +2702,6 @@ const AuctionManage: React.FC = () => {
                                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Category Name</th>
                                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Base Price</th>
                                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Per Team</th>
-                                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Required</th>
                                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Assigned</th>
                                             <th className="px-6 py-4 text-right"></th>
                                         </tr>
@@ -2672,9 +2739,6 @@ const AuctionManage: React.FC = () => {
                                                     </td>
                                                     <td className={`px-6 py-4 text-xs font-bold ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
                                                         {activeTab === 'CATEGORIES' ? `${item.minPerTeam || 0}-${item.maxPerTeam || 0}` : '-'}
-                                                    </td>
-                                                    <td className={`px-6 py-4 text-xs font-bold ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                                                        {activeTab === 'CATEGORIES' ? item.requiredPlayers || 0 : '-'}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isDark ? 'bg-accent/10 text-accent' : 'bg-blue-50 text-blue-600'}`}>
@@ -3164,7 +3228,7 @@ const AuctionManage: React.FC = () => {
                                             <input type="number" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.bidIncrement || 0} onChange={e => setEditItem({...editItem, bidIncrement: Number(e.target.value)})} />
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Min Per Team</label>
                                             <input type="number" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.minPerTeam || 0} onChange={e => setEditItem({...editItem, minPerTeam: Number(e.target.value)})} />
@@ -3172,10 +3236,6 @@ const AuctionManage: React.FC = () => {
                                         <div>
                                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Max Per Team</label>
                                             <input type="number" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.maxPerTeam || 0} onChange={e => setEditItem({...editItem, maxPerTeam: Number(e.target.value)})} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Required Players</label>
-                                            <input type="number" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.requiredPlayers || 0} onChange={e => setEditItem({...editItem, requiredPlayers: Number(e.target.value)})} />
                                         </div>
                                     </div>
                                     <div>
