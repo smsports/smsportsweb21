@@ -99,7 +99,12 @@ const MyTeamPanel: React.FC = () => {
                     {userTeam.players && userTeam.players.length > 0 ? userTeam.players.map(player => (
                         <div key={player.id} className={`p-3 rounded-2xl border-l-4 flex justify-between items-center transition-all ${isDark ? 'bg-zinc-900/40 border-accent/50 hover:bg-zinc-800/60' : 'bg-gray-50 border-blue-500/50 hover:bg-white hover:shadow-md'}`}>
                             <div>
-                                <p className={`text-xs font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{player.name}</p>
+                                <div className="flex items-center gap-1.5">
+                                    <p className={`text-xs font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{player.name}</p>
+                                    {player.isTraded && (
+                                        <span className="text-[7px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-black tracking-widest border border-amber-500/20">Traded</span>
+                                    )}
+                                </div>
                                 <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{player.category}</p>
                             </div>
                             {(player as any).soldPrice && (

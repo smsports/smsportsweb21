@@ -53,7 +53,7 @@ const TradingPanel: React.FC = () => {
     const team1 = state.teams.find(t => String(t.id) === String(team1Id));
     const team2 = state.teams.find(t => String(t.id) === String(team2Id));
 
-    const handleExecuteTrade = async () => {
+    const handleExecuteTrade = async (instant = false) => {
         if (!team1 || !team2) return;
         if (team1Id === team2Id) {
             setError("Cannot trade with the same team.");
@@ -63,6 +63,8 @@ const TradingPanel: React.FC = () => {
         setIsExecuting(true);
         setError(null);
         try {
+            const tradeId = db.collection('auctions').doc(activeAuctionId!).collection('trades').doc().id;
+            
             await initiateTrade({
                 auctionId: activeAuctionId || '',
                 team1Id,
@@ -70,16 +72,20 @@ const TradingPanel: React.FC = () => {
                 team1PlayerIds: team1SelectedPlayerIds,
                 team2PlayerIds: team2SelectedPlayerIds,
                 cashAmount,
-                status: 'PENDING',
+                status: instant ? 'APPROVED' : 'PENDING',
                 createdAt: Date.now()
             });
-            
+
             // Reset
             setTeam1SelectedPlayerIds([]);
             setTeam2SelectedPlayerIds([]);
             setCashAmount(0);
             setShowConfirmation(false);
-            alert("Trade request sent for admin approval!");
+            if (!instant) {
+                alert("Trade request sent for admin approval!");
+            } else {
+                alert("Trade completed successfully!");
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -283,7 +289,12 @@ const TradingPanel: React.FC = () => {
                                                     className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${team1SelectedPlayerIds.includes(String(player.id)) ? 'bg-amber-600 border-amber-500 text-black' : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/20'}`}
                                                 >
                                                     <div className="text-left">
-                                                        <p className="text-xs font-black uppercase tracking-tight">{player.name}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-black uppercase tracking-tight">{player.name}</p>
+                                                            {player.isTraded && (
+                                                                <span className="text-[7px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-black tracking-widest">Traded</span>
+                                                            )}
+                                                        </div>
                                                         <p className={`text-[8px] font-bold uppercase tracking-widest ${team1SelectedPlayerIds.includes(String(player.id)) ? 'text-black/60' : 'text-slate-600'}`}>{player.role}</p>
                                                     </div>
                                                     <b className="text-[10px] font-black">₹{player.soldPrice}</b>
@@ -359,7 +370,12 @@ const TradingPanel: React.FC = () => {
                                                     className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${team2SelectedPlayerIds.includes(String(player.id)) ? 'bg-amber-600 border-amber-500 text-black' : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/20'}`}
                                                 >
                                                     <div className="text-left">
-                                                        <p className="text-xs font-black uppercase tracking-tight">{player.name}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-black uppercase tracking-tight">{player.name}</p>
+                                                            {player.isTraded && (
+                                                                <span className="text-[7px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-black tracking-widest">Traded</span>
+                                                            )}
+                                                        </div>
                                                         <p className={`text-[8px] font-bold uppercase tracking-widest ${team2SelectedPlayerIds.includes(String(player.id)) ? 'text-black/60' : 'text-slate-600'}`}>{player.role}</p>
                                                     </div>
                                                     <b className="text-[10px] font-black">₹{player.soldPrice}</b>
@@ -483,11 +499,11 @@ const TradingPanel: React.FC = () => {
                                     Cancel
                                 </button>
                                 <button 
-                                    onClick={handleExecuteTrade}
+                                    onClick={() => handleExecuteTrade(isAdmin)}
                                     disabled={isExecuting}
                                     className="flex-2 px-8 py-5 rounded-2xl bg-amber-600 text-black font-black uppercase tracking-widest text-[10px] hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/40 flex items-center justify-center gap-3"
                                 >
-                                    {isExecuting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Confirm & Execute</>}
+                                    {isExecuting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {isAdmin ? "Direct Execute" : "Confirm & Propose"}</>}
                                 </button>
                             </div>
                         </motion.div>

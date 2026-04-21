@@ -508,17 +508,21 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const tradeLog: TradeRecord = {
             ...trade,
             id: tradeId,
-            status: 'PENDING',
             createdAt: Date.now()
         };
 
         await db.collection('auctions').doc(activeAuctionId).collection('trades').doc(tradeId).set(tradeLog);
         
-        await addLog({
-            message: `TRADE PROPOSED: Between Teams`,
-            timestamp: Date.now(),
-            type: 'TRADE'
-        });
+        if (trade.status === 'APPROVED') {
+            // Direct Execution
+            await processTrade(tradeId, 'APPROVE');
+        } else {
+            await addLog({
+                message: `TRADE PROPOSED: Between Teams`,
+                timestamp: Date.now(),
+                type: 'TRADE'
+            });
+        }
     };
 
     const processTrade = async (tradeId: string, action: 'APPROVE' | 'REJECT') => {
@@ -562,11 +566,19 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             t1ToT2Players.forEach(p => {
                 const pRef = auctionRef.collection('players').doc(String(p.id));
-                t.update(pRef, { soldTo: t2Data.name });
+                t.update(pRef, { 
+                    soldTo: t2Data.name,
+                    isTraded: true,
+                    status: 'TRADED'
+                });
             });
             t2ToT1Players.forEach(p => {
                 const pRef = auctionRef.collection('players').doc(String(p.id));
-                t.update(pRef, { soldTo: t1Data.name });
+                t.update(pRef, { 
+                    soldTo: t1Data.name,
+                    isTraded: true,
+                    status: 'TRADED'
+                });
             });
 
             const newT1Players = (t1Data.players || []).filter(p => !trade.team1PlayerIds.includes(String(p.id)));
@@ -574,7 +586,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 newT1Players.push({
                     ...p,
                     soldTo: t1Data.name,
-                    status: 'SOLD'
+                    status: 'TRADED',
+                    isTraded: true
                 });
             });
             const newT1Budget = t1Data.budget - trade.cashAmount;
@@ -584,7 +597,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 newT2Players.push({
                     ...p,
                     soldTo: t2Data.name,
-                    status: 'SOLD'
+                    status: 'TRADED',
+                    isTraded: true
                 });
             });
             const newT2Budget = t2Data.budget + trade.cashAmount;

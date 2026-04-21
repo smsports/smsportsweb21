@@ -26,9 +26,10 @@ export interface Player {
     runs: number;
     wickets: number;
   };
-  status?: 'SOLD' | 'UNSOLD';
+  status?: 'SOLD' | 'UNSOLD' | 'TRADED';
   soldPrice?: number;
   soldTo?: string;
+  isTraded?: boolean;
 }
 
 export interface PromoCode {

@@ -1515,8 +1515,68 @@ const CategoryArrangement: React.FC = () => {
         if (!id) return;
         setIsSaving(true);
         try {
+            const batch = db.batch();
+            const col = 'categories';
+            const catRef = editItem.id 
+                ? db.collection('auctions').doc(id).collection(col).doc(editItem.id)
+                : db.collection('auctions').doc(id).collection(col).doc();
+
             if (editItem.id) {
-                await db.collection('auctions').doc(id).collection('categories').doc(editItem.id).set(editItem);
+                // Propagation logic for renaming
+                const oldCategory = categories.find(c => c.id === editItem.id);
+                if (oldCategory && oldCategory.name !== editItem.name) {
+                    const oldName = oldCategory.name;
+                    const newName = editItem.name;
+                    const oldPrefix = oldName.substring(0, 3).toUpperCase();
+                    const newPrefix = newName.substring(0, 3).toUpperCase();
+
+                    // 1. Update players
+                    players.filter(p => p.category === oldName).forEach(p => {
+                        batch.update(db.collection('auctions').doc(id).collection('players').doc(String(p.id)), {
+                            category: newName,
+                            updatedAt: Date.now()
+                        });
+                    });
+
+                    // 2. Update arrangement drafts
+                    const draftsSnap = await db.collection('auctions').doc(id).collection('arrangementDrafts').get();
+                    draftsSnap.docs.forEach(draftDoc => {
+                        if (draftDoc.id === 'SETTINGS') return;
+                        const draftData = draftDoc.data();
+                        const draftSlots = draftData.slots || {};
+                        const draftCategory = categories.find(c => c.id === draftDoc.id);
+                        const isThisDraftAllRounder = draftCategory?.name.toLowerCase() === 'allrounder';
+
+                        let changed = false;
+                        const updatedDraftSlots: any = {};
+                        Object.entries(draftSlots).forEach(([slotId, slot]: [string, any]) => {
+                            let newSlotId = slotId;
+                            const newSlot = { ...slot };
+                            if (slot.category === oldName) {
+                                newSlot.category = newName;
+                                changed = true;
+                            }
+                            if (draftDoc.id === editItem.id && oldPrefix !== newPrefix && !isThisDraftAllRounder) {
+                                if (slotId.startsWith(oldPrefix)) {
+                                    newSlotId = slotId.replace(oldPrefix, newPrefix);
+                                    changed = true;
+                                }
+                            }
+                            if (isThisDraftAllRounder) {
+                                if (slotId.startsWith(oldName + "_")) {
+                                    newSlotId = slotId.replace(oldName + "_", newName + "_");
+                                    changed = true;
+                                }
+                            }
+                            updatedDraftSlots[newSlotId] = newSlot;
+                        });
+                        if (changed) {
+                            batch.update(draftDoc.ref, { slots: updatedDraftSlots });
+                        }
+                    });
+                }
+                batch.set(catRef, editItem);
+                await batch.commit();
                 showNotification("Category updated successfully", "success");
             } else {
                 await db.collection('auctions').doc(id).collection('categories').add({
