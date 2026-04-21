@@ -64,9 +64,10 @@ import autoTable from 'jspdf-autotable';
 interface DraggablePlayerProps {
     player: Player;
     disabled?: boolean;
+    isPlaced?: boolean;
 }
 
-const DraggablePlayer: React.FC<DraggablePlayerProps> = ({ player, disabled }) => {
+const DraggablePlayer: React.FC<DraggablePlayerProps> = ({ player, disabled, isPlaced }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -86,10 +87,12 @@ const DraggablePlayer: React.FC<DraggablePlayerProps> = ({ player, disabled }) =
             style={style} 
             {...listeners} 
             {...attributes}
-            className={`flex items-center gap-1.5 p-1.5 rounded-lg border transition-all cursor-grab active:cursor-grabbing group ${
+            className={`relative flex items-center gap-1.5 p-1.5 rounded-lg border transition-all cursor-grab active:cursor-grabbing group ${
                 disabled 
                 ? (isDark ? 'bg-zinc-900/50 border-zinc-800/50 opacity-40 grayscale pointer-events-none' : 'bg-gray-100 border-gray-200 opacity-40 grayscale pointer-events-none')
-                : (isDark ? 'bg-zinc-900 border-zinc-800 hover:border-accent/50 hover:bg-zinc-800 shadow-sm' : 'bg-white border-gray-200 hover:border-blue-500/50 hover:bg-gray-50 shadow-sm')
+                : (isDark 
+                    ? `bg-zinc-900 border-zinc-800 hover:border-accent/50 hover:bg-zinc-800 shadow-sm ${isPlaced ? 'border-green-500/30' : ''}` 
+                    : `bg-white border-gray-200 hover:border-blue-500/50 hover:bg-gray-50 shadow-sm ${isPlaced ? 'border-green-500/30' : ''}`)
             }`}
         >
             <div className={`w-7 h-7 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0 border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-gray-100 border-gray-200'}`}>
@@ -101,8 +104,16 @@ const DraggablePlayer: React.FC<DraggablePlayerProps> = ({ player, disabled }) =
             </div>
             <div className="min-w-0 flex-1">
                 <p className={`text-[10px] font-bold truncate transition-colors ${isDark ? 'text-zinc-100 group-hover:text-accent' : 'text-gray-900 group-hover:text-blue-600'}`}>{player.name}</p>
-                <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{player.category}</p>
+                <div className="flex items-center gap-1">
+                    <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{player.category || 'Unassigned'}</p>
+                    {isPlaced && <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />}
+                </div>
             </div>
+            {isPlaced && (
+                <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
+                    <Check className="w-2 h-2" />
+                </div>
+            )}
         </div>
     );
 };
@@ -400,6 +411,8 @@ const CategoryArrangement: React.FC = () => {
     const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempCategoryName, setTempCategoryName] = useState('');
+    const [showAutoFillModal, setShowAutoFillModal] = useState(false);
+    const [autoFillSourceCategory, setAutoFillSourceCategory] = useState<string>('CURRENT');
     const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
     const [continuousNumbering, setContinuousNumbering] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -1257,59 +1270,115 @@ const CategoryArrangement: React.FC = () => {
         return cIdx;
     };
 
-    const handleAutoFill = () => {
+    useEffect(() => {
+        if (activeCategory && activeCategory !== 'ALL_CATEGORIES') {
+            const cat = categories.find(c => c.id === activeCategory);
+            if (cat) {
+                setFilterCategory(cat.name);
+            }
+        }
+    }, [activeCategory, categories]);
+
+    const handleAutoFill = (sourceCatId?: string) => {
         if (isAllCategories) {
             showNotification("Auto-fill is not available for All Categories view.", "error");
             return;
         }
-        const cat = categories.find(c => c.id === activeCategory);
-        if (!cat) return;
+        const targetCat = categories.find(c => c.id === activeCategory);
+        if (!targetCat) return;
 
-        const availablePlayers = players.filter(p => 
-            p.category === cat.name && 
-            !Object.values(allSlots).some(catSlots => 
+        let sourceCatName: string | null = targetCat.name;
+        if (sourceCatId === 'UNASSIGNED') {
+            sourceCatName = null; // Looking for unassigned
+        } else if (sourceCatId && sourceCatId !== 'CURRENT') {
+            const sc = categories.find(c => c.id === sourceCatId);
+            if (sc) sourceCatName = sc.name;
+        }
+
+        const availablePlayers = players.filter(p => {
+            const isMatch = sourceCatName === null 
+                ? (!p.category || p.category.trim() === '')
+                : (p.category === sourceCatName);
+            
+            return isMatch && !Object.values(allSlots).some(catSlots => 
                 Object.values(catSlots).some(slot => String(slot.playerId) === String(p.id))
-            )
-        );
+            );
+        });
 
-        if (availablePlayers.length === 0) return;
+        if (availablePlayers.length === 0) {
+            showNotification(`No unassigned players found in ${sourceCatName || 'Unassigned'} pool`, "error");
+            return;
+        }
 
         const newSlots = { ...slots };
-        const totalInCategory = players.filter(p => p.category === cat.name).length;
-        const totalRequired = totalInCategory || 6;
+        const totalRequired = players.filter(p => p.category === targetCat.name).length || 6;
         const rows = Math.ceil(totalRequired / 6);
         const cols = 6;
 
         let playerIdx = 0;
+        const batch = db.batch();
+
         for (let r = 1; r <= rows; r++) {
             for (let c = 1; c <= cols; c++) {
-                const slotId = `${cat.name.substring(0, 3).toUpperCase()}${r}_${c}`;
+                const slotId = `${targetCat.name.substring(0, 3).toUpperCase()}${r}_${c}`;
                 if (!newSlots[slotId] && playerIdx < availablePlayers.length) {
                     const p = availablePlayers[playerIdx++];
                     newSlots[slotId] = {
                         playerId: p.id,
                         playerName: p.name,
-                        category: p.category
+                        category: targetCat.name // Update slot to target category
                     };
+                    
+                    // Also update player's actual category in DB for consistency
+                    const pRef = db.collection('auctions').doc(id!).collection('players').doc(String(p.id));
+                    batch.update(pRef, { 
+                        category: targetCat.name,
+                        updatedAt: Date.now() 
+                    });
                 }
             }
+        }
+
+        if (playerIdx > 0) {
+            batch.commit().catch(err => console.error("Auto Fill DB Update Error:", err));
         }
 
         setHistory([...history, slots]);
         setSlots(newSlots);
         setAllSlots(prev => ({ ...prev, [activeCategory]: newSlots }));
+        showNotification(`Auto-filled ${playerIdx} players from ${sourceCatName || 'Unassigned pool'}`, "success");
+        setShowAutoFillModal(false);
     };
 
     const filteredPlayers = players.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-        const matchesFilter = filterCategory === 'ALL' || p.category === filterCategory;
         
-        // Hide if already in any slot
-        const isAlreadyPlaced = Object.values(allSlots).some(catSlots => 
-            Object.values(catSlots).some(slot => String(slot.playerId) === String(p.id))
+        // If we are in a specific category board, we want to see players assigned to THIS category
+        // AND players with NO category (unassigned), even if they are placed.
+        
+        const isPlacedInCurrentBoard = Object.values(slots).some(slot => String(slot.playerId) === String(p.id));
+        const isPlacedElsewhere = Object.entries(allSlots).some(([cid, catSlots]) => 
+            cid !== activeCategory && Object.values(catSlots).some(slot => String(slot.playerId) === String(p.id))
         );
+
+        const isUnassigned = !p.category || p.category.trim() === '';
+
+        if (filterCategory === 'ALL') {
+            // Show everyone not placed anywhere
+            return matchesSearch && !isPlacedElsewhere && !isPlacedInCurrentBoard;
+        }
         
-        return matchesSearch && matchesFilter && !isAlreadyPlaced;
+        const matchesFilter = p.category === filterCategory;
+
+        if (!isAllCategories) {
+            // When viewing a specific board:
+            // Show players of this category (placed or not) + Unassigned players
+            // But hide them if they are placed on A DIFFERENT board.
+            return matchesSearch && (matchesFilter || isUnassigned) && !isPlacedElsewhere;
+        }
+
+        // General sidebar behavior
+        return matchesSearch && matchesFilter && !isPlacedElsewhere && !isPlacedInCurrentBoard;
     });
 
     const currentCategory = categories.find(c => c.id === activeCategory);
@@ -1823,7 +1892,7 @@ const CategoryArrangement: React.FC = () => {
                                         <DraggablePlayer 
                                             key={player.id} 
                                             player={player} 
-                                            disabled={Object.values(slots).some(s => s.playerId === player.id)}
+                                            isPlaced={Object.values(slots).some(s => s.playerId === player.id)}
                                         />
                                     ))}
                                     {filteredPlayers.length === 0 && (
@@ -1961,7 +2030,7 @@ const CategoryArrangement: React.FC = () => {
                                         </button>
                                     </div>
                                     <button 
-                                        onClick={handleAutoFill}
+                                        onClick={() => setShowAutoFillModal(true)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-accent hover:border-accent/30' : 'bg-white border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-500/30'}`}
                                     >
                                         <Shuffle className="w-3.5 h-3.5" /> Auto Fill
@@ -2520,7 +2589,7 @@ const CategoryArrangement: React.FC = () => {
                                         <input type="number" className={`w-full border-2 rounded-xl px-4 py-2.5 font-bold outline-none transition-all ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:border-accent/50' : 'bg-gray-50 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`} value={editItem?.bidIncrement || 0} onChange={e => setEditItem({...editItem, bidIncrement: Number(e.target.value)})} />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className={`block text-[10px] font-black uppercase tracking-widest mb-1 ml-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Min / Team</label>
                                         <input type="number" className={`w-full border-2 rounded-xl px-4 py-2.5 font-bold outline-none transition-all ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:border-accent/50' : 'bg-gray-50 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`} value={editItem?.minPerTeam || 0} onChange={e => setEditItem({...editItem, minPerTeam: Number(e.target.value)})} />
@@ -2529,10 +2598,6 @@ const CategoryArrangement: React.FC = () => {
                                         <label className={`block text-[10px] font-black uppercase tracking-widest mb-1 ml-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Max / Team</label>
                                         <input type="number" className={`w-full border-2 rounded-xl px-4 py-2.5 font-bold outline-none transition-all ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:border-accent/50' : 'bg-gray-50 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`} value={editItem?.maxPerTeam || 0} onChange={e => setEditItem({...editItem, maxPerTeam: Number(e.target.value)})} />
                                     </div>
-                                    <div>
-                                        <label className={`block text-[10px] font-black uppercase tracking-widest mb-1 ml-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Required</label>
-                                        <input type="number" className={`w-full border-2 rounded-xl px-4 py-2.5 font-bold outline-none transition-all ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:border-accent/50' : 'bg-gray-50 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`} value={editItem?.requiredPlayers || 0} onChange={e => setEditItem({...editItem, requiredPlayers: Number(e.target.value)})} />
-                                    </div>
                                 </div>
                             </div>
                             <button type="submit" disabled={isSaving} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${isDark ? 'bg-accent hover:bg-white text-zinc-950' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
@@ -2540,6 +2605,71 @@ const CategoryArrangement: React.FC = () => {
                                 {editItem?.id ? 'Update Category' : 'Create Category'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* AUTO FILL SELECTION MODAL */}
+            {showAutoFillModal && (
+                <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className={`rounded-[2rem] shadow-2xl max-w-sm w-full overflow-hidden border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                        <div className={`p-6 flex justify-between items-center relative overflow-hidden ${isDark ? 'bg-zinc-800 text-accent' : 'bg-blue-600 text-white'}`}>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                            <h3 className="text-lg font-black uppercase tracking-tight relative z-10">Auto Fill Settings</h3>
+                            <button onClick={() => setShowAutoFillModal(false)} className="relative z-10 hover:rotate-90 transition-transform"><X className="w-6 h-6"/></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Select Source Category</label>
+                                <div className="space-y-2">
+                                    <button 
+                                        onClick={() => setAutoFillSourceCategory('CURRENT')}
+                                        className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left ${autoFillSourceCategory === 'CURRENT' ? (isDark ? 'border-accent bg-accent/10 text-accent' : 'border-blue-600 bg-blue-50 text-blue-600') : (isDark ? 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200')}`}
+                                    >
+                                        <div className="min-w-0 pr-4">
+                                            <p className="font-bold text-xs uppercase truncate">Current Category Players</p>
+                                            <p className="text-[10px] opacity-70 italic truncate">({currentCategory?.name})</p>
+                                        </div>
+                                        {autoFillSourceCategory === 'CURRENT' && <Check className="w-4 h-4 shrink-0" />}
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setAutoFillSourceCategory('UNASSIGNED')}
+                                        className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left ${autoFillSourceCategory === 'UNASSIGNED' ? (isDark ? 'border-amber-500 bg-amber-500/10 text-amber-500' : 'border-amber-600 bg-amber-50 text-amber-600') : (isDark ? 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200')}`}
+                                    >
+                                        <div className="min-w-0 pr-4">
+                                            <p className="font-bold text-xs uppercase truncate">Unassigned Players</p>
+                                            <p className="text-[10px] opacity-70 italic truncate">(Players with no category)</p>
+                                        </div>
+                                        {autoFillSourceCategory === 'UNASSIGNED' && <Check className="w-4 h-4 shrink-0" />}
+                                    </button>
+                                    
+                                    {categories.filter(c => c.id !== activeCategory).map(cat => (
+                                        <button 
+                                            key={cat.id}
+                                            onClick={() => setAutoFillSourceCategory(cat.id || '')}
+                                            className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left ${autoFillSourceCategory === cat.id ? (isDark ? 'border-accent bg-accent/10 text-accent' : 'border-blue-600 bg-blue-50 text-blue-600') : (isDark ? 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200')}`}
+                                        >
+                                            <span className="font-bold text-xs uppercase truncate">{cat.name} Category Players</span>
+                                            {autoFillSourceCategory === cat.id && <Check className="w-4 h-4 shrink-0" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className={`p-4 rounded-xl border flex items-start gap-3 ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-200/70' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <p className="text-[10px] font-medium leading-relaxed italic">The system will fetch unassigned players from the selected category and populate the empty slots on the current board.</p>
+                            </div>
+
+                            <button 
+                                onClick={() => handleAutoFill(autoFillSourceCategory)} 
+                                className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${isDark ? 'bg-accent hover:bg-white text-zinc-950' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                            >
+                                <Shuffle className="w-4 h-4"/>
+                                Start Auto Fill
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
