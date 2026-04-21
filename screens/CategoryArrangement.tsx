@@ -1240,6 +1240,24 @@ const CategoryArrangement: React.FC = () => {
         }
     };
 
+    const isAllCategories = activeCategory === 'ALL_CATEGORIES';
+    const currentCategory = categories.find(c => c.id === activeCategory);
+    const isAllrounderTable = currentCategory?.name?.toLowerCase() === 'allrounder';
+    
+    const config = customConfig[activeCategory] || { rows: 0, cols: 0 };
+    const totalInCategory = players.filter(p => p.category === currentCategory?.name).length;
+    const totalRequired = totalInCategory || 6;
+
+    // Transpose logic for All Categories
+    const rowCount = (isAllCategories 
+        ? sortedCategories.length 
+        : (config.rows || (isAllrounderTable ? sortedCategories.length : Math.ceil(totalRequired / 6)))) + rowCountExtra;
+        
+    const colCount = (isAllCategories 
+        ? 6 
+        : (config.cols || 6)) + colCountExtra;
+    const prefix = isAllCategories ? 'ALL' : (currentCategory?.name?.substring(0, 3).toUpperCase() || 'CAT');
+
     const toggleCategorySelection = (cid: string) => {
         const newSelection = new Set(selectedCategoryIds);
         if (newSelection.has(cid)) {
@@ -1380,24 +1398,6 @@ const CategoryArrangement: React.FC = () => {
         // General sidebar behavior
         return matchesSearch && matchesFilter && !isPlacedElsewhere && !isPlacedInCurrentBoard;
     });
-
-    const currentCategory = categories.find(c => c.id === activeCategory);
-    const isAllCategories = activeCategory === 'ALL_CATEGORIES';
-    const isAllrounderTable = currentCategory?.name.toLowerCase() === 'allrounder';
-    
-    const config = customConfig[activeCategory] || { rows: 0, cols: 0 };
-    const totalInCategory = players.filter(p => p.category === currentCategory?.name).length;
-    const totalRequired = totalInCategory || 6;
-    
-    // Transpose logic for All Categories
-    const rowCount = (isAllCategories 
-        ? sortedCategories.length 
-        : (config.rows || (isAllrounderTable ? sortedCategories.length : Math.ceil(totalRequired / 6)))) + rowCountExtra;
-        
-    const colCount = (isAllCategories 
-        ? 6 
-        : (config.cols || 6)) + colCountExtra;
-    const prefix = isAllCategories ? 'ALL' : (currentCategory?.name.substring(0, 3).toUpperCase() || 'CAT');
 
     const maxCols = Math.max(6, ...categories.map(cat => {
         const config = customConfig[cat.id || ''] || { rows: 0, cols: 0 };

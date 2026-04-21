@@ -19,7 +19,7 @@ import {
     DollarSign,
     RefreshCw
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TradingPanel: React.FC = () => {
     const { activeAuctionId, state, initiateTrade, processTrade, userProfile } = useAuction();

@@ -543,7 +543,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const tradeDoc = await t.get(tradeRef);
             if (!tradeDoc.exists) throw new Error("Trade record not found.");
             const trade = tradeDoc.data() as TradeRecord;
-            if (trade.status !== 'PENDING') throw new Error("Trade already processed.");
+            if (trade.status !== 'PENDING' && trade.status !== 'APPROVED') throw new Error("Trade already processed.");
 
             const team1Ref = auctionRef.collection('teams').doc(trade.team1Id);
             const team2Ref = auctionRef.collection('teams').doc(trade.team2Id);

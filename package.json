@@ -17,6 +17,7 @@
     "@remix-run/router": "1.21.0",
     "@tailwindcss/vite": "^4.2.2",
     "firebase": "^12.5.0",
+    "framer-motion": "^12.38.0",
     "heic2any": "^0.0.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
