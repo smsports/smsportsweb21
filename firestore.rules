@@ -1,0 +1,267 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions (Phase 3)
+    // ===============================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Role Helpers
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "mezabiullakhan@gmail.com" ||
+        request.auth.token.email == "zabiullakhanofficial@gmail.com" ||
+        request.auth.token.email == "admin@auction.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "SUPER_ADMIN")
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isSuperAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "ADMIN")
+      );
+    }
+
+    function isSupport() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "SUPPORT")
+      );
+    }
+
+    function isTeamOwner(auctionId, teamId) {
+      // Team ownership is usually tied to uid or a specific teamId field in user profile
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isSignedIn() && profile.role == "TEAM_OWNER" && profile.teamId == teamId;
+    }
+
+    // Type Checkers
+    function isValidString(val, minSize, maxSize) {
+      return val is string && val.size() >= minSize && val.size() <= maxSize;
+    }
+
+    // ===============================================================
+    // Entity Validations (Phase 4)
+    // ===============================================================
+
+    function isValidAuction(data) {
+      return isValidString(data.title, 1, 200) &&
+             (data.date is string || data.dateTBD == true) &&
+             data.totalTeams is number &&
+             data.createdAt is number;
+    }
+
+    function isValidTeam(data) {
+      return isValidString(data.name, 1, 100) &&
+             data.budget is number &&
+             data.budget >= 0;
+    }
+
+    function isValidPlayer(data) {
+      return isValidString(data.name, 1, 100) &&
+             isValidString(data.category, 1, 50) &&
+             isValidString(data.role, 1, 50);
+    }
+
+    // ===============================================================
+    // PUBLIC ACCESS (Global Configs & Public Views)
+    // ===============================================================
+    match /appConfig/{configId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /globalAssets/{assetId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /systemBroadcasts/{broadcastId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /systemPopups/{popupId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /subscriptionPlans/{planId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /promoCodes/{codeId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /system/{docId} {
+      allow read: if true;
+      allow list: if isSignedIn();
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read, list: if isSignedIn() && (
+        request.auth.uid == userId || 
+        isAdmin() || 
+        isSupport()
+      );
+
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoUrl', 'email', 'mobile'])) || 
+        isAdmin()
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    match /auctions/{auctionId} {
+      allow read: if true;
+      // Secure List Queries (Pillar 8): Allow public list queries for auctions
+      allow list: if true;
+
+      allow create: if isAdmin() && isValidAuction(incoming());
+      allow update: if (isAdmin() || isSuperAdmin()) && isValidAuction(incoming()) && (
+        // Action: Update Settings (Admin)
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'date', 'venue', 'logoUrl', 'dateTBD', 'slabs', 'status', 'currentPlayerId', 'currentBid', 'highestBidder', 'timer', 'playerSelectionMode', 'sponsors', 'sponsorConfig', 'projectorLayout', 'obsLayout', 'adminViewOverride', 'maxPlayersPerTeam', 'basePrice', 'auctionLog', 'biddingStatus'])
+      ) || (
+        // Action: Bid (Team Owners)
+        // Ensure the bidder is signed in and has the role of TEAM_OWNER in the users registry or via session validation
+        isSignedIn() && 
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "TEAM_OWNER") ||
+          // Allow anonymous team owners if the bid logic is validated correctly
+          (request.auth.token.provider_id == "anonymous")
+        ) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['currentBid', 'highestBidder', 'timer', 'auctionLog']) &&
+        incoming().currentBid > existing().currentBid &&
+        // Ensure the auction is actually LIVE or IN_PROGRESS
+        existing().status == "IN_PROGRESS" &&
+        existing().biddingStatus == "ON"
+      );
+
+      match /players/{playerId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /teams/{teamId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /categories/{categoryId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /arrangementDrafts/{draftId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /settings/{settingId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /registrations/{regId} {
+        allow read, list: if isAdmin() || isSuperAdmin();
+        allow create: if isValidString(incoming().fullName, 1, 100) && (incoming().mobile is string || incoming().email is string);
+        allow update, delete: if isAdmin() || isSuperAdmin();
+      }
+
+      match /roles/{roleId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /captainCodes/{codeId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /sponsors/{sponsorId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /auctionLogs/{logId} {
+        allow read, list: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isAdmin() || isSuperAdmin();
+      }
+
+      match /waitlist/{listId} {
+        allow create, list: if true;
+        allow read, update, delete: if isAdmin() || isSuperAdmin();
+      }
+
+      match /recollectionForms/{formId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+
+      match /trades/{tradeId} {
+        allow read, list: if true;
+        allow write: if isAdmin() || isSuperAdmin();
+      }
+    }
+
+    match /recollectionResponses/{responseId} {
+      allow create: if true;
+      allow read, list, update, delete: if isAdmin() || isSuperAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read, list: if true;
+      allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /supportTickets/{ticketId} {
+      // Secure List Queries (Pillar 8): Explicitly evaluate resource.data to prevent unauthorized list scraping
+      allow read, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || isSuperAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || isSuperAdmin());
+
+      match /messages/{msgId} {
+        // Relational Sync (Pillar 1): Verify access via parent ticket
+        allow read, list: if isSignedIn() && (get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid || isAdmin() || isSuperAdmin());
+        allow create: if isSignedIn() && (incoming().senderId == request.auth.uid);
+      }
+    }
+
+    // Default deny for anything not matched above
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
