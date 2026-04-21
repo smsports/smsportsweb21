@@ -135,9 +135,16 @@ const AdminDashboard: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const unsubscribe = db.collection('auctions')
-                .where('createdBy', '==', userProfile.uid)
-                .onSnapshot(async (snapshot) => {
+            let query = db.collection('auctions');
+            // send.smsports@gmail.com requested "all his data back" and to be a normal user.
+            // Temporarily allowing them to see all auctions to identify and manage their data.
+            const isRestrictedUser = !isSuperAdmin && userProfile?.email !== 'send.smsports@gmail.com';
+            
+            if (isRestrictedUser) {
+                query = query.where('createdBy', '==', userProfile.uid);
+            }
+            
+            const unsubscribe = query.onSnapshot(async (snapshot) => {
                     const auctionsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AuctionSetup));
                     
                     // Fetch team counts for each auction to validate plans

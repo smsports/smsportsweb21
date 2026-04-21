@@ -22,7 +22,8 @@ const Dashboard: React.FC = () => {
 
   const isDark = theme === 'dark';
   const isSuperAdmin = userProfile?.role === UserRole.SUPER_ADMIN;
-  const isAdmin = userProfile?.role === UserRole.ADMIN || isSuperAdmin;
+  const isAuctionCreator = state.createdBy === userProfile?.uid;
+  const isAdmin = userProfile?.role === UserRole.ADMIN || isSuperAdmin || isAuctionCreator;
   const isTeamOwner = userProfile?.role === UserRole.TEAM_OWNER;
   const myTeam = isTeamOwner ? state.teams.find(t => t.id === userProfile.teamId) : null;
   const [view, setView] = React.useState<'AUCTION' | 'TRADE'>('AUCTION');

@@ -186,6 +186,7 @@ export interface AuctionState {
   hideScoringSection?: boolean; // Global toggle for scoring section
   unlimitedPurse?: boolean; // Toggle for purse validation
   autoReserveFunds?: boolean; // Toggle for smart purse reservation
+  createdBy?: string; // UID of the user who created this auction
 }
 
 export enum UserRole {

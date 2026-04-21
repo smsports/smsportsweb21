@@ -111,16 +111,18 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         setUserProfile({ uid: user.uid, email: 'viewer@smsports.com', role: UserRole.VIEWER });
                     }
                 } else {
-                    const SUPER_ADMIN_EMAILS = ['mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com'];
+                    const SUPER_ADMIN_EMAILS = ['mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com', 'info.digitalmount@gmail.com'];
                     const isSuperAdminAccount = user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
 
                     profileUnsub = db.collection('users').doc(user.uid).onSnapshot(doc => {
                         const userData = doc.data();
+                        const isGlobalAdmin = isSuperAdminAccount || userData?.role === UserRole.SUPER_ADMIN;
+                        
                         const profile: UserProfile = {
                             uid: user.uid,
                             email: user.email || '',
                             name: user.displayName || userData?.name || 'System Operator',
-                            role: isSuperAdminAccount ? UserRole.SUPER_ADMIN : (userData?.role || UserRole.ADMIN),
+                            role: isGlobalAdmin ? UserRole.SUPER_ADMIN : (userData?.role || UserRole.ADMIN),
                             plan: userData?.plan || { type: 'FREE', maxTeams: 2, maxAuctions: 1 }
                         };
                         setUserProfile(profile);
@@ -152,7 +154,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         auctionLogoUrl: data.logoUrl || prev.auctionLogoUrl,
                         sponsorConfig: data.sponsorConfig || prev.sponsorConfig || { showOnOBS: false, showOnProjector: false, loopInterval: 5 },
                         maxPlayersPerTeam: data.playersPerTeam || 25,
-                        isPaid: data.isPaid || false
+                        isPaid: data.isPaid || false,
+                        createdBy: data.createdBy || ''
                     }));
                 }
             } else {

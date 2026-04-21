@@ -1,10 +1,11 @@
 {
-  "projectId": "gen-lang-client-0775917013",
-  "appId": "1:139372290614:web:6e27d9cfbff6151e7aee97",
-  "apiKey": "AIzaSyD8qvfuiX0xDlNdro6N9w1GxdVgADeIJIo",
-  "authDomain": "gen-lang-client-0775917013.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-c6688c5d-7ef7-493f-9f7b-1a6b8e98a38e",
-  "storageBucket": "gen-lang-client-0775917013.firebasestorage.app",
-  "messagingSenderId": "139372290614",
-  "measurementId": ""
+  "projectId": "sm-sports-1d8ee",
+  "appId": "1:701916968860:web:cdca84dfe49def6a8a3a59",
+  "apiKey": "AIzaSyAhpYiFy34mmiimkAPpOXla7dpJD-X2PeU",
+  "authDomain": "sm-sports-1d8ee.firebaseapp.com",
+  "databaseURL": "https://sm-sports-1d8ee-default-rtdb.asia-southeast1.firebasedatabase.app",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "sm-sports-1d8ee.appspot.com",
+  "messagingSenderId": "701916968860",
+  "measurementId": "G-LXPML2B6E6"
 }
