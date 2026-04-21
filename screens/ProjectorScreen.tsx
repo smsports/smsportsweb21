@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuction } from '../hooks/useAuction';
 import { useParams } from 'react-router-dom';
-import { Globe, User, TrendingUp, Wallet, Trophy, Star, AlertTriangle, Users, Zap, CheckCircle, Activity } from 'lucide-react';
+import { Globe, User, TrendingUp, Wallet, Trophy, Star, AlertTriangle, Users, Zap, CheckCircle, Activity, ArrowRightLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Team, Player, AuctionStatus, ProjectorLayout } from '../types';
 import { getEffectiveBasePrice } from '../utils';
@@ -601,6 +601,49 @@ const ProjectorScreen: React.FC = () => {
                     )}
                 </div>
             </RenderOverrideContainer>
+          );
+      }
+      if (type === 'TRADING') {
+          return (
+              <RenderOverrideContainer title="Live Trading Activity">
+                  <div className="h-full flex flex-col pt-4">
+                      {/* We'll use a local state to fetch trades in ProjectorScreen if we wanted, 
+                          but since it's an override, we can just show a message or a small list 
+                          if we added trades to global state.
+                          For now, let's keep it simple and show that trading is active. */}
+                      <div className="flex-1 flex flex-col items-center justify-center text-center space-y-10 group">
+                          <motion.div 
+                            animate={{ rotateY: 360 }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-gradient-to-br from-amber-400 to-amber-600 p-12 rounded-[3.5rem] shadow-[0_0_80px_rgba(245,158,11,0.3)] border-4 border-white/40"
+                          >
+                              <ArrowRightLeft className="w-48 h-48 text-black" />
+                          </motion.div>
+                          <div className="space-y-4">
+                              <h2 className="text-8xl font-black italic text-white uppercase tracking-tighter drop-shadow-2xl">Transfer Market Open</h2>
+                              <p className="text-2xl font-bold text-amber-500 uppercase tracking-[0.5em] animate-pulse">Deals in progress...</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-10 w-full max-w-6xl mt-12">
+                              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 text-center">
+                                  <Users className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                                  <p className="text-sm font-black text-slate-500 uppercase tracking-widest mb-1">Player Swaps</p>
+                                  <p className="text-white text-xs font-bold uppercase opacity-60">Team to Team</p>
+                              </div>
+                              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 text-center">
+                                  <Wallet className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+                                  <p className="text-sm font-black text-slate-500 uppercase tracking-widest mb-1">Cash Trades</p>
+                                  <p className="text-white text-xs font-bold uppercase opacity-60">Purse Transfers</p>
+                              </div>
+                              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 text-center">
+                                  <TrendingUp className="w-12 h-12 text-white mx-auto mb-4" />
+                                  <p className="text-sm font-black text-slate-500 uppercase tracking-widest mb-1">Real-time Updates</p>
+                                  <p className="text-white text-xs font-bold uppercase opacity-60">Instant Sync</p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </RenderOverrideContainer>
           );
       }
   }

@@ -501,11 +501,46 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await db.collection('auctions').doc(activeAuctionId).update({ adminViewOverride: view });
     };
 
-    const executeTrade = async (trade: Omit<TradeRecord, 'processedAt' | 'processedBy'>) => {
+    const initiateTrade = async (trade: Omit<TradeRecord, 'processedAt' | 'processedBy'>) => {
+        if (!activeAuctionId) return;
+        const tradeId = db.collection('auctions').doc(activeAuctionId).collection('trades').doc().id;
+        
+        const tradeLog: TradeRecord = {
+            ...trade,
+            id: tradeId,
+            status: 'PENDING',
+            createdAt: Date.now()
+        };
+
+        await db.collection('auctions').doc(activeAuctionId).collection('trades').doc(tradeId).set(tradeLog);
+        
+        await addLog({
+            message: `TRADE PROPOSED: Between Teams`,
+            timestamp: Date.now(),
+            type: 'TRADE'
+        });
+    };
+
+    const processTrade = async (tradeId: string, action: 'APPROVE' | 'REJECT') => {
         if (!activeAuctionId) return;
         const auctionRef = db.collection('auctions').doc(activeAuctionId);
+        const tradeRef = auctionRef.collection('trades').doc(tradeId);
+
+        if (action === 'REJECT') {
+            await tradeRef.update({
+                status: 'REJECTED',
+                processedAt: Date.now(),
+                processedBy: userProfile?.uid || 'system'
+            });
+            return;
+        }
 
         await db.runTransaction(async (t) => {
+            const tradeDoc = await t.get(tradeRef);
+            if (!tradeDoc.exists) throw new Error("Trade record not found.");
+            const trade = tradeDoc.data() as TradeRecord;
+            if (trade.status !== 'PENDING') throw new Error("Trade already processed.");
+
             const team1Ref = auctionRef.collection('teams').doc(trade.team1Id);
             const team2Ref = auctionRef.collection('teams').doc(trade.team2Id);
             
@@ -515,20 +550,16 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const t1Data = t1Doc.data() as Team;
             const t2Data = t2Doc.data() as Team;
 
-            // Check Budget for Team 1 (if they are paying)
             if (trade.cashAmount > 0 && t1Data.budget < trade.cashAmount && !state.unlimitedPurse) {
                 throw new Error(`Insufficient budget for ${t1Data.name}.`);
             }
-            // Check Budget for Team 2 (if they are paying - cashAmount would be negative here in logic, but let's assume cashAmount > 0 means T1 pays T2)
             if (trade.cashAmount < 0 && t2Data.budget < Math.abs(trade.cashAmount) && !state.unlimitedPurse) {
                 throw new Error(`Insufficient budget for ${t2Data.name}.`);
             }
 
-            // Players movement
-            const t1ToT2Players = state.players.filter(p => trade.team1PlayerIds.includes(String(p.id)));
-            const t2ToT1Players = state.players.filter(p => trade.team2PlayerIds.includes(String(p.id)));
+            const t1ToT2Players = (t1Data.players || []).filter(p => trade.team1PlayerIds.includes(String(p.id)));
+            const t2ToT1Players = (t2Data.players || []).filter(p => trade.team2PlayerIds.includes(String(p.id)));
 
-            // Update Player Documents
             t1ToT2Players.forEach(p => {
                 const pRef = auctionRef.collection('players').doc(String(p.id));
                 t.update(pRef, { soldTo: t2Data.name });
@@ -538,7 +569,6 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 t.update(pRef, { soldTo: t1Data.name });
             });
 
-            // Update Team 1
             const newT1Players = (t1Data.players || []).filter(p => !trade.team1PlayerIds.includes(String(p.id)));
             t2ToT1Players.forEach(p => {
                 newT1Players.push({
@@ -549,7 +579,6 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
             const newT1Budget = t1Data.budget - trade.cashAmount;
 
-            // Update Team 2
             const newT2Players = (t2Data.players || []).filter(p => !trade.team2PlayerIds.includes(String(p.id)));
             t1ToT2Players.forEach(p => {
                 newT2Players.push({
@@ -563,20 +592,14 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             t.update(team1Ref, { players: newT1Players, budget: newT1Budget });
             t.update(team2Ref, { players: newT2Players, budget: newT2Budget });
 
-            // Log the Trade
-            const tradeId = db.collection('auctions').doc(activeAuctionId).collection('trades').doc().id;
-            const tradeLog: TradeRecord = {
-                ...trade,
-                id: tradeId,
+            t.update(tradeRef, {
                 status: 'APPROVED',
                 processedAt: Date.now(),
                 processedBy: userProfile?.uid || 'system'
-            };
-            t.set(auctionRef.collection('trades').doc(tradeId), tradeLog);
+            });
 
-            // System Log
             const systemLog: Omit<AuctionLog, 'id'> = {
-                message: `TRADE: ${t1Data.name} & ${t2Data.name} swapped players/cash`,
+                message: `TRADE APPROVED: ${t1Data.name} <-> ${t2Data.name}`,
                 timestamp: Date.now(),
                 type: 'TRADE'
             };
@@ -629,7 +652,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return (
         <AuctionContext.Provider value={{
-            state: activeState, userProfile, setUserProfile, placeBid, sellPlayer, passPlayer, correctPlayerSale, executeTrade, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, updateSponsorConfig, toggleSelectionMode, updateTheme, setAdminView, logout, error, joinAuction, activeAuctionId, nextBid
+            state: activeState, userProfile, setUserProfile, placeBid, sellPlayer, passPlayer, correctPlayerSale, initiateTrade, processTrade, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, updateSponsorConfig, toggleSelectionMode, updateTheme, setAdminView, logout, error, joinAuction, activeAuctionId, nextBid
         }}>
             {children}
         </AuctionContext.Provider>

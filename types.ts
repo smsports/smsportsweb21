@@ -141,7 +141,7 @@ export interface SponsorConfig {
 export type ProjectorLayout = 'STANDARD' | 'IPL' | 'MODERN' | 'ADVAYA' | 'NEON' | 'FUTURISTIC';
 export type OBSLayout = 'STANDARD' | 'MINIMAL' | 'VERTICAL' | 'ADVAYA' | 'IPL';
 
-export type AdminViewType = 'SQUAD' | 'PURSES' | 'UNSOLD' | 'SOLD' | 'TOP_BUY' | 'TOP_5' | 'NONE';
+export type AdminViewType = 'SQUAD' | 'PURSES' | 'UNSOLD' | 'SOLD' | 'TOP_BUY' | 'TOP_5' | 'TRADING' | 'NONE';
 
 export interface AdminViewOverride {
     type: AdminViewType;
@@ -543,7 +543,8 @@ export interface AuctionContextType {
   toggleSelectionMode: () => Promise<void>;
   updateTheme: (type: 'PROJECTOR' | 'OBS', layout: string) => Promise<void>;
   setAdminView: (view: AdminViewOverride | null) => Promise<void>;
-  executeTrade: (trade: Omit<TradeRecord, 'processedAt' | 'processedBy'>) => Promise<void>;
+  initiateTrade: (trade: Omit<TradeRecord, 'processedAt' | 'processedBy'>) => Promise<void>;
+  processTrade: (tradeId: string, action: 'APPROVE' | 'REJECT') => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
   joinAuction: (id: string) => void;

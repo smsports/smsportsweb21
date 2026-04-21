@@ -2,17 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuction } from '../hooks/useAuction';
 import { AuctionStatus, Team, Player, ProjectorLayout, OBSLayout } from '../types';
 import TeamStatusCard from '../components/TeamStatusCard';
+import TradingPanel from '../components/TradingPanel';
 // Fixed missing LayoutList import
-import { Play, Check, X, ArrowLeft, Loader2, RotateCcw, AlertOctagon, DollarSign, Cast, Lock, Unlock, Monitor, ChevronDown, Shuffle, Search, User, Palette, Trophy, Gavel, Wallet, Eye, EyeOff, Clock, Zap, Undo2, RefreshCw, LayoutList } from 'lucide-react';
+import { Play, Check, X, ArrowLeft, Loader2, RotateCcw, AlertOctagon, DollarSign, Cast, Lock, Unlock, Monitor, ChevronDown, Shuffle, Search, User, Palette, Trophy, Gavel, Wallet, Eye, EyeOff, Clock, Zap, Undo2, RefreshCw, LayoutList, ArrowRightLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const LiveAdminPanel: React.FC = () => {
-  const { state, sellPlayer, passPlayer, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, toggleSelectionMode, updateTheme, activeAuctionId, placeBid, nextBid, updateSponsorConfig, correctPlayerSale, setAdminView } = useAuction();
-  const { teams, players, biddingStatus, playerSelectionMode, categories, maxPlayersPerTeam, roles } = state;
-  const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
+    const { state, sellPlayer, passPlayer, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, toggleSelectionMode, updateTheme, activeAuctionId, placeBid, nextBid, updateSponsorConfig, correctPlayerSale, setAdminView } = useAuction();
+    const { teams, players, biddingStatus, playerSelectionMode, categories, maxPlayersPerTeam, roles } = state;
+    const navigate = useNavigate();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [activeTab, setActiveTab] = useState<'AUCTION' | 'TRADING'>('AUCTION');
 
-  // Move isRoundActive to component scope to ensure it's accessible by all inner functions
+    // Move isRoundActive to component scope to ensure it's accessible by all inner functions
   const isRoundActive = state.status === AuctionStatus.InProgress && state.currentPlayerId;
   
   // Inline Sell State
@@ -679,7 +681,23 @@ const LiveAdminPanel: React.FC = () => {
       <div className="flex justify-between items-center mb-4 border-b border-accent pb-2">
           <div className="flex flex-col gap-2 w-full">
               <div className="flex justify-between items-center w-full">
-                <h2 className="text-xl font-bold text-highlight uppercase tracking-wider">Auctioneer</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-bold text-highlight uppercase tracking-wider">Auctioneer</h2>
+                  <div className="flex bg-gray-800 rounded-xl p-1 border border-gray-700">
+                    <button 
+                      onClick={() => setActiveTab('AUCTION')}
+                      className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'AUCTION' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                    >
+                      Auction
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('TRADING')}
+                      className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'TRADING' ? 'bg-amber-500 text-black' : 'text-gray-500 hover:text-gray-400'}`}
+                    >
+                      Trading
+                    </button>
+                  </div>
+                </div>
                 <button onClick={() => navigate('/admin')} className="text-xs text-text-secondary hover:text-white flex items-center">
                     <ArrowLeft className="w-3 h-3 mr-1"/> Dashboard
                 </button>
@@ -825,6 +843,7 @@ const LiveAdminPanel: React.FC = () => {
                       { id: 'NONE', label: 'None', color: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400' },
                       { id: 'SQUAD', label: 'Squad View', color: 'bg-white border border-gray-200 text-gray-700' },
                       { id: 'PURSES', label: 'Team Purses', color: 'bg-white border border-gray-200 text-gray-700' },
+                      { id: 'TRADING', label: 'Trading Board', color: 'bg-white border border-gray-200 text-gray-700' },
                       { id: 'LEADERBOARD', label: 'Leaderboard', color: 'bg-white border border-gray-200 text-gray-700' }
                   ].map(view => (
                       <button
@@ -977,12 +996,20 @@ const LiveAdminPanel: React.FC = () => {
          )}
       </div>
 
-      <h3 className="text-sm font-bold mb-3 text-text-secondary uppercase">Teams Overview</h3>
-      <div className="flex-grow overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-        {teams.map((team: Team) => (
-          <TeamStatusCard key={team.id} team={team} />
-        ))}
-      </div>
+      {activeTab === 'TRADING' ? (
+        <div className="flex-grow overflow-y-auto no-scrollbar pt-2 pb-10">
+          <TradingPanel />
+        </div>
+      ) : (
+        <>
+          <h3 className="text-sm font-bold mb-3 text-text-secondary uppercase">Teams Overview</h3>
+          <div className="flex-grow overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+            {teams.map((team: Team) => (
+              <TeamStatusCard key={team.id} team={team} />
+            ))}
+          </div>
+        </>
+      )}
       </div>
     </div>
   );

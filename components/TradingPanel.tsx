@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 const TradingPanel: React.FC = () => {
-    const { activeAuctionId, state, executeTrade, userProfile } = useAuction();
+    const { activeAuctionId, state, initiateTrade, processTrade, userProfile } = useAuction();
     const [team1Id, setTeam1Id] = useState<string>('');
     const [team2Id, setTeam2Id] = useState<string>('');
     const [team1SelectedPlayerIds, setTeam1SelectedPlayerIds] = useState<string[]>([]);
@@ -35,13 +35,14 @@ const TradingPanel: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const isSuperAdmin = userProfile?.role === UserRole.SUPER_ADMIN;
-    const isAdmin = userProfile?.role === UserRole.ADMIN || isSuperAdmin;
+    const isAuctionOwner = state.createdBy === userProfile?.uid;
+    const isAdmin = userProfile?.role === UserRole.ADMIN || isSuperAdmin || isAuctionOwner;
 
     useEffect(() => {
         if (activeAuctionId) {
             const unsub = db.collection('auctions').doc(activeAuctionId).collection('trades')
                 .orderBy('createdAt', 'desc')
-                .limit(20)
+                .limit(50)
                 .onSnapshot(snap => {
                     setTradeHistory(snap.docs.map(d => ({ id: d.id, ...d.data() } as TradeRecord)));
                 });
@@ -62,7 +63,7 @@ const TradingPanel: React.FC = () => {
         setIsExecuting(true);
         setError(null);
         try {
-            await executeTrade({
+            await initiateTrade({
                 auctionId: activeAuctionId || '',
                 team1Id,
                 team2Id,
@@ -78,11 +79,20 @@ const TradingPanel: React.FC = () => {
             setTeam2SelectedPlayerIds([]);
             setCashAmount(0);
             setShowConfirmation(false);
-            alert("Trade executed successfully!");
+            alert("Trade request sent for admin approval!");
         } catch (err: any) {
             setError(err.message);
         } finally {
             setIsExecuting(false);
+        }
+    };
+
+    const handleProcessTrade = async (tradeId: string, action: 'APPROVE' | 'REJECT') => {
+        if (!window.confirm(`Are you sure you want to ${action.toLowerCase()} this trade?`)) return;
+        try {
+            await processTrade(tradeId, action);
+        } catch (err: any) {
+            alert(err.message);
         }
     };
 
@@ -100,6 +110,9 @@ const TradingPanel: React.FC = () => {
 
     const getPlayer = (playerId: string) => state.players.find(p => String(p.id) === String(playerId));
 
+    const pendingTrades = tradeHistory.filter(t => t.status === 'PENDING');
+    const completedTrades = tradeHistory.filter(t => t.status !== 'PENDING');
+
     return (
         <div className="space-y-6">
             {/* Header with Switch */}
@@ -111,58 +124,131 @@ const TradingPanel: React.FC = () => {
                     </h2>
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1">Player Transfer & Purse Adjustment</p>
                 </div>
-                <button 
-                    onClick={() => setShowHistory(!showHistory)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${showHistory ? 'bg-amber-600 text-black' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                >
-                    <History className="w-4 h-4" /> {showHistory ? 'Show Panel' : 'Past Trades'}
-                </button>
+                <div className="flex items-center gap-3">
+                    {pendingTrades.length > 0 && (
+                        <div className="bg-amber-500 text-black px-4 py-2 rounded-2xl text-[10px] font-black uppercase flex items-center gap-2 animate-pulse">
+                            <ShieldAlert className="w-4 h-4" /> {pendingTrades.length} Pending
+                        </div>
+                    )}
+                    <button 
+                        onClick={() => setShowHistory(!showHistory)}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${showHistory ? 'bg-amber-600 text-black shadow-lg shadow-amber-600/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                    >
+                        <History className="w-4 h-4" /> {showHistory ? 'Show Panel' : 'Past Trades'}
+                    </button>
+                </div>
             </div>
 
             {showHistory ? (
-                <div className="space-y-4">
-                    {tradeHistory.length === 0 ? (
-                        <div className="text-center py-20 bg-slate-900/50 rounded-[3rem] border border-dashed border-slate-800">
-                            <History className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No trade records found</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-4">
-                            {tradeHistory.map(trade => {
-                                const t1 = state.teams.find(t => String(t.id) === String(trade.team1Id));
-                                const t2 = state.teams.find(t => String(t.id) === String(trade.team2Id));
-                                return (
-                                    <div key={trade.id} className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                                        <div className="flex items-center gap-4 flex-1">
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t1?.name}</p>
-                                                <div className="flex flex-wrap justify-end gap-1 mt-1">
-                                                    {trade.team1PlayerIds.map(id => (
-                                                        <span key={id} className="text-[8px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-md font-bold uppercase">{getPlayer(id)?.name}</span>
-                                                    ))}
-                                                    {trade.cashAmount > 0 && <span className="text-[8px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-md font-bold uppercase">-₹{trade.cashAmount}</span>}
+                <div className="space-y-8">
+                    {/* Pending Section for Admins */}
+                    {isAdmin && pendingTrades.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
+                                <ShieldAlert className="w-4 h-4" /> Authorization Required
+                            </h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                {pendingTrades.map(trade => {
+                                    const t1 = state.teams.find(t => String(t.id) === String(trade.team1Id));
+                                    const t2 = state.teams.find(t => String(t.id) === String(trade.team2Id));
+                                    return (
+                                        <div key={trade.id} className="bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 group">
+                                            <div className="flex items-center gap-6 flex-1">
+                                                <div className="text-right flex-1">
+                                                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">{t1?.name}</p>
+                                                    <div className="flex flex-wrap justify-end gap-2">
+                                                        {trade.team1PlayerIds.map(id => (
+                                                            <span key={id} className="text-[9px] bg-red-500/20 text-red-400 px-3 py-1 rounded-xl font-black uppercase">{getPlayer(id)?.name}</span>
+                                                        ))}
+                                                        {trade.cashAmount > 0 && <span className="text-[9px] bg-red-500/20 text-red-500 px-3 py-1 rounded-xl font-black uppercase">-₹{trade.cashAmount}</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                                    <ArrowRightLeft className="w-6 h-6" />
+                                                </div>
+                                                <div className="text-left flex-1">
+                                                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">{t2?.name}</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {trade.team2PlayerIds.map(id => (
+                                                            <span key={id} className="text-[9px] bg-green-500/20 text-green-400 px-3 py-1 rounded-xl font-black uppercase">{getPlayer(id)?.name}</span>
+                                                        ))}
+                                                        {trade.cashAmount > 0 && <span className="text-[9px] bg-green-500/20 text-green-500 px-3 py-1 rounded-xl font-black uppercase">+₹{trade.cashAmount}</span>}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-slate-700" />
-                                            <div className="text-left">
-                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t2?.name}</p>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {trade.team2PlayerIds.map(id => (
-                                                        <span key={id} className="text-[8px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-md font-bold uppercase">{getPlayer(id)?.name}</span>
-                                                    ))}
-                                                    {trade.cashAmount > 0 && <span className="text-[8px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-md font-bold uppercase">+₹{trade.cashAmount}</span>}
-                                                </div>
+                                            <div className="flex items-center gap-3 border-l border-white/5 pl-8">
+                                                <button 
+                                                    onClick={() => handleProcessTrade(trade.id!, 'REJECT')}
+                                                    className="p-4 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/5"
+                                                    title="Reject Trade"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleProcessTrade(trade.id!, 'APPROVE')}
+                                                    className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                                                >
+                                                    Approve
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="text-right border-l border-white/5 pl-6">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(trade.createdAt).toLocaleDateString()}</p>
-                                            <span className="text-[9px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full mt-2 inline-block tracking-widest">Completed</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
+
+                    {/* History List */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                            <History className="w-4 h-4" /> Transaction History
+                        </h3>
+                        {completedTrades.length === 0 ? (
+                            <div className="text-center py-20 bg-slate-900/50 rounded-[3rem] border border-dashed border-slate-800">
+                                <History className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No trade records found</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                                {completedTrades.map(trade => {
+                                    const t1 = state.teams.find(t => String(t.id) === String(trade.team1Id));
+                                    const t2 = state.teams.find(t => String(t.id) === String(trade.team2Id));
+                                    const isApproved = trade.status === 'APPROVED';
+                                    return (
+                                        <div key={trade.id} className={`bg-slate-900/50 border border-white/5 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 opacity-80 hover:opacity-100 transition-all ${!isApproved ? 'grayscale border-red-500/10' : ''}`}>
+                                            <div className="flex items-center gap-4 flex-1">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t1?.name}</p>
+                                                    <div className="flex flex-wrap justify-end gap-1 mt-1">
+                                                        {trade.team1PlayerIds.map(id => (
+                                                            <span key={id} className="text-[8px] bg-white/5 text-slate-400 px-2 py-0.5 rounded-md font-bold uppercase">{getPlayer(id)?.name}</span>
+                                                        ))}
+                                                        {trade.cashAmount > 0 && <span className="text-[8px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-md font-bold uppercase">-₹{trade.cashAmount}</span>}
+                                                    </div>
+                                                </div>
+                                                <ArrowRight className={`w-5 h-5 ${isApproved ? 'text-emerald-500' : 'text-red-500'}`} />
+                                                <div className="text-left">
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t2?.name}</p>
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {trade.team2PlayerIds.map(id => (
+                                                            <span key={id} className="text-[8px] bg-white/5 text-slate-400 px-2 py-0.5 rounded-md font-bold uppercase">{getPlayer(id)?.name}</span>
+                                                        ))}
+                                                        {trade.cashAmount > 0 && <span className="text-[8px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-md font-bold uppercase">+₹{trade.cashAmount}</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right border-l border-white/5 pl-6 min-w-[120px]">
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(trade.createdAt).toLocaleDateString()}</p>
+                                                <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full mt-2 inline-block tracking-widest ${isApproved ? 'text-emerald-500 bg-emerald-500/10' : 'text-red-500 bg-red-500/10'}`}>
+                                                    {trade.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
