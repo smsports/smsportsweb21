@@ -46,7 +46,7 @@ const Marquee = React.memo(({ content, show, layout }: { content: string[], show
               </div>
               <style>{`
                   @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-                  .animate-marquee { animation: marquee 35s linear infinite; }
+                  .animate-marquee { animation: marquee 18s linear infinite; }
               `}</style>
           </div>
     );
@@ -261,7 +261,6 @@ const OBSOverlay: React.FC = () => {
       const { type, data } = state.adminViewOverride;
       const OverlayCard = ({ children, title }: any) => (
           <div className="min-h-screen w-full flex flex-col items-center justify-center relative p-12 bg-transparent">
-              <TopCenterLogo />
               <SponsorLogo />
               <div className="bg-gradient-to-br from-[#0f172a]/95 via-[#020617]/95 to-black/95 backdrop-blur-2xl rounded-[2.5rem] border-2 border-cyan-500/40 shadow-[0_0_80px_rgba(6,182,212,0.25)] p-0 w-full max-w-6xl animate-slide-up overflow-hidden relative mt-20">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_transparent_100%)] opacity-20"></div>
@@ -423,9 +422,9 @@ const OBSOverlay: React.FC = () => {
       }
   }
 
-  if (display.status === 'FINISHED') return <div className="min-h-screen w-full flex flex-col items-center justify-center relative"><TopCenterLogo /><SponsorLogo /><div className="bg-green-900/90 text-white px-16 py-8 rounded-3xl border-4 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] animate-bounce-in text-center"><h1 className="text-4xl md:text-6xl font-black tracking-widest uppercase text-green-400 mb-2">AUCTION</h1><h1 className="text-4xl md:text-6xl font-black tracking-widest uppercase text-white">COMPLETED</h1></div><Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} /></div>;
+  if (display.status === 'FINISHED') return <div className="min-h-screen w-full flex flex-col items-center justify-center relative"><div className="bg-green-900/90 text-white px-16 py-8 rounded-3xl border-4 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] animate-bounce-in text-center"><h1 className="text-4xl md:text-6xl font-black tracking-widest uppercase text-green-400 mb-2">AUCTION</h1><h1 className="text-4xl md:text-6xl font-black tracking-widest uppercase text-white">COMPLETED</h1></div><Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} /></div>;
 
-  if (display.status === 'WAITING' || !display.player) return <div className="min-h-screen w-full flex flex-col items-center justify-end pb-20 relative"><TopCenterLogo /><SponsorLogo /><div className="bg-slate-900/90 text-white px-12 py-4 rounded-full border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] animate-pulse mb-10"><h1 className="text-2xl font-bold tracking-[0.5em] uppercase text-cyan-400">{state.status === AuctionStatus.NotStarted ? "AUCTION STARTING SOON" : "WAITING FOR AUCTION"}</h1></div><Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} /></div>;
+  if (display.status === 'WAITING' || !display.player) return <div className="min-h-screen w-full flex flex-col items-center justify-end pb-20 relative"><div className="bg-slate-900/90 text-white px-12 py-4 rounded-full border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] animate-pulse mb-10"><h1 className="text-2xl font-bold tracking-[0.5em] uppercase text-cyan-400">{state.status === AuctionStatus.NotStarted ? "AUCTION STARTING SOON" : "WAITING FOR AUCTION"}</h1></div><Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} /></div>;
 
   const { player, bid, bidder, status } = display;
   const layout = state.obsLayout || 'STANDARD';
@@ -443,21 +442,9 @@ const OBSOverlay: React.FC = () => {
 
   return (
     <>
-        <TopCenterLogo />
         {layout === 'IPL' && (
             <div className="min-h-screen w-full relative font-sans overflow-hidden bg-transparent select-none">
-                 {/* Top Left: Auction Logo */}
-                 <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-8 left-8 z-50 flex items-center gap-4 bg-black/40 backdrop-blur-md p-3 px-5 rounded-2xl border border-white/10"
-                 >
-                     <Trophy className="w-8 h-8 text-[#fbbf24] drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]" />
-                     <div className="flex flex-col">
-                         <span className="text-white font-black text-2xl italic tracking-tighter leading-none">SM SPORTS</span>
-                         <span className="text-[#fbbf24] text-[8px] font-bold uppercase tracking-[0.4em] mt-0.5">Auction Engine</span>
-                     </div>
-                 </motion.div>
+                 {/* Top Left: Removed Auction Logo */}
 
                  {/* Main Content Area */}
                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -759,7 +746,6 @@ const OBSOverlay: React.FC = () => {
         
         {layout === 'ADVAYA' && (
             <div className="min-h-screen w-full relative font-sans overflow-hidden bg-transparent flex items-center justify-center">
-                <TopCenterLogo />
                 
                 <AnimatePresence mode="wait">
                     {state.adminViewOverride?.type === 'TOP_5' ? (
@@ -881,7 +867,7 @@ const OBSOverlay: React.FC = () => {
                 </AnimatePresence>
             </div>
         )}
-        <Marquee show={!!state.sponsorConfig?.showHighlights} content={marqueeContent} layout={state.obsLayout} />
+        <Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} />
     </>
   );
 };

@@ -49,7 +49,7 @@ const Marquee = React.memo(({ content, show, layout }: { content: string[], show
               </div>
               <style>{`
                   @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-                  .animate-marquee { animation: marquee 40s linear infinite; }
+                  .animate-marquee { animation: marquee 18s linear infinite; }
               `}</style>
           </div>
     );
@@ -789,7 +789,7 @@ const ProjectorScreen: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
                                 transition={{ duration: 0.6, ease: "circOut" }}
-                                className="w-[95%] h-[72%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
+                                className="w-[95%] h-[65%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
                            >
                             <div className="flex items-center justify-end mb-2">
                                 <div className="bg-yellow-500 text-black px-6 py-1.5 rounded-xl font-black text-lg italic tracking-widest uppercase shadow-lg">
@@ -952,24 +952,24 @@ const ProjectorScreen: React.FC = () => {
                        </AnimatePresence>
 
                        {/* Team Purses at Bottom */}
-                       <div className="w-[92%] mt-6 min-h-[120px] mb-2 bg-slate-900/70 backdrop-blur-2xl rounded-[2.5rem] border-2 border-white/10 p-6 flex flex-col shadow-2xl relative z-[20]">
-                              <p className="text-blue-400 text-xs font-black uppercase tracking-[0.5em] mb-4 flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)]"></div>
+                       <div className="w-[94%] mt-4 min-h-[90px] mb-12 bg-slate-900/70 backdrop-blur-2xl rounded-[2rem] border-2 border-white/10 p-4 flex flex-col shadow-2xl relative z-[20]">
+                              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.5em] mb-2 flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)]"></div>
                                   TEAM PURSES
                               </p>
-                              <div className="flex-1 flex flex-wrap items-center justify-center gap-3">
+                              <div className="flex-1 flex flex-wrap items-center justify-center gap-2">
                                   {state.teams.map((team, idx) => (
                                       <motion.div 
                                         key={team.id} 
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: idx * 0.02 }}
-                                        className="bg-black/60 px-4 py-2.5 rounded-xl border border-white/10 flex items-center gap-3 hover:bg-blue-900/30 transition-all border-l-4 border-l-blue-500 shadow-xl"
+                                        className="bg-black/60 px-2 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 hover:bg-blue-900/30 transition-all border-l-2 border-l-blue-500 shadow-xl"
                                       >
-                                          {team.logoUrl ? <img src={team.logoUrl} className="w-8 h-8 object-contain bg-white p-1 rounded-full shrink-0" referrerPolicy="no-referrer" /> : <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0">{team.name.charAt(0)}</div>}
+                                          {team.logoUrl ? <img src={team.logoUrl} className="w-6 h-6 object-contain bg-white p-0.5 rounded-full shrink-0" referrerPolicy="no-referrer" /> : <div className="w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center font-bold text-[8px] shrink-0">{team.name.charAt(0)}</div>}
                                           <div className="min-w-0">
-                                              <p className="text-gray-400 font-bold text-[9px] uppercase truncate tracking-widest leading-none mb-1">{team.name}</p>
-                                              <p className="text-yellow-500 font-mono font-black text-lg italic leading-none truncate">₹ {team.budget.toLocaleString()}</p>
+                                              <p className="text-gray-400 font-bold text-[8px] uppercase truncate tracking-widest leading-none mb-0.5">{team.name}</p>
+                                              <p className="text-yellow-500 font-mono font-black text-sm italic leading-none truncate">₹ {team.budget.toLocaleString()}</p>
                                           </div>
                                       </motion.div>
                                   ))}

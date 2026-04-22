@@ -46,8 +46,10 @@ service cloud.firestore {
       return isSignedIn() && (
         (exists(/databases/$(database)/documents/auctions/$(auctionId)) && 
          get(/databases/$(database)/documents/auctions/$(auctionId)).data.createdBy == request.auth.uid) ||
-        // Fallback for identified user auctions
-        request.auth.token.email == "send.smsports@gmail.com"
+        // Admin fallbacks
+        request.auth.token.email == "send.smsports@gmail.com" ||
+        request.auth.token.email == "info.digitalmount@gmail.com" ||
+        request.auth.token.email == "mezabiullakhan@gmail.com"
       );
     }
 
@@ -77,8 +79,6 @@ service cloud.firestore {
 
     function isValidAuction(data) {
       return isValidString(data.title, 1, 200) &&
-             (data.date is string || data.dateTBD == true) &&
-             data.totalTeams is number &&
              data.createdAt is number;
     }
 
@@ -145,7 +145,7 @@ service cloud.firestore {
 
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (
-        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoUrl', 'email', 'mobile'])) || 
+        request.auth.uid == userId || 
         isSuperAdmin()
       );
       allow delete: if isSuperAdmin();
@@ -157,9 +157,11 @@ service cloud.firestore {
       allow list: if true;
 
       allow create: if isSignedIn() && isValidAuction(incoming()); // Any user can create an auction
-      allow update: if (isAdmin(auctionId) || isSuperAdmin()) && isValidAuction(incoming()) && (
-        // Action: Update Settings (Admin)
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'date', 'venue', 'logoUrl', 'dateTBD', 'slabs', 'status', 'currentPlayerId', 'currentBid', 'highestBidder', 'timer', 'playerSelectionMode', 'sponsors', 'sponsorConfig', 'projectorLayout', 'obsLayout', 'adminViewOverride', 'maxPlayersPerTeam', 'basePrice', 'auctionLog', 'biddingStatus', 'unlimitedPurse', 'autoReserveFunds', 'registrationConfig'])
+      allow update: if isSuperAdmin() || (
+        isAdmin(auctionId) && isValidAuction(incoming()) && (
+          // Ensure they don't transfer ownership unless super admin
+          incoming().createdBy == existing().createdBy || isSuperAdmin()
+        )
       ) || (
         // Action: Bid (Team Owners)
         // Ensure the bidder is signed in and has the role of TEAM_OWNER in the users registry or via session validation
@@ -246,7 +248,12 @@ service cloud.firestore {
 
     match /recollectionResponses/{responseId} {
       allow create: if true;
-      allow read, list, update, delete: if isSuperAdmin() || request.auth.token.email == "send.smsports@gmail.com";
+      allow read, list, update, delete: if isSignedIn() && (
+        isSuperAdmin() || 
+        request.auth.token.email == "send.smsports@gmail.com" ||
+        (exists(/databases/$(database)/documents/auctions/$(resource.data.auctionId)) && 
+         get(/databases/$(database)/documents/auctions/$(resource.data.auctionId)).data.createdBy == request.auth.uid)
+      );
     }
 
     match /matches/{matchId} {
