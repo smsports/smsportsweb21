@@ -321,7 +321,7 @@ const ProjectorScreen: React.FC = () => {
                       {children}
                   </div>
               </div>
-              <Marquee show={!!state.sponsorConfig?.showHighlights} content={marqueeContent} layout={state.projectorLayout} />
+              <Marquee show={state.sponsorConfig?.showTickerOnProjector ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.projectorLayout} />
           </div>
           );
       };
@@ -789,7 +789,7 @@ const ProjectorScreen: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
                                 transition={{ duration: 0.6, ease: "circOut" }}
-                                className="w-[95%] h-[78%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
+                                className="w-[95%] h-[72%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
                            >
                             <div className="flex items-center justify-end mb-2">
                                 <div className="bg-yellow-500 text-black px-6 py-1.5 rounded-xl font-black text-lg italic tracking-widest uppercase shadow-lg">
@@ -1069,128 +1069,93 @@ const ProjectorScreen: React.FC = () => {
               </div>
           )}
           {layout === 'ADVAYA' && (
-              <div className="h-screen w-full bg-[#030303] flex flex-col font-sans overflow-hidden relative text-white">
-                  {/* Background Accents: Stadium hint */}
-                  <div className="absolute inset-0 stadium-bg opacity-15 pointer-events-none"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black pointer-events-none"></div>
+              <div className="h-screen w-full bg-transparent flex flex-col font-sans overflow-hidden relative text-white">
+                  <div className="absolute top-10 left-10 z-50">
+                      <img src={state.auctionLogoUrl || state.systemLogoUrl} className="h-20 w-auto object-contain" />
+                  </div>
                   
-                  <Header />
+                  <div className="flex-1 flex flex-col items-center justify-end pb-20 relative z-10 p-10">
+                       {/* Lower Third Widget for Advaya */}
+                       <div className="w-full max-w-[1400px] flex items-end gap-10">
+                           {/* Left: Base Price info */}
+                           <div className="flex-1 flex flex-col items-end pb-4">
+                               <div className="bg-black/80 backdrop-blur-md border-l-4 border-yellow-500 px-6 py-4 rounded-tl-3xl shadow-2xl transform skew-x-[-12deg] w-[300px]">
+                                   <div className="transform skew-x-[12deg] text-right">
+                                       <p className="text-yellow-500 font-black text-xs uppercase tracking-[0.3em] mb-1 opacity-70">BASE PRICE</p>
+                                       <p className="text-4xl font-black italic tracking-tighter">₹ {player ? getEffectiveBasePrice(player, state.categories).toLocaleString() : '0'}</p>
+                                   </div>
+                               </div>
+                           </div>
 
-                  <div className="flex-1 flex p-10 gap-10 min-h-0 relative z-10">
-                      {/* Player Profile Card - Large & Sleek */}
-                      <div className="w-[38%] flex flex-col gap-8 animate-slide-in-left">
-                          <div className="flex-1 bg-black rounded-[48px] overflow-hidden relative border-2 border-yellow-500/30 advaya-border-glow shadow-2xl">
-                              <img src={player?.photoUrl} className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105" />
-                              
-                              {/* Separated Info - Strictly at bottom to avoid overlapping with player face */}
-                              <div className="absolute bottom-0 left-0 w-full p-10 bg-gradient-to-t from-black via-black/95 to-transparent h-[40%] flex flex-col justify-end">
-                                  <div className="bg-yellow-500 text-black px-8 py-2.5 rounded-xl font-black text-2xl uppercase tracking-widest inline-block mb-6 shadow-xl transform -skew-x-12">
-                                      {player?.category}
-                                  </div>
-                                  <h2 className="text-8xl font-black uppercase tracking-tighter leading-none text-white mb-3 italic">
-                                      {player?.name}
-                                  </h2>
-                                  <p className="text-yellow-500 font-black uppercase tracking-[0.5em] text-lg italic ml-1 opacity-80">{player?.role || player?.speciality}</p>
-                              </div>
-                          </div>
-                      </div>
-
-                      {/* Bidding Area - Professional & Intense */}
-                      <div className="flex-1 flex flex-col gap-10">
-                          <div className="flex-1 bg-black/60 backdrop-blur-xl rounded-[48px] border-2 border-yellow-500/30 advaya-border-glow relative overflow-hidden flex flex-col items-center justify-center shadow-[0_30px_100px_rgba(0,0,0,1)]">
-                              
-                                {status === 'SOLD' && (
-                                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-3xl animate-fade-in shadow-[inset_0_0_100px_rgba(234,179,8,0.2)]">
-                                        <div className="relative mb-14">
-                                            <div className="absolute inset-[-60px] bg-yellow-400 blur-[120px] opacity-30"></div>
-                                            <div className="text-yellow-500 font-black text-[15vw] tracking-tighter leading-none animate-bounce-in italic drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">SOLD</div>
-                                        </div>
-                                        {bidder && (
-                                            <div className="flex flex-col items-center animate-slide-up">
-                                                <div className="flex items-center gap-12 bg-black/80 p-12 rounded-[50px] border-2 border-yellow-500/50 shadow-[0_0_100px_rgba(234,179,8,0.3)]">
-                                                    <div className="relative">
-                                                        <div className="absolute inset-[-20px] bg-yellow-500 blur-3xl opacity-30 rounded-full"></div>
-                                                        {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-36 h-36 object-contain bg-white p-3 rounded-3xl relative z-10 shadow-2xl" /> : <div className="w-36 h-36 bg-yellow-600 rounded-3xl flex items-center justify-center text-6xl font-black relative z-10 border-4 border-yellow-400/30">{bidder.name.charAt(0)}</div>}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-yellow-500 font-black uppercase tracking-[0.6em] text-[10px] mb-3">Owner Identified</p>
-                                                        <h3 className="text-7xl font-black uppercase tracking-tighter italic leading-none">{bidder.name}</h3>
-                                                        <div className="h-px w-full bg-yellow-500/20 my-4"></div>
-                                                        <p className="text-5xl font-black text-white italic tracking-tighter">₹{bid.toLocaleString()}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                           {/* Middle: Main Player Plate */}
+                           <div className="shrink-0 flex flex-col items-center relative gap-4">
+                               <div className="relative group">
+                                    <div className="absolute inset-[-10px] rounded-full border-4 border-yellow-500/20 border-t-yellow-500 border-b-yellow-500 animate-spin-slow"></div>
+                                    <div className="w-48 h-48 rounded-full border-8 border-[#050505] overflow-hidden shadow-[0_0_60px_rgba(0,0,0,1)] relative z-10 advaya-border-glow p-1">
+                                        <img src={player?.photoUrl} className="w-full h-full object-cover object-top" />
                                     </div>
-                                )}
+                               </div>
 
-                                {status === 'UNSOLD' && (
-                                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/98 backdrop-blur-3xl animate-fade-in">
-                                        <div className="relative">
-                                            <div className="absolute inset-[-50px] bg-red-600 blur-[100px] opacity-20"></div>
-                                            <div className="text-red-600 font-black text-[15vw] tracking-tighter leading-none animate-bounce-in italic drop-shadow-[0_0_80px_rgba(220,38,38,0.6)]">UNSOLD</div>
-                                        </div>
+                               <div className="w-[600px] bg-[#050505] border-t-4 border-yellow-500 rounded-2xl p-6 shadow-[0_30px_100px_rgba(0,0,0,1)] relative flex flex-col items-center">
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full px-8 py-1 bg-yellow-500 text-black font-black italic tracking-widest text-sm uppercase rounded-t-lg">
+                                        {player?.category}
                                     </div>
-                                )}
+                                    <h2 className="text-6xl font-black uppercase italic tracking-tighter leading-none mb-2 text-center w-full truncate">{player?.name}</h2>
+                                    <p className="text-yellow-500/80 font-black uppercase tracking-[0.4em] text-xs italic">{player?.role || player?.speciality}</p>
+                               </div>
+                           </div>
 
-                                <div className="relative z-10 flex flex-col items-center">
-                                    <div className="mb-6 flex flex-col items-center">
-                                        <div className="flex gap-1.5 mb-2">
-                                            {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}></div>)}
-                                        </div>
-                                        <p className="text-yellow-500/80 font-black text-3xl uppercase tracking-[0.8em] italic">{bidder ? 'CURRENT BID' : 'BASE PRICE'}</p>
-                                    </div>
-                                    <div className="text-[26vh] font-black text-white leading-none tabular-nums tracking-tighter drop-shadow-[0_25px_100px_rgba(0,0,0,1)] italic">
-                                        {bid.toLocaleString()}
-                                    </div>
-                                  
-                                    {status === 'LIVE' && bidder && (
-                                        <div className="mt-14 flex flex-col items-center animate-slide-up">
-                                            <div className="flex items-center gap-8 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black px-16 py-8 rounded-full shadow-[0_25px_70px_rgba(234,179,8,0.5)] transform hover:scale-105 transition-all duration-500 border-t-4 border-yellow-200/50">
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 bg-white blur-xl opacity-30"></div>
-                                                    {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-20 h-20 object-contain bg-white p-1.5 rounded-full relative z-10" /> : <div className="w-20 h-20 bg-black/20 rounded-full flex items-center justify-center font-black text-3xl relative z-10">{bidder.name.charAt(0)}</div>}
-                                                </div>
-                                                <div>
-                                                    <p className="text-black/70 text-[11px] font-black uppercase tracking-widest leading-none mb-2">Leading Entity presence</p>
-                                                    <p className="text-5xl font-black uppercase tracking-tight leading-none italic">{bidder.name}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                          </div>
+                           {/* Right: Current Bid & Stats */}
+                           <div className="flex-1 flex flex-col items-start gap-4 pb-4">
+                               <div className="bg-black/80 backdrop-blur-md border-r-4 border-yellow-500 px-8 py-4 rounded-tr-3xl shadow-2xl transform skew-x-[-12deg] w-[400px] flex justify-between items-center h-[88px]">
+                                   <div className="transform skew-x-[-12deg]">
+                                       <p className="text-yellow-500 font-black text-xs uppercase tracking-[0.3em] mb-1 opacity-70">CURRENT BID</p>
+                                       <p className="text-5xl font-black italic tracking-tighter tabular-nums">₹ {bid.toLocaleString()}</p>
+                                   </div>
+                                   {bidder && (
+                                       <div className="transform skew-x-[-12deg] flex items-center gap-3">
+                                           {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-12 h-12 object-contain bg-white rounded-xl p-1" /> : <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center font-black">{bidder.name.charAt(0)}</div>}
+                                           <p className="text-xl font-black uppercase italic tracking-tighter leading-tight max-w-[120px] truncate">{bidder.name}</p>
+                                       </div>
+                                   )}
+                               </div>
 
-                          {/* Data Ticker - Custom ADVAYA Style */}
-                          <div className="h-44 bg-black/90 rounded-[48px] border-2 border-yellow-500/20 p-8 flex flex-col shadow-2xl relative overflow-hidden">
-                              <div className="absolute inset-0 stadium-bg opacity-5 pointer-events-none"></div>
-                              <div className="flex justify-between items-center mb-6 px-4 relative z-10">
-                                  <div className="flex items-center gap-3">
-                                      <Activity className="w-5 h-5 text-yellow-500 animate-pulse" />
-                                      <p className="text-yellow-500 font-black text-sm uppercase tracking-[0.5em] italic">Live Squad Valuation Matrix</p>
-                                  </div>
-                                  <div className="flex gap-3">
-                                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shadow-[0_0_10px_rgba(234,179,8,1)]"></div>
-                                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></div>
-                                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></div>
-                                  </div>
-                              </div>
-                              <div className="flex-1 overflow-x-auto flex items-center gap-8 custom-scrollbar pb-3 relative z-10">
-                                  {state.teams.map(team => (
-                                      <div key={team.id} className="min-w-[260px] flex items-center gap-6 bg-yellow-500/5 backdrop-blur-md p-5 rounded-[2rem] border-2 border-yellow-500/10 hover:border-yellow-500/40 hover:bg-yellow-500/10 transition-all duration-300 shrink-0 group">
-                                          <div className="relative">
-                                             <div className="absolute inset-0 bg-yellow-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                                             {team.logoUrl ? <img src={team.logoUrl} className="w-14 h-14 object-contain bg-white p-1.5 rounded-2xl relative z-10 shadow-lg" /> : <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center font-black text-sm relative z-10 border-2 border-zinc-700">{team.name.charAt(0)}</div>}
-                                          </div>
-                                          <div className="min-w-0">
-                                              <p className="text-white/70 font-black text-[11px] uppercase truncate tracking-wider mb-1">{team.name}</p>
-                                              <p className="text-yellow-500 font-mono font-black text-2xl leading-none italic tracking-tighter">₹ {team.budget.toLocaleString()}</p>
-                                          </div>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                      </div>
+                               {/* Squad Table Overlay */}
+                               <div className="bg-[#050505]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[300px] transform skew-x-[12deg]">
+                                    <div className="transform skew-x-[-12deg]">
+                                        <table className="w-full text-[10px] font-bold text-gray-400">
+                                           <thead>
+                                               <tr className="border-b border-white/10">
+                                                   <th className="text-left pb-2">TEAMS</th>
+                                                   <th className="text-right pb-2 px-4">PURSE REM</th>
+                                                   <th className="text-right pb-2">PLAYERS</th>
+                                               </tr>
+                                           </thead>
+                                           <tbody>
+                                               {state.teams.slice(0, 3).map(team => (
+                                                   <tr key={team.id} className="border-b border-white/5 last:border-0">
+                                                       <td className="py-2 text-white truncate max-w-[80px]">{team.name}</td>
+                                                       <td className="py-2 text-yellow-500 text-right px-4">₹{(team.budget/10000000).toFixed(2)}Cr</td>
+                                                       <td className="py-2 text-right text-white">{team.players.length}</td>
+                                                   </tr>
+                                               ))}
+                                           </tbody>
+                                        </table>
+                                    </div>
+                               </div>
+                           </div>
+                       </div>
+
+                       {/* Sold Animation Absolute - Advaya */}
+                       {status === 'SOLD' && (
+                           <motion.div 
+                               initial={{ scale: 0.5, opacity: 0, y: 100 }}
+                               animate={{ scale: 1, opacity: 1, y: 0 }}
+                               className="absolute bottom-[30%] z-[100] bg-yellow-500 text-black font-black text-9xl px-20 py-8 shadow-[0_0_150px_rgba(234,179,8,0.8)] -rotate-3 border-[12px] border-black italic tracking-tighter"
+                           >
+                               SOLD
+                           </motion.div>
+                       )}
                   </div>
               </div>
           )}
@@ -1377,7 +1342,7 @@ const ProjectorScreen: React.FC = () => {
               </div>
           )}
           </div>
-          <Marquee show={!!state.sponsorConfig?.showHighlights} content={marqueeContent} layout={state.projectorLayout} />
+          <Marquee show={state.sponsorConfig?.showTickerOnProjector ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.projectorLayout} />
       </div>
   );
 };

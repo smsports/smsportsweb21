@@ -134,7 +134,9 @@ export interface Sponsor {
 export interface SponsorConfig {
     showOnOBS: boolean;
     showOnProjector: boolean;
-    showHighlights?: boolean; // New: Toggle for news ticker highlights
+    showTickerOnOBS?: boolean; // New: Independent ticker control for OBS
+    showTickerOnProjector?: boolean; // New: Independent ticker control for Projector
+    showHighlights?: boolean; // Global fallback or deprecated
     loopInterval: number; // seconds
 }
 
