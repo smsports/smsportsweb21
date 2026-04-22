@@ -300,31 +300,12 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
         const currentPlayer = state.players.find(p => String(p.id) === String(state.currentPlayerId));
         if (currentPlayer) {
-            const targetSquadSize = state.maxPlayersPerTeam || 11;
-            const currentSquadCount = team.players.length;
-            const playersStillNeededAfterThis = targetSquadSize - (currentSquadCount + 1);
-
-            if (targetSquadSize - currentSquadCount <= 0) {
-                throw new Error("Squad Limit Reached!");
-            }
-
-            // Category Max Limit Check
-            if (currentPlayer.category) {
-                const cat = state.categories.find(c => c.name === currentPlayer.category);
-                if (cat && cat.maxPerTeam > 0) {
-                    const countInCat = team.players.filter(p => p.category === cat.name).length;
-                    if (countInCat >= cat.maxPerTeam) {
-                        throw new Error(`Category Limit Reached! This team already has ${cat.maxPerTeam} players from category ${cat.name}.`);
-                    }
-                }
-            }
-
             if (!state.unlimitedPurse) {
-                const { maxBid, reservedAmount, playersNeeded } = calculateMaxBid(team, state, currentPlayer);
+                const result = calculateMaxBid(team, state, currentPlayer);
 
-                if (amount > maxBid) {
+                if (!result.allowBid || amount > result.maxBid) {
                     throw new Error(
-                        `Insufficient purse to complete squad. You must reserve ₹${reservedAmount} for the remaining ${playersNeeded} players to meet minimum requirements.`
+                        result.reason || `Insufficient purse to complete squad. You must reserve ₹${Math.floor(result.reservedFunds)} for the remaining ${result.remainingSlots} players.`
                     );
                 }
             }
@@ -347,9 +328,9 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Reserve Check for Admin Sale
         if (!state.unlimitedPurse) {
-            const { maxBid, reservedAmount, playersNeeded } = calculateMaxBid(finalTeam, state, player);
-            if (finalPrice > maxBid) {
-                throw new Error(`Cannot sell: Team needs ₹${reservedAmount} in reserve to buy remaining ${playersNeeded} players.`);
+            const result = calculateMaxBid(finalTeam, state, player);
+            if (!result.allowBid || finalPrice > result.maxBid) {
+                throw new Error(result.reason || `Cannot sell: Team needs ₹${Math.floor(result.reservedFunds)} in reserve to buy remaining ${result.remainingSlots} players.`);
             }
         }
 

@@ -39,11 +39,16 @@ const TeamStatusCard: React.FC<Props> = ({ team }) => {
             }
         }
 
-        const { maxBid, reservedAmount } = calculateMaxBid(team, state, currentPlayer);
+        const result = calculateMaxBid(team, state, currentPlayer);
+        const maxBid = result.maxBid;
 
         let reached = false;
         let reason = "";
-        if (nextBid > maxBid) {
+        
+        if (!result.allowBid) {
+            reached = true;
+            reason = result.reason || "Limit Hit";
+        } else if (nextBid > maxBid) {
             reached = true;
             reason = "Reserve Hit";
         }

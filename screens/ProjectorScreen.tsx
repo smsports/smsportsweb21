@@ -178,7 +178,7 @@ const ProjectorScreen: React.FC = () => {
                 
                 {/* Middle: Auction Name */}
                 <div className="flex-1 flex justify-center">
-                    <h1 className="text-6xl lg:text-8xl font-black uppercase tracking-tighter text-white italic drop-shadow-[0_10px_30px_rgba(255,255,255,0.2)]">
+                    <h1 className="text-6xl lg:text-8xl font-black uppercase tracking-tighter golden-text glow-text-gold italic drop-shadow-[0_0_30px_rgba(234,179,8,0.4)]">
                         {state.tournamentName || "TATA IPL AUCTION 2026"}
                     </h1>
                 </div>
@@ -779,7 +779,7 @@ const ProjectorScreen: React.FC = () => {
                   
                   <Header />
 
-                  <div className="flex-1 flex flex-col p-4 relative z-10 items-center justify-start mt-[-20px]">
+                  <div className="flex-1 flex flex-col p-4 relative z-10 items-center justify-start">
                        {/* Main Content Box from Image */}
                        <AnimatePresence mode="wait">
                            <motion.div 
@@ -788,7 +788,7 @@ const ProjectorScreen: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
                                 transition={{ duration: 0.6, ease: "circOut" }}
-                                className="w-[90%] h-[68%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-6 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
+                                className="w-[95%] h-[78%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
                            >
                             <div className="flex items-center justify-end mb-2">
                                 <div className="bg-yellow-500 text-black px-6 py-1.5 rounded-xl font-black text-lg italic tracking-widest uppercase shadow-lg">
@@ -824,7 +824,7 @@ const ProjectorScreen: React.FC = () => {
                                           <motion.p 
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className="text-blue-400 font-black text-xl uppercase tracking-[0.4em] italic"
+                                            className="text-blue-400 font-black text-4xl lg:text-5xl uppercase tracking-[0.4em] italic mb-2"
                                           >
                                               {player?.category || 'PLATINUM SET'}
                                           </motion.p>
@@ -864,7 +864,7 @@ const ProjectorScreen: React.FC = () => {
                             </div>
 
                             {/* Bottom: Price Boxes with higher impact */}
-                            <div className="mt-auto grid grid-cols-2 gap-8 h-24">
+                            <div className="mt-8 grid grid-cols-2 gap-8 h-28 shrink-0">
                                  <motion.div 
                                     initial={{ x: -100, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
