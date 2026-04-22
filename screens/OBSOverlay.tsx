@@ -84,10 +84,15 @@ const OBSOverlay: React.FC = () => {
     return items;
   }, [state.sponsorConfig?.showHighlights, state.teams, state.auctionLog, state.tournamentName, state.sponsors]);
 
-  useEffect(() => {
-      document.body.style.backgroundColor = 'transparent';
-      document.documentElement.style.backgroundColor = 'transparent';
-  }, []);
+    useEffect(() => {
+        let bg = 'transparent';
+        // If user wants solid backgrounds, we can set them here based on layout
+        // but typically OBS stays transparent. User said "change them all to other colors".
+        // I will set a very dark gray/black as fallback if not transparent.
+        bg = '#020202'; 
+        document.body.style.backgroundColor = bg;
+        document.documentElement.style.backgroundColor = bg;
+    }, []);
 
   useEffect(() => { if (auctionId) joinAuction(auctionId); }, [auctionId]);
 
@@ -208,7 +213,7 @@ const OBSOverlay: React.FC = () => {
              <div className="h-full bg-black/40 px-6 flex items-center border-l border-white/10 shrink-0">
                  <div className="flex flex-col items-end mr-3">
                      <span className="text-[8px] font-black text-[#fbbf24] uppercase tracking-[0.2em] italic leading-none">Live Auction</span>
-                     <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] italic leading-none mt-0.5">SM SPORTS v2.0</span>
+                     <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] italic leading-none mt-0.5">VERSION 2.0</span>
                  </div>
                  {state.systemLogoUrl && <img src={state.systemLogoUrl} className="h-6 object-contain opacity-50 contrast-125" />}
              </div>
@@ -219,11 +224,11 @@ const OBSOverlay: React.FC = () => {
   if (window.location.protocol === 'blob:') return <div className="min-h-screen w-full flex items-center justify-center bg-black/90 p-10"><div className="bg-red-600/20 border border-red-500 text-white p-8 rounded-xl text-center"><h1 className="text-2xl font-bold mb-2">Preview Mode Detected</h1><p>Please deploy the app to use the OBS Overlay.</p></div></div>;
 
   const SystemLogoFrame = () => (
-      <div className="absolute top-6 left-6 h-16 bg-slate-900 rounded-xl border-2 border-yellow-500 p-2 shadow-2xl flex items-center gap-3 z-50 overflow-hidden pr-6">
+      <div className="absolute top-6 left-6 h-16 bg-slate-950 rounded-xl border-2 border-yellow-500 p-2 shadow-2xl flex items-center gap-3 z-50 overflow-hidden pr-6">
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
           <div className="flex flex-col relative z-10">
-              <span className="text-white font-black text-lg tracking-tighter leading-none">SM SPORTS</span>
-              <span className="text-yellow-500 text-[6px] font-bold uppercase tracking-[0.2em] mt-0.5 italic text-right">Auction Engine</span>
+              <span className="text-white font-black text-lg tracking-tighter leading-none">{state.tournamentName || "AUCTION"}</span>
+              <span className="text-yellow-500 text-[6px] font-bold uppercase tracking-[0.2em] mt-0.5 italic text-right">Live System</span>
           </div>
           {state.systemLogoUrl ? (
               <img src={state.systemLogoUrl} className="h-full object-contain relative z-10" alt="Logo" />
@@ -234,15 +239,15 @@ const OBSOverlay: React.FC = () => {
   );
 
   const TopCenterLogo = () => (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 h-44 z-50 animate-fade-in">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 h-32 z-50 animate-fade-in">
         {state.systemLogoUrl ? (
             <img src={state.systemLogoUrl} className="h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" alt="Center Logo" />
         ) : (
-            <div className="flex items-center gap-6 bg-black/80 backdrop-blur-2xl px-12 py-5 rounded-3xl border-2 border-white/20 shadow-2xl">
-                <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+            <div className="flex items-center gap-6 bg-black/90 px-12 py-5 rounded-3xl border-2 border-white/10 shadow-2xl">
+                <Trophy className="w-16 h-16 text-yellow-500" />
                 <div className="flex flex-col">
-                    <span className="text-white text-4xl font-black italic tracking-tighter leading-none">SM SPORTS</span>
-                    <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-1 text-right">Auction Engine</span>
+                    <span className="text-white text-4xl font-black italic tracking-tighter leading-none uppercase">{state.tournamentName || "AUCTION"}</span>
+                    <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-1 text-right">Live Engine</span>
                 </div>
             </div>
         )}
@@ -758,59 +763,127 @@ const OBSOverlay: React.FC = () => {
         {layout === 'VERTICAL' && <div className="min-h-screen w-full relative"><div className="absolute top-0 right-0 h-full w-[300px] bg-gradient-to-b from-indigo-900 to-slate-900 border-l-4 border-cyan-500 flex flex-col p-6 shadow-2xl"><div className="bg-white/10 rounded-full p-2 mb-4 flex justify-center mx-auto w-36 h-36 border-4 border-cyan-500 relative"><img src={player?.photoUrl} className="w-full h-full rounded-full object-cover" /></div><h1 className="text-white text-2xl font-black text-center mb-1 leading-tight">{player?.name}</h1><p className="text-cyan-400 text-center text-sm font-bold uppercase mb-6 tracking-widest">{player?.role || player?.speciality || player?.category}</p><div className="bg-white/10 p-4 rounded-xl text-center mb-6 border border-white/20"><p className="text-gray-300 text-xs uppercase mb-1 font-bold">Current Bid</p><p className="text-4xl font-black text-white">{bid.toLocaleString()}</p></div>{bidder ? (<div className="bg-indigo-800 p-4 rounded-xl border border-indigo-600"><p className="text-xs text-gray-300 uppercase mb-2 font-bold">Highest Bidder</p><div className="flex items-center gap-3">{bidder.logoUrl ? <img src={bidder.logoUrl} className="w-10 h-10 rounded-full bg-white p-0.5"/> : <div className="w-10 h-10 bg-gray-600 rounded-full"/>}<p className="font-bold text-white leading-tight">{bidder.name}</p></div></div>) : (<div className="text-center text-gray-500 italic mt-4">Waiting for bids...</div>)}<div className="mt-auto">{status === 'SOLD' && <div className="bg-green-600 text-white text-center py-2 font-black text-xl rounded uppercase animate-pulse shadow-lg">SOLD</div>}{status === 'UNSOLD' && <div className="bg-red-600 text-white text-center py-2 font-black text-xl rounded uppercase shadow-lg">UNSOLD</div>}</div></div></div>}
         
         {layout === 'ADVAYA' && (
-            <div className="min-h-screen w-full relative font-sans overflow-hidden">
-                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 animate-slide-up">
-                    {/* Player Info - Thinner version */}
-                    <div className="flex-1 bg-black/95 backdrop-blur-xl rounded-xl border border-yellow-500/50 p-1.5 px-3 flex items-center gap-3 shadow-2xl relative overflow-hidden h-16">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-yellow-500/30 shrink-0">
-                            <img src={player?.photoUrl} className="w-full h-full object-cover object-top" />
-                        </div>
-                        <div className="min-w-0">
-                            <h1 className="text-lg font-black uppercase tracking-tight text-white truncate leading-none">{player?.name}</h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="bg-yellow-500 text-black px-1 py-0 rounded-[2px] text-[7px] font-black uppercase tracking-[0.1em] leading-none">
-                                    {player?.category}
-                                </span>
-                                <span className="text-yellow-500/80 font-bold uppercase tracking-widest text-[7px] leading-none">{player?.role || player?.speciality || player?.category}</span>
+            <div className="min-h-screen w-full relative font-sans overflow-hidden bg-black/90 flex items-center justify-center">
+                <TopCenterLogo />
+                
+                <AnimatePresence mode="wait">
+                    {state.adminViewOverride?.type === 'TOP_5' ? (
+                        <motion.div 
+                            key="top-buys"
+                            initial={{ x: -1000, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -1000, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+                            className="absolute left-10 top-32 w-[600px] z-[100]"
+                        >
+                            <div className="bg-black/95 rounded-[2rem] border-2 border-yellow-500/50 advaya-border-glow p-8 shadow-[0_0_50px_rgba(0,0,0,1)]">
+                                <h3 className="text-yellow-500 font-black text-3xl uppercase tracking-widest italic mb-8 border-b-2 border-yellow-500/30 pb-4">Tournament Top Buys</h3>
+                                <div className="space-y-4">
+                                    {state.teams.flatMap(t => t.players).sort((a,b) => (b.soldPrice || 0) - (a.soldPrice || 0)).slice(0, 5).map((p, i) => (
+                                        <div key={i} className="flex justify-between items-center bg-yellow-500/5 p-4 rounded-xl border border-yellow-500/10">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-yellow-500 font-black text-xl italic">#{i+1}</span>
+                                                <span className="text-white font-black uppercase text-sm italic">{p.name}</span>
+                                            </div>
+                                            <span className="text-yellow-500 font-black text-lg italic">₹{p.soldPrice?.toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Bidding Info - Thinner version */}
-                    <div className="w-[320px] flex flex-col gap-1">
-                        <div className="bg-yellow-500 rounded-xl p-1.5 px-4 flex items-center justify-between shadow-xl relative overflow-hidden border border-yellow-400 h-14">
-                            <div className="relative z-10">
-                                <p className="text-black/70 text-[7px] font-black uppercase tracking-widest mb-0">{bidder ? 'Current Bid' : 'Base Price'}</p>
-                                <p className={`text-3xl font-black text-black tabular-nums leading-none tracking-tighter italic ${!bidder ? 'animate-pulse' : ''}`}>{bid.toLocaleString()}</p>
-                            </div>
-                            <div className="text-right relative z-10">
-                                {status === 'SOLD' ? (
-                                    <span className="bg-black text-yellow-500 px-2 py-0.5 rounded-lg font-black text-sm italic uppercase tracking-widest animate-pulse">SOLD</span>
-                                ) : status === 'UNSOLD' ? (
-                                    <span className="bg-red-600 text-white px-2 py-0.5 rounded-lg font-black text-sm italic uppercase tracking-widest">UNSOLD</span>
-                                ) : (
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-black/50 text-[7px] font-bold uppercase tracking-widest leading-none">Min</span>
-                                        <span className="text-black font-bold text-base font-mono leading-none">₹{player ? getEffectiveBasePrice(player, state.categories).toLocaleString() : '0'}</span>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key={player?.id || 'empty'}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.5 }}
+                            className="flex flex-col items-center gap-6"
+                        >
+                            {/* Central Middle Layout - Advaya */}
+                            <div className="advaya-border-glow p-1 rounded-full shadow-[0_0_100px_rgba(250,204,21,0.15)] relative">
+                                <div className="w-64 h-64 rounded-full overflow-hidden border-4 border-yellow-500 bg-black p-1">
+                                    <img src={player?.photoUrl} className="w-full h-full object-cover object-top" />
+                                </div>
+                                {status === 'UNSOLD' && (
+                                    <div className="absolute inset-0 bg-red-600/60 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-red-600">
+                                        <span className="text-white font-black text-4xl -rotate-12 border-4 px-4 py-1">UNSOLD</span>
                                     </div>
                                 )}
                             </div>
-                        </div>
 
-                        {bidder && (
-                            <div className="bg-black/90 backdrop-blur-md rounded-lg p-1 px-3 flex items-center justify-between border border-yellow-500/30 shadow-lg h-8">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                                    <span className="text-white text-[10px] font-black uppercase italic tracking-tight truncate max-w-[120px]">{bidder.name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-yellow-500 font-mono font-bold text-[10px]">{bidder.budget.toLocaleString()}</span>
-                                    {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-5 h-5 object-contain bg-white p-0.5 rounded-full" /> : <div className="w-5 h-5 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-[7px] text-white">{bidder.name.charAt(0)}</div>}
+                            <div className="flex flex-col items-center gap-1 w-[800px]">
+                                {/* Middle Stats Plate */}
+                                <div className="w-full bg-black/95 rounded-[2rem] border-2 border-yellow-500/50 advaya-border-glow p-8 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500/40 to-transparent"></div>
+                                    
+                                    <div className="flex items-center justify-center gap-4 mb-4">
+                                        <span className="bg-yellow-500 text-black px-6 py-1 rounded-lg font-black text-xl uppercase tracking-[0.2em] italic skew-x-[-12deg]">
+                                            {player?.category}
+                                        </span>
+                                        <span className="text-yellow-500/60 font-black uppercase tracking-widest text-lg italic">{player?.role || player?.speciality}</span>
+                                    </div>
+
+                                    <h1 className="text-7xl font-black uppercase italic text-white tracking-tighter mb-6 text-center leading-none">{player?.name}</h1>
+
+                                    <div className="w-full flex items-center justify-between border-t border-yellow-500/20 pt-6 px-10">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-yellow-500/40 text-[10px] font-black uppercase tracking-widest mb-1">Base Price</span>
+                                            <span className="text-white font-black text-4xl italic tracking-tighter">₹ {player ? getEffectiveBasePrice(player, state.categories).toLocaleString() : '0'}</span>
+                                        </div>
+                                        <div className="h-16 w-px bg-yellow-500/20"></div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-1">{bidder ? 'Current Bid' : 'No Bid'}</span>
+                                            <span className="text-yellow-500 font-black text-5xl italic tracking-tighter drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] tabular-nums">
+                                                ₹ {bid.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        {bidder && (
+                                            <>
+                                                <div className="h-16 w-px bg-yellow-500/20"></div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-yellow-500/40 text-[10px] font-black uppercase tracking-widest mb-1">Leader</span>
+                                                    <div className="flex items-center gap-3">
+                                                       {bidder.logoUrl && <img src={bidder.logoUrl} className="w-8 h-8 object-contain bg-white rounded-full p-1 shadow-md" />}
+                                                       <span className="text-white font-black text-3xl italic tracking-tighter uppercase">{bidder.name}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Sold Animation Bottom - Advaya */}
+                <AnimatePresence>
+                    {status === 'SOLD' && bidder && (
+                        <motion.div 
+                            initial={{ y: 200, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 200, opacity: 0 }}
+                            className="fixed bottom-10 left-0 w-full flex justify-center z-[200]"
+                        >
+                            <div className="w-[1000px] bg-black/95 border-b-8 border-yellow-500 advaya-border-glow rounded-3xl p-6 flex items-center justify-between shadow-[0_0_100px_rgba(0,0,0,1)] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-yellow-500/10 to-transparent pointer-events-none"></div>
+                                <div className="flex items-center gap-8">
+                                    <div className="bg-white p-3 rounded-2xl border-4 border-yellow-500 w-24 h-24 flex items-center justify-center shrink-0 shadow-2xl">
+                                        <img src={bidder.logoUrl} className="w-full h-full object-contain" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-yellow-500 font-black text-xl italic skew-x-[-12deg] tracking-widest mb-1 uppercase">SOLD TO</span>
+                                        <h2 className="text-white text-6xl font-black uppercase italic tracking-tighter leading-none drop-shadow-2xl">{bidder.name}</h2>
+                                    </div>
+                                </div>
+                                <div className="text-right flex flex-col items-end">
+                                    <span className="text-yellow-500 font-black text-xl italic tracking-[0.2em] mb-1 uppercase">WINNING BID</span>
+                                    <span className="text-white text-7xl font-black italic tracking-tighter drop-shadow-2xl leading-none">₹ {bid.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         )}
         <Marquee show={!!state.sponsorConfig?.showHighlights} content={marqueeContent} layout={state.obsLayout} />

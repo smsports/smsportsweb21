@@ -155,16 +155,17 @@
     @apply absolute inset-0 bg-black/60 backdrop-blur-[2px];
   }
 
-  /* Moving Light Border for Advaya */
+  /* Moving Light Border for Advaya - Neon lines only */
   .advaya-border-glow {
     position: relative;
     border-radius: inherit;
+    border: 2px solid rgba(251, 191, 36, 0.3);
   }
 
   .advaya-border-glow::before {
     content: '';
     position: absolute;
-    inset: -3px;
+    inset: -2px;
     background: conic-gradient(
       from 0deg,
       transparent 0deg,
@@ -173,7 +174,7 @@
       transparent 240deg,
       transparent 360deg
     );
-    animation: rotate-border 3s linear infinite;
+    animation: rotate-border 4s linear infinite;
     z-index: -1;
     border-radius: inherit;
   }
@@ -184,7 +185,7 @@
   }
 
   .glow-text-gold {
-    text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 0 20px rgba(251, 191, 36, 0.4);
+    text-shadow: none; /* Removed glow effect as requested for Advaya */
   }
 }
 

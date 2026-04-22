@@ -209,20 +209,20 @@ const ProjectorScreen: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black"></div>
                 
                 <div className="flex items-center gap-6 w-1/4 relative z-10">
-                    <div className="advaya-border-glow p-0.5 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                    <div className="advaya-border-glow p-0.5 rounded-xl overflow-hidden shadow-2xl">
                         <div className="bg-black backdrop-blur-3xl px-6 py-2 rounded-xl flex items-center gap-3">
-                            <Trophy className="w-8 h-8 text-yellow-500 glow-text-gold" />
+                            <Trophy className="w-8 h-8 text-yellow-500" />
                             <div className="flex flex-col">
-                                <span className="text-white text-xl font-black italic tracking-tighter leading-none glow-text-gold">SM SPORTS</span>
-                                <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] text-right">Auction Pro</span>
+                                <span className="text-white text-xl font-black italic tracking-tighter leading-none">{state.tournamentName || "AUCTION"}</span>
+                                <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] text-right">Live System</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div className="flex-1 flex justify-center relative z-10 px-8">
-                    <div className="bg-black/60 backdrop-blur-2xl px-12 py-4 rounded-[40px] border-2 border-yellow-500/30 shadow-[0_0_60px_rgba(234,179,8,0.2)]">
-                        <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 glow-text-gold drop-shadow-2xl text-center italic">
+                    <div className="bg-black/80 backdrop-blur-2xl px-12 py-4 rounded-[40px] border-2 border-yellow-500/30">
+                        <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-[0.15em] text-white drop-shadow-2xl text-center italic">
                             {state.tournamentName || "PREMIUM AUCTION"}
                         </h1>
                     </div>
@@ -244,6 +244,7 @@ const ProjectorScreen: React.FC = () => {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-transparent to-transparent opacity-50"></div>
           
           {/* Left: SM Sports Logo */}
+          {/* Header Logo */}
           <div className="flex items-center gap-6 w-1/4 relative z-10">
                {state.systemLogoUrl ? (
                   <div className="relative group">
@@ -253,10 +254,10 @@ const ProjectorScreen: React.FC = () => {
               ) : (
                   <div className="flex items-center gap-4 bg-gradient-to-br from-black/80 to-slate-900/80 backdrop-blur-xl px-8 py-3 rounded-2xl border border-white/10 shadow-2xl skew-x-[-12deg]">
                       <div className="transform skew-x-[12deg] flex items-center gap-3">
-                          <Trophy className="w-10 h-10 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+                          <Trophy className="w-10 h-10 text-yellow-500" />
                           <div className="flex flex-col">
-                              <span className="text-white text-2xl font-black italic tracking-tighter leading-none">SM SPORTS</span>
-                              <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] mt-1 text-right">Auction Engine</span>
+                              <span className="text-white text-2xl font-black italic tracking-tighter leading-none uppercase">{state.tournamentName || "AUCTION"}</span>
+                              <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] mt-1 text-right">Live System</span>
                           </div>
                       </div>
                   </div>
@@ -677,11 +678,8 @@ const ProjectorScreen: React.FC = () => {
                 
                 <div className="flex-1 flex gap-6 p-8 min-h-0 relative z-10 items-center justify-center">
                     {/* Player Image with strong frame */}
-                    <div className="w-[35%] bg-white rounded-[2rem] shadow-2xl overflow-hidden relative border-8 border-white h-[75vh] group">
+                    <div className="w-[35%] bg-white rounded-[2rem] shadow-2xl overflow-hidden relative border-[12px] border-white h-[75vh] group">
                         <img src={player?.photoUrl} alt={player?.name} className="w-full h-full object-cover object-top" />
-                        <div className="absolute top-6 left-6 bg-slate-900/90 text-white px-6 py-2 rounded-xl shadow-2xl border border-white/20">
-                            <span className="font-black text-2xl uppercase tracking-widest">{player?.category}</span>
-                        </div>
                     </div>
 
                     <div className="flex-1 flex flex-col gap-6 h-[75vh]">
@@ -689,8 +687,11 @@ const ProjectorScreen: React.FC = () => {
                         <div className="bg-slate-900 rounded-[2rem] p-10 shadow-2xl border border-white/10 flex justify-between items-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-transparent opacity-50"></div>
                             <div className="relative z-10">
-                                <div className="flex items-center gap-2 mb-3 text-slate-400 font-bold tracking-[0.3em] uppercase text-xs">
-                                    <Globe className="w-4 h-4" /> {player?.nationality}
+                                <div className="flex items-center gap-4 mb-3">
+                                    <span className="bg-yellow-500 text-black px-4 py-1 rounded-lg text-xs font-black uppercase tracking-widest">{player?.category}</span>
+                                    <div className="flex items-center gap-2 text-slate-400 font-bold tracking-[0.3em] uppercase text-xs">
+                                        <Globe className="w-4 h-4" /> {player?.nationality}
+                                    </div>
                                 </div>
                                 <h1 className="text-7xl font-black text-white leading-none mb-3 drop-shadow-lg">{player?.name}</h1>
                                 <div className="flex items-center gap-6">
@@ -985,7 +986,7 @@ const ProjectorScreen: React.FC = () => {
                   <Header />
 
                   <div className="flex-1 flex p-10 gap-10 min-h-0 relative z-10">
-                      <div className="w-[42%] bg-zinc-900 rounded-[3rem] overflow-hidden relative border border-white/10 shadow-2xl flex flex-col">
+                      <div className="w-[42%] bg-zinc-950 rounded-[3rem] overflow-hidden relative border border-white/10 shadow-2xl flex flex-col">
                           <div className="flex-1 relative">
                              <img src={player?.photoUrl} className="w-full h-full object-cover object-top" />
                              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
@@ -1076,17 +1077,17 @@ const ProjectorScreen: React.FC = () => {
                   <Header />
 
                   <div className="flex-1 flex p-10 gap-10 min-h-0 relative z-10">
-                      {/* Player Profile Card - Large & Glowing */}
+                      {/* Player Profile Card - Large & Sleek */}
                       <div className="w-[38%] flex flex-col gap-8 animate-slide-in-left">
-                          <div className="flex-1 bg-black rounded-[48px] overflow-hidden relative border-2 border-yellow-500/30 advaya-border-glow shadow-[0_0_80px_rgba(0,0,0,1)]">
+                          <div className="flex-1 bg-black rounded-[48px] overflow-hidden relative border-2 border-yellow-500/30 advaya-border-glow shadow-2xl">
                               <img src={player?.photoUrl} className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105" />
                               
-                              {/* Overlay for Name/Category */}
-                              <div className="absolute bottom-0 left-0 w-full p-10 bg-gradient-to-t from-black via-black/95 to-transparent">
-                                  <div className="bg-yellow-500 text-black px-8 py-2.5 rounded-xl font-black text-2xl uppercase tracking-widest inline-block mb-6 shadow-[0_0_30px_rgba(234,179,8,0.7)] transform -skew-x-12">
+                              {/* Separated Info - Strictly at bottom to avoid overlapping with player face */}
+                              <div className="absolute bottom-0 left-0 w-full p-10 bg-gradient-to-t from-black via-black/95 to-transparent h-[40%] flex flex-col justify-end">
+                                  <div className="bg-yellow-500 text-black px-8 py-2.5 rounded-xl font-black text-2xl uppercase tracking-widest inline-block mb-6 shadow-xl transform -skew-x-12">
                                       {player?.category}
                                   </div>
-                                  <h2 className="text-8xl font-black uppercase tracking-tighter leading-none glow-text-gold mb-3 drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] italic">
+                                  <h2 className="text-8xl font-black uppercase tracking-tighter leading-none text-white mb-3 italic">
                                       {player?.name}
                                   </h2>
                                   <p className="text-yellow-500 font-black uppercase tracking-[0.5em] text-lg italic ml-1 opacity-80">{player?.role || player?.speciality}</p>
@@ -1102,7 +1103,7 @@ const ProjectorScreen: React.FC = () => {
                                     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-3xl animate-fade-in shadow-[inset_0_0_100px_rgba(234,179,8,0.2)]">
                                         <div className="relative mb-14">
                                             <div className="absolute inset-[-60px] bg-yellow-400 blur-[120px] opacity-30"></div>
-                                            <div className="text-yellow-500 font-black text-[15vw] tracking-tighter leading-none animate-bounce-in glow-text-gold italic drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">SOLD</div>
+                                            <div className="text-yellow-500 font-black text-[15vw] tracking-tighter leading-none animate-bounce-in italic drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">SOLD</div>
                                         </div>
                                         {bidder && (
                                             <div className="flex flex-col items-center animate-slide-up">
@@ -1112,8 +1113,8 @@ const ProjectorScreen: React.FC = () => {
                                                         {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-36 h-36 object-contain bg-white p-3 rounded-3xl relative z-10 shadow-2xl" /> : <div className="w-36 h-36 bg-yellow-600 rounded-3xl flex items-center justify-center text-6xl font-black relative z-10 border-4 border-yellow-400/30">{bidder.name.charAt(0)}</div>}
                                                     </div>
                                                     <div>
-                                                        <p className="text-yellow-500 font-black uppercase tracking-[0.6em] text-[10px] mb-3 glow-text-gold">New Owner Identified</p>
-                                                        <h3 className="text-7xl font-black uppercase tracking-tighter glow-text-gold italic leading-none">{bidder.name}</h3>
+                                                        <p className="text-yellow-500 font-black uppercase tracking-[0.6em] text-[10px] mb-3">Owner Identified</p>
+                                                        <h3 className="text-7xl font-black uppercase tracking-tighter italic leading-none">{bidder.name}</h3>
                                                         <div className="h-px w-full bg-yellow-500/20 my-4"></div>
                                                         <p className="text-5xl font-black text-white italic tracking-tighter">₹{bid.toLocaleString()}</p>
                                                     </div>
@@ -1137,9 +1138,9 @@ const ProjectorScreen: React.FC = () => {
                                         <div className="flex gap-1.5 mb-2">
                                             {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}></div>)}
                                         </div>
-                                        <p className="text-yellow-500/80 font-black text-3xl uppercase tracking-[0.8em] glow-text-gold italic">{bidder ? 'CURRENT BID' : 'BASE PRICE'}</p>
+                                        <p className="text-yellow-500/80 font-black text-3xl uppercase tracking-[0.8em] italic">{bidder ? 'CURRENT BID' : 'BASE PRICE'}</p>
                                     </div>
-                                    <div className="text-[26vh] font-black text-white leading-none tabular-nums tracking-tighter glow-text-gold drop-shadow-[0_25px_100px_rgba(0,0,0,1)] italic">
+                                    <div className="text-[26vh] font-black text-white leading-none tabular-nums tracking-tighter drop-shadow-[0_25px_100px_rgba(0,0,0,1)] italic">
                                         {bid.toLocaleString()}
                                     </div>
                                   
@@ -1166,7 +1167,7 @@ const ProjectorScreen: React.FC = () => {
                               <div className="flex justify-between items-center mb-6 px-4 relative z-10">
                                   <div className="flex items-center gap-3">
                                       <Activity className="w-5 h-5 text-yellow-500 animate-pulse" />
-                                      <p className="text-yellow-500 font-black text-sm uppercase tracking-[0.5em] glow-text-gold italic">Live Squad Valuation Matrix</p>
+                                      <p className="text-yellow-500 font-black text-sm uppercase tracking-[0.5em] italic">Live Squad Valuation Matrix</p>
                                   </div>
                                   <div className="flex gap-3">
                                       <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shadow-[0_0_10px_rgba(234,179,8,1)]"></div>
@@ -1183,7 +1184,7 @@ const ProjectorScreen: React.FC = () => {
                                           </div>
                                           <div className="min-w-0">
                                               <p className="text-white/70 font-black text-[11px] uppercase truncate tracking-wider mb-1">{team.name}</p>
-                                              <p className="text-yellow-500 font-mono font-black text-2xl leading-none glow-text-gold italic tracking-tighter">₹{team.budget.toLocaleString()}</p>
+                                              <p className="text-yellow-500 font-mono font-black text-2xl leading-none italic tracking-tighter">₹ {team.budget.toLocaleString()}</p>
                                           </div>
                                       </div>
                                   ))}
