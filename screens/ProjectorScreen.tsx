@@ -855,10 +855,37 @@ const ProjectorScreen: React.FC = () => {
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.4 }}
-                                                className="bg-slate-900/80 p-4 rounded-3xl border border-white/10"
+                                                className="bg-slate-900/80 p-4 rounded-3xl border border-white/10 flex items-center justify-between"
                                             >
-                                                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-0.5">NATIONALITY</p>
-                                                <p className="text-3xl font-black text-white italic tracking-tighter uppercase leading-tight">{player?.nationality || 'INTERNATIONAL'}</p>
+                                                <div className="flex-1">
+                                                    <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-0.5">
+                                                        {bidder ? 'CURRENT BID' : 'BASE PRICE'}
+                                                    </p>
+                                                    <p className="text-3xl font-black text-white italic tracking-tighter uppercase leading-tight font-mono">
+                                                        ₹ {bid.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                {bidder && (
+                                                    <motion.div 
+                                                        initial={{ x: 20, opacity: 0 }}
+                                                        animate={{ x: 0, opacity: 1 }}
+                                                        className="flex items-center gap-3 bg-blue-600/10 p-2 rounded-2xl border border-blue-500/20"
+                                                    >
+                                                        <div className="flex flex-col items-end shrink-0">
+                                                            <span className="text-[10px] font-black text-white uppercase tracking-tighter truncate max-w-[80px]">
+                                                                {bidder.name}
+                                                            </span>
+                                                            <span className="text-[8px] font-bold text-yellow-500 uppercase tracking-widest leading-none">LEADING</span>
+                                                        </div>
+                                                        {bidder.logoUrl ? (
+                                                            <img src={bidder.logoUrl} className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow-lg" />
+                                                        ) : (
+                                                            <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center text-xs font-black text-white">
+                                                                {bidder.name.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                )}
                                            </motion.div>
                                       </div>
                                  </div>
