@@ -132,6 +132,10 @@ const ProjectorScreen: React.FC = () => {
         document.documentElement.style.backgroundColor = bg;
     }, [state.projectorLayout]);
 
+  useEffect(() => {
+    if (auctionId) joinAuction(auctionId);
+  }, [auctionId]);
+
   const [showSoldOverlay, setShowSoldOverlay] = useState(false);
   const [soldAnimationPlayer, setSoldAnimationPlayer] = useState<{player: Player, bid: number, bidder: Team | null} | null>(null);
 
@@ -211,7 +215,7 @@ const ProjectorScreen: React.FC = () => {
                             </motion.div>
                         )}
                         <h1 className="text-6xl lg:text-7xl font-black uppercase tracking-tighter golden-text glow-text-gold italic drop-shadow-[0_0_30px_rgba(234,179,8,0.4)]">
-                            {state.tournamentName || "TATA IPL AUCTION 2026"}
+                            {state.tournamentName || "LIVE AUCTION"}
                         </h1>
                     </div>
                 </div>
@@ -246,7 +250,7 @@ const ProjectorScreen: React.FC = () => {
                         <div className="bg-black backdrop-blur-3xl px-6 py-2 rounded-xl flex items-center gap-3">
                             <Trophy className="w-8 h-8 text-yellow-500" />
                             <div className="flex flex-col">
-                                <span className="text-white text-xl font-black italic tracking-tighter leading-none">{state.tournamentName || "AUCTION"}</span>
+                                <span className="text-white text-xl font-black italic tracking-tighter leading-none">{state.tournamentName || "LIVE AUCTION"}</span>
                                 <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] text-right">Live System</span>
                             </div>
                         </div>
@@ -256,7 +260,7 @@ const ProjectorScreen: React.FC = () => {
                 <div className="flex-1 flex justify-center relative z-10 px-8">
                     <div className="bg-black/80 backdrop-blur-2xl px-12 py-4 rounded-[40px] border-2 border-yellow-500/30">
                         <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-[0.15em] text-white drop-shadow-2xl text-center italic">
-                            {state.tournamentName || "PREMIUM AUCTION"}
+                            {state.tournamentName || "LIVE AUCTION"}
                         </h1>
                     </div>
                 </div>
@@ -289,7 +293,7 @@ const ProjectorScreen: React.FC = () => {
                       <div className="transform skew-x-[12deg] flex items-center gap-3">
                           <Trophy className="w-10 h-10 text-yellow-500" />
                           <div className="flex flex-col">
-                              <span className="text-white text-2xl font-black italic tracking-tighter leading-none uppercase">{state.tournamentName || "AUCTION"}</span>
+                              <span className="text-white text-2xl font-black italic tracking-tighter leading-none uppercase">{state.tournamentName || "LIVE AUCTION"}</span>
                               <span className="text-yellow-500 text-[8px] font-bold uppercase tracking-[0.3em] mt-1 text-right">Live System</span>
                           </div>
                       </div>
@@ -304,7 +308,7 @@ const ProjectorScreen: React.FC = () => {
                   <div className="bg-black/60 backdrop-blur-xl px-12 py-4 rounded-[40px] border border-yellow-500/30 shadow-[0_0_50px_rgba(234,179,8,0.15)] relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
                       <h1 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-100 to-yellow-500 drop-shadow-[0_0_30px_rgba(234,179,8,0.6)] truncate max-w-[45vw] text-center italic">
-                          {state.tournamentName || "AUCTION 2025"}
+                          {state.tournamentName || "LIVE AUCTION"}
                       </h1>
                   </div>
               </div>
@@ -445,7 +449,7 @@ const ProjectorScreen: React.FC = () => {
                                    <img src={state.systemLogoUrl || "https://picsum.photos/seed/logo/200/200"} className="h-full object-contain" referrerPolicy="no-referrer" />
                                </div>
                                <div className="flex flex-col">
-                                   <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase">{state.tournamentName || "TATA IPL AUCTION 2026"}</h2>
+                                   <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase">{state.tournamentName || "LIVE AUCTION"}</h2>
                                    <p className="text-sm font-bold text-blue-400 uppercase tracking-widest -mt-1">PURSE REMAINING</p>
                                </div>
                            </div>
