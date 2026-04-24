@@ -858,7 +858,7 @@ const ProjectorScreen: React.FC = () => {
                   
                   <Header />
 
-                  <div className="flex-1 flex flex-col p-4 relative z-10 items-center justify-start">
+                  <div className="flex-1 flex flex-col p-4 relative z-10 items-center justify-between">
                        {/* Main Content Box from Image */}
                        <AnimatePresence mode="wait">
                            <motion.div 
@@ -867,7 +867,7 @@ const ProjectorScreen: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
                                 transition={{ duration: 0.6, ease: "circOut" }}
-                                className="w-[95%] h-[65%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
+                                className="w-[95%] h-[60%] border-4 border-white/40 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl p-8 flex flex-col relative overflow-hidden shadow-[0_0_120px_rgba(59,130,246,0.4)]"
                            >
                             <div className="flex items-center justify-end mb-2">
                                 <div className="bg-yellow-500 text-black px-6 py-1.5 rounded-xl font-black text-lg italic tracking-widest uppercase shadow-lg">
@@ -1114,7 +1114,7 @@ const ProjectorScreen: React.FC = () => {
                        </AnimatePresence>
 
                        {/* Team Purses at Bottom */}
-                       <div className="w-[98%] mt-4 min-h-[140px] mb-12 bg-slate-900/80 backdrop-blur-3xl rounded-[3rem] border-2 border-white/10 p-6 flex flex-col shadow-[0_20px_100px_rgba(0,0,0,0.6)] relative z-[20]">
+                       <div className="w-[98%] mt-2 min-h-[140px] mb-2 bg-slate-900/80 backdrop-blur-3xl rounded-[3rem] border-2 border-white/10 p-6 flex flex-col shadow-[0_20px_100px_rgba(0,0,0,0.6)] relative z-[20]">
                               <p className="text-blue-400 text-xs font-black uppercase tracking-[0.5em] mb-4 flex items-center gap-2">
                                   <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,1)] animate-ping"></div>
                                   LIVE TEAM PURSES & STATUS
