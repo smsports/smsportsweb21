@@ -132,7 +132,20 @@ const ProjectorScreen: React.FC = () => {
         document.documentElement.style.backgroundColor = bg;
     }, [state.projectorLayout]);
 
-  useEffect(() => { if (auctionId) joinAuction(auctionId); }, [auctionId]);
+  const [showSoldOverlay, setShowSoldOverlay] = useState(false);
+  const [soldAnimationPlayer, setSoldAnimationPlayer] = useState<{player: Player, bid: number, bidder: Team | null} | null>(null);
+
+  useEffect(() => {
+    if (display.status === 'SOLD' && display.player) {
+        setSoldAnimationPlayer({ player: display.player, bid: display.bid, bidder: display.bidder });
+        setShowSoldOverlay(true);
+        const timer = setTimeout(() => {
+            setShowSoldOverlay(false);
+            // Optionally clear soldAnimationPlayer after transition
+        }, 4000); // 3 seconds + 1s for fade out
+        return () => clearTimeout(timer);
+    }
+  }, [display.status, display.player]);
 
   useEffect(() => {
       const { currentPlayerId, players, currentBid, highestBidder, status, teams, auctionLog } = state;
@@ -145,8 +158,15 @@ const ProjectorScreen: React.FC = () => {
       if (currentPlayer) {
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           let derivedStatus: 'LIVE' | 'SOLD' | 'UNSOLD' | 'FINISHED' = 'LIVE';
-          if (status === AuctionStatus.Sold || currentPlayer.status === 'SOLD') derivedStatus = 'SOLD';
-          else if (status === AuctionStatus.Unsold || currentPlayer.status === 'UNSOLD') derivedStatus = 'UNSOLD';
+          if (status === AuctionStatus.Sold || currentPlayer.status === 'SOLD') {
+              derivedStatus = 'SOLD';
+          } else if (status === AuctionStatus.Unsold) {
+              derivedStatus = 'UNSOLD';
+          } else if (currentPlayer.status === 'UNSOLD') {
+              // If player is UNSOLD from a previous round but is now the currentPlayer and auction is back in progress,
+              // treat them as LIVE/Fresh unless specifically marked UNSOLD again in this session.
+              derivedStatus = (status === AuctionStatus.InProgress || status === AuctionStatus.Paused) ? 'LIVE' : 'UNSOLD';
+          }
           let resolvedBidder = highestBidder;
           if (derivedStatus === 'SOLD' && !resolvedBidder && currentPlayer.soldTo) {
              resolvedBidder = teams.find(t => t.name === currentPlayer.soldTo) || null;
@@ -162,25 +182,38 @@ const ProjectorScreen: React.FC = () => {
     const layout = state.projectorLayout;
     
     if (layout === 'IPL') {
-        const logoUrl = state.auctionLogoUrl || state.systemLogoUrl || "https://picsum.photos/seed/logo/200/200";
+        const smLogo = state.systemLogoUrl || "/sm-sports-logo.png"; // Fallback or standard
+        const tournamentLogo = state.auctionLogoUrl;
+        
         return (
             <div className="h-32 bg-transparent flex items-center justify-between px-16 z-[60] shrink-0 relative">
-                {/* Left: Tournament/Auction Logo */}
+                {/* Left: SM Sports Logo */}
                 <div className="flex items-center gap-6 w-1/4">
                     <motion.div 
                         initial={{ x: -50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
-                        className="bg-white p-3 rounded-2xl shadow-2xl border-4 border-blue-900 h-24 flex items-center justify-center min-w-[6rem]"
+                        className="bg-transparent h-24 flex items-center justify-center"
                     >
-                        <img src={logoUrl} className="h-full w-auto object-contain" referrerPolicy="no-referrer" alt="Tournament Logo" />
+                        <img src={smLogo} className="h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" referrerPolicy="no-referrer" alt="SM Sports Logo" />
                     </motion.div>
                 </div>
                 
-                {/* Middle: Auction Name */}
-                <div className="flex-1 flex justify-center">
-                    <h1 className="text-6xl lg:text-8xl font-black uppercase tracking-tighter golden-text glow-text-gold italic drop-shadow-[0_0_30px_rgba(234,179,8,0.4)]">
-                        {state.tournamentName || "TATA IPL AUCTION 2026"}
-                    </h1>
+                {/* Middle: Auction Name + Tournament Logo */}
+                <div className="flex-1 flex flex-col items-center justify-center">
+                    <div className="flex items-center gap-6">
+                        {tournamentLogo && (
+                            <motion.div
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="bg-white p-2 rounded-xl shadow-2xl h-16 w-16 flex items-center justify-center border-2 border-blue-900"
+                            >
+                                <img src={tournamentLogo} className="h-full w-full object-contain" referrerPolicy="no-referrer" alt="Tournament Logo" />
+                            </motion.div>
+                        )}
+                        <h1 className="text-6xl lg:text-7xl font-black uppercase tracking-tighter golden-text glow-text-gold italic drop-shadow-[0_0_30px_rgba(234,179,8,0.4)]">
+                            {state.tournamentName || "TATA IPL AUCTION 2026"}
+                        </h1>
+                    </div>
                 </div>
 
                 {/* Right: Sponsors pics */}
@@ -858,10 +891,10 @@ const ProjectorScreen: React.FC = () => {
                                                 className="bg-slate-900/80 p-4 rounded-3xl border border-white/10 flex items-center justify-between"
                                             >
                                                 <div className="flex-1">
-                                                    <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-0.5">
+                                                    <p className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-1 italic opacity-80">
                                                         {bidder ? 'CURRENT BID' : 'BASE PRICE'}
                                                     </p>
-                                                    <p className="text-3xl font-black text-white italic tracking-tighter uppercase leading-tight font-mono">
+                                                    <p className="text-5xl font-black text-white italic tracking-tighter uppercase leading-tight font-mono drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                                                         ₹ {bid.toLocaleString()}
                                                     </p>
                                                 </div>
@@ -872,15 +905,15 @@ const ProjectorScreen: React.FC = () => {
                                                         className="flex items-center gap-3 bg-blue-600/10 p-2 rounded-2xl border border-blue-500/20"
                                                     >
                                                         <div className="flex flex-col items-end shrink-0">
-                                                            <span className="text-[10px] font-black text-white uppercase tracking-tighter truncate max-w-[80px]">
+                                                            <span className="text-2xl font-black text-white uppercase tracking-tighter truncate max-w-[150px] drop-shadow-md italic">
                                                                 {bidder.name}
                                                             </span>
-                                                            <span className="text-[8px] font-bold text-yellow-500 uppercase tracking-widest leading-none">LEADING</span>
+                                                            <span className="text-xs font-bold text-yellow-500 uppercase tracking-widest leading-none">LEADING BIDDER</span>
                                                         </div>
                                                         {bidder.logoUrl ? (
-                                                            <img src={bidder.logoUrl} className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow-lg" />
+                                                            <img src={bidder.logoUrl} className="w-14 h-14 object-contain bg-white rounded-full p-1 shadow-2xl border border-white/10" />
                                                         ) : (
-                                                            <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center text-xs font-black text-white">
+                                                            <div className="w-14 h-14 bg-blue-900 rounded-full flex items-center justify-center text-xl font-black text-white italic">
                                                                 {bidder.name.charAt(0)}
                                                             </div>
                                                         )}
@@ -892,31 +925,31 @@ const ProjectorScreen: React.FC = () => {
                             </div>
 
                             {/* Bottom: Price Boxes with higher impact */}
-                            <div className="mt-8 grid grid-cols-2 gap-8 h-28 shrink-0">
+                            <div className="mt-8 grid grid-cols-2 gap-8 h-32 shrink-0">
                                  <motion.div 
                                     initial={{ x: -100, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
-                                    className="bg-gradient-to-r from-blue-900 via-blue-800 to-transparent p-0.5 rounded-[1.2rem] shadow-2xl"
+                                    className="bg-gradient-to-r from-blue-600 via-blue-500 to-transparent p-0.5 rounded-[1.5rem] shadow-[0_0_50px_rgba(37,99,235,0.4)]"
                                  >
-                                      <div className="h-full w-full bg-[#050505] rounded-[1.2rem] flex items-center justify-between px-8 border border-white/10">
+                                      <div className="h-full w-full bg-[#050505] rounded-[1.5rem] flex items-center justify-between px-10 border border-white/20">
                                           <div className="flex flex-col">
-                                              <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest leading-none mb-1">CURRENT VALUATION</span>
-                                              <div className="flex items-baseline gap-2">
-                                                  <span className="text-3xl font-black text-yellow-500 italic">₹</span>
+                                              <span className="text-blue-400 text-[12px] font-black uppercase tracking-[0.2em] leading-none mb-2 font-mono">CURRENT VALUATION</span>
+                                              <div className="flex items-baseline gap-3">
+                                                  <span className="text-4xl font-black text-yellow-500 italic">₹</span>
                                                   <motion.span 
                                                     key={bid}
-                                                    initial={{ scale: 0.8 }}
-                                                    animate={{ scale: 1 }}
-                                                    className="text-5xl font-black text-white italic font-mono tracking-tighter"
+                                                    initial={{ scale: 1.2, filter: "brightness(200%)" }}
+                                                    animate={{ scale: 1, filter: "brightness(100%)" }}
+                                                    className="text-6xl font-black text-white italic font-mono tracking-tighter"
                                                   >
                                                       {bid.toLocaleString()}
                                                   </motion.span>
                                               </div>
                                           </div>
                                           {bidder && (
-                                              <div className="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 flex items-center gap-3">
-                                                   {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-10 h-10 object-contain bg-white rounded-full p-1 shrink-0" /> : <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center font-bold shrink-0">{bidder.name.charAt(0)}</div>}
-                                                   <span className="text-xl font-black italic uppercase tracking-tighter truncate max-w-[120px]">{bidder.name}</span>
+                                              <div className="bg-blue-600 px-6 py-4 rounded-2xl border-2 border-white/30 flex items-center gap-4 shadow-[0_0_30px_rgba(37,99,235,0.6)] animate-pulse">
+                                                   {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-14 h-14 object-contain bg-white rounded-full p-1 shrink-0" /> : <div className="w-14 h-14 bg-blue-900 rounded-full flex items-center justify-center font-black text-2xl shrink-0">{bidder.name.charAt(0)}</div>}
+                                                   <span className="text-3xl font-black italic uppercase tracking-tighter truncate max-w-[200px] text-white drop-shadow-md">{bidder.name}</span>
                                               </div>
                                           )}
                                       </div>
@@ -924,11 +957,11 @@ const ProjectorScreen: React.FC = () => {
                                  <motion.div 
                                     initial={{ x: 100, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
-                                    className="bg-gradient-to-l from-yellow-900/40 via-yellow-600/20 to-transparent p-0.5 rounded-[1.2rem] shadow-2xl"
+                                    className="bg-gradient-to-l from-yellow-700 via-yellow-600/40 to-transparent p-0.5 rounded-[1.5rem] shadow-2xl"
                                  >
-                                      <div className="h-full w-full bg-[#050505] rounded-[1.2rem] flex flex-col justify-center items-center border border-yellow-500/20">
-                                          <span className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.5em] mb-1">{bidder ? 'LEADING BID' : 'STARTING PRICE'}</span>
-                                          <p className="text-4xl font-black text-white italic tracking-tighter font-mono leading-none">
+                                      <div className="h-full w-full bg-[#050505] rounded-[1.5rem] flex flex-col justify-center items-center border border-yellow-500/30">
+                                          <span className="text-yellow-500 text-[12px] font-black uppercase tracking-[0.5em] mb-2 font-mono opacity-60">STARTING PRICE</span>
+                                          <p className="text-5xl font-black text-white italic tracking-tighter font-mono leading-none">
                                               ₹ {player ? getEffectiveBasePrice(player, state.categories).toLocaleString() : '0'}
                                           </p>
                                       </div>
@@ -936,67 +969,104 @@ const ProjectorScreen: React.FC = () => {
                             </div>
 
                             {/* Status Overlays */}
-                            {status === 'SOLD' && (
-                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-blue-950/95 backdrop-blur-3xl">
+                            <AnimatePresence>
+                                {showSoldOverlay && soldAnimationPlayer && (
                                     <motion.div 
-                                        initial={{ scale: 0.5, rotate: -30, opacity: 0 }}
-                                        animate={{ scale: 1, rotate: -12, opacity: 1 }}
-                                        className="bg-yellow-500 text-black font-black text-9xl px-24 py-10 shadow-[0_0_120px_rgba(234,179,8,1)] animate-pulse mb-12 border-[12px] border-black flex flex-col items-center italic tracking-tighter ring-[20px] ring-white/10"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-3xl overflow-hidden"
                                     >
-                                        <span>SOLD</span>
-                                    </motion.div>
-                                    {bidder && (
-                                        <motion.div 
-                                            initial={{ y: 50, opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            transition={{ delay: 0.2 }}
-                                            className="flex flex-col items-center mt-6"
+                                        <motion.div
+                                            initial={{ scale: 0, rotate: -45 }}
+                                            animate={{ scale: 1.2, rotate: -8 }}
+                                            transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                                            className="bg-yellow-500 text-black font-black text-[12vw] px-24 py-10 shadow-[0_0_150px_rgba(234,179,8,0.8)] border-[15px] border-black flex flex-col items-center italic tracking-tighter ring-[30px] ring-white/10 relative z-20"
                                         >
-                                            <div className="flex items-center gap-10 bg-black/80 backdrop-blur-xl p-12 rounded-[4rem] border-4 border-yellow-500 shadow-[0_0_100px_rgba(0,0,0,0.8)]">
-                                                {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-40 h-40 object-contain bg-white p-3 rounded-full shadow-2xl" /> : <div className="w-40 h-40 bg-yellow-600 rounded-full flex items-center justify-center text-7xl font-bold">{bidder.name.charAt(0)}</div>}
+                                            <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">SOLD</span>
+                                        </motion.div>
+
+                                        <motion.div 
+                                            initial={{ y: 100, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col items-center mt-12 relative z-20"
+                                        >
+                                            <div className="flex items-center gap-12 bg-black/80 backdrop-blur-2xl p-14 rounded-[5rem] border-4 border-yellow-500 shadow-[0_50px_100px_rgba(0,0,0,0.9)] scale-110">
+                                                {soldAnimationPlayer.bidder?.logoUrl ? (
+                                                    <img src={soldAnimationPlayer.bidder.logoUrl} className="w-48 h-48 object-contain bg-white p-4 rounded-full shadow-2xl border-4 border-blue-900" />
+                                                ) : (
+                                                    <div className="w-48 h-48 bg-blue-900 rounded-full flex items-center justify-center text-8xl font-black text-white italic">{soldAnimationPlayer.bidder?.name?.charAt(0) || '?'}</div>
+                                                )}
                                                 <div className="flex flex-col">
-                                                    <h3 className="text-7xl font-black uppercase tracking-tighter text-white italic leading-none">{bidder.name}</h3>
-                                                    <p className="text-4xl font-black text-yellow-500 mt-4 font-mono">PURCHASED FOR ₹ {bid.toLocaleString()}</p>
+                                                    <p className="text-blue-400 font-bold uppercase tracking-[0.5em] mb-2 font-mono">CONGRATULATIONS</p>
+                                                    <h3 className="text-8xl font-black uppercase tracking-tighter text-white italic leading-none drop-shadow-lg">
+                                                        {soldAnimationPlayer.bidder?.name}
+                                                    </h3>
+                                                    <p className="text-5xl font-black text-yellow-500 mt-6 font-mono border-t border-white/10 pt-6">
+                                                        ₹ {soldAnimationPlayer.bid.toLocaleString()}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </motion.div>
-                                    )}
-                                </div>
-                            )}
+                                        
+                                        {/* Background Celebration Elements */}
+                                        <motion.div 
+                                            animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0.3, 0.1] }}
+                                            transition={{ duration: 2, repeat: Infinity }}
+                                            className="absolute inset-0 bg-[radial-gradient(circle_at_center,_white_0%,_transparent_70%)] z-10 pointer-events-none"
+                                        />
+                                    </motion.div>
+                                )}
 
-                            {status === 'UNSOLD' && (
-                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-red-950/95 backdrop-blur-3xl">
+                                {status === 'UNSOLD' && !showSoldOverlay && (
                                     <motion.div 
                                         initial={{ scale: 0.5, rotate: 30, opacity: 0 }}
                                         animate={{ scale: 1, rotate: 12, opacity: 1 }}
-                                        className="bg-red-600 text-white font-black text-9xl px-24 py-10 shadow-[0_0_120px_rgba(220,38,38,1)] italic border-[12px] border-white tracking-widest ring-[20px] ring-red-500/30"
+                                        exit={{ scale: 1.5, opacity: 0 }}
+                                        className="absolute inset-0 z-50 flex items-center justify-center bg-red-950/95 backdrop-blur-3xl"
                                     >
-                                        UNSOLD
+                                        <div className="bg-red-600 text-white font-black text-9xl px-24 py-10 shadow-[0_0_120px_rgba(220,38,38,1)] italic border-[12px] border-white tracking-widest ring-[20px] ring-red-500/30">
+                                            UNSOLD
+                                        </div>
                                     </motion.div>
-                                </div>
-                            )}
+                                )}
+                            </AnimatePresence>
                        </motion.div>
                        </AnimatePresence>
 
                        {/* Team Purses at Bottom */}
-                       <div className="w-[94%] mt-4 min-h-[90px] mb-12 bg-slate-900/70 backdrop-blur-2xl rounded-[2rem] border-2 border-white/10 p-4 flex flex-col shadow-2xl relative z-[20]">
-                              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.5em] mb-2 flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)]"></div>
-                                  TEAM PURSES
+                       <div className="w-[98%] mt-4 min-h-[140px] mb-12 bg-slate-900/80 backdrop-blur-3xl rounded-[3rem] border-2 border-white/10 p-6 flex flex-col shadow-[0_20px_100px_rgba(0,0,0,0.6)] relative z-[20]">
+                              <p className="text-blue-400 text-xs font-black uppercase tracking-[0.5em] mb-4 flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,1)] animate-ping"></div>
+                                  LIVE TEAM PURSES & STATUS
                               </p>
-                              <div className="flex-1 flex flex-wrap items-center justify-center gap-2">
+                              <div className="flex-1 flex flex-wrap items-center justify-start gap-4 px-2">
                                   {state.teams.map((team, idx) => (
                                       <motion.div 
                                         key={team.id} 
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ delay: idx * 0.02 }}
-                                        className="bg-black/60 px-2 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 hover:bg-blue-900/30 transition-all border-l-2 border-l-blue-500 shadow-xl"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="bg-black/60 px-5 py-4 rounded-2xl border-2 border-white/10 flex items-center gap-5 hover:bg-blue-900/40 transition-all border-l-4 border-l-blue-500 shadow-2xl min-w-[240px] flex-1"
                                       >
-                                          {team.logoUrl ? <img src={team.logoUrl} className="w-6 h-6 object-contain bg-white p-0.5 rounded-full shrink-0" referrerPolicy="no-referrer" /> : <div className="w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center font-bold text-[8px] shrink-0">{team.name.charAt(0)}</div>}
-                                          <div className="min-w-0">
-                                              <p className="text-gray-400 font-bold text-[8px] uppercase truncate tracking-widest leading-none mb-0.5">{team.name}</p>
-                                              <p className="text-yellow-500 font-mono font-black text-sm italic leading-none truncate">₹ {team.budget.toLocaleString()}</p>
+                                          {team.logoUrl ? (
+                                              <img src={team.logoUrl} className="w-14 h-14 object-contain bg-white p-1.5 rounded-full shrink-0 shadow-lg border border-white/10" referrerPolicy="no-referrer" />
+                                          ) : (
+                                              <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center font-black text-xl shrink-0 italic text-blue-400 border border-white/10">
+                                                  {team.name.charAt(0)}
+                                              </div>
+                                          )}
+                                          <div className="min-w-0 flex-1">
+                                              <p className="text-blue-300 font-bold text-[10px] uppercase truncate tracking-widest leading-none mb-2 opacity-60">{team.name}</p>
+                                              <div className="flex items-center justify-between">
+                                                  <p className="text-white font-mono font-black text-2xl italic leading-none truncate drop-shadow-md">
+                                                       ₹ {team.budget.toLocaleString()}
+                                                  </p>
+                                                  <div className="bg-blue-500/20 px-2 py-0.5 rounded text-[8px] font-black text-blue-400 border border-blue-400/20 font-mono">
+                                                      {team.players.length} / {state.maxPlayersPerTeam}
+                                                  </div>
+                                              </div>
                                           </div>
                                       </motion.div>
                                   ))}
