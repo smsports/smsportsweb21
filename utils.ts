@@ -4,7 +4,6 @@ import { AuctionState, Team, Player } from './types';
 /**
  * Calculates the maximum allowed bid for a team, ensuring they have enough 
  * budget left to fill their squad up to the required minimums and total size.
- * This implementation uses the lowest available base prices for reservation.
  */
 export const calculateMaxBid = (
     team: Team,
@@ -21,130 +20,99 @@ export const calculateMaxBid = (
     const { 
         maxPlayersPerTeam = 25, 
         categories = [], 
-        players = [],
         unlimitedPurse = false,
+        autoReserveFunds = false,
+        basePrice: globalBasePrice = 100
     } = state;
 
     const currentSquadCount = team.players.length;
-    const targetSquadSize = maxPlayersPerTeam;
-    
-    // Remaining slots AFTER potentially buying the current player
-    const remainingSlots = Math.max(0, targetSquadSize - (currentSquadCount + 1));
+    const remainingSlotsIfBought = Math.max(0, maxPlayersPerTeam - (currentSquadCount + 1));
 
     if (unlimitedPurse) {
         return { 
             maxBid: Infinity, 
             reservedFunds: 0, 
-            remainingSlots, 
+            remainingSlots: remainingSlotsIfBought, 
             allowBid: true, 
             reason: null,
             categoryStatus: []
         };
     }
 
-    // --- 1. Identify Available Players & Their Prices ---
-    // We exclude already SOLD players and the current player (since we are bidding for them)
-    // We treat TRADED as SOLD for the pool logic.
-    const availablePool = players.filter(p => 
-        !p.status && String(p.id) !== String(currentPlayer?.id)
-    );
-
-    // --- 2. Category-Specific Reservation ---
-    let totalCategoryReservation = 0;
-    let mandatoryCategorySlotsUsed = 0;
+    // 1. Calculate Reservation
+    let totalReservedFunds = 0;
+    let mandatorySlotsAfterCurrent = 0;
     const categoryStatus: { name: string, current: number, min: number, reserved: number }[] = [];
 
-    categories.forEach(cat => {
-        const countInTeam = team.players.filter(p => p.category === cat.name).length;
-        let neededInCat = Math.max(0, (cat.minPerTeam || 0) - countInTeam);
+    if (autoReserveFunds) {
+        categories.forEach(cat => {
+            const countInTeam = team.players.filter(p => p.category === cat.name).length;
+            let neededForMin = Math.max(0, (cat.minPerTeam || 0) - countInTeam);
 
-        // If current player is in this category, they satisfy one of the needed mandatory slots
-        if (currentPlayer && currentPlayer.category === cat.name) {
-            neededInCat = Math.max(0, neededInCat - 1);
-        }
-
-        if (neededInCat > 0) {
-            // Find the lowest base prices available for THIS category
-            const catPoolPrices = availablePool
-                .filter(p => p.category === cat.name)
-                .map(p => p.basePrice)
-                .sort((a, b) => a - b);
-
-            // Reserve using the cheapest players in this category
-            for (let i = 0; i < neededInCat; i++) {
-                // If pool is empty, fallback to category base price or global base price
-                const priceMatch = catPoolPrices[i] !== undefined ? catPoolPrices[i] : (cat.basePrice || state.basePrice || 100);
-                totalCategoryReservation += priceMatch;
+            // If current player is in this category, they help fulfill the requirement
+            if (currentPlayer && currentPlayer.category === cat.name) {
+                neededForMin = Math.max(0, neededForMin - 1);
             }
-            mandatoryCategorySlotsUsed += neededInCat;
+
+            const catBasePrice = (cat.basePrice && cat.basePrice > 0) ? cat.basePrice : globalBasePrice;
+            const reservation = neededForMin * catBasePrice;
             
-            categoryStatus.push({ 
-                name: cat.name, 
-                current: countInTeam + (currentPlayer?.category === cat.name ? 1 : 0), 
-                min: cat.minPerTeam,
-                reserved: neededInCat // Track count reserved
+            totalReservedFunds += reservation;
+            mandatorySlotsAfterCurrent += neededForMin;
+
+            categoryStatus.push({
+                name: cat.name,
+                current: countInTeam + (currentPlayer?.category === cat.name ? 1 : 0),
+                min: cat.minPerTeam || 0,
+                reserved: reservation
             });
-        }
-    });
+        });
 
-    // --- 3. General Slot Reservation (Flexible Slots) ---
-    // Total slots we MUST fill beyond the current player
-    const totalRemainingToFill = remainingSlots; 
-    const flexibleSlotsCount = Math.max(0, totalRemainingToFill - mandatoryCategorySlotsUsed);
-    
-    // For flexible slots, we use the cheapest players across the WHOLE pool 
-    // that haven't been "claimed" by the mandatory category reservation.
-    const allPoolPrices = availablePool
-        .map(p => p.basePrice)
-        .sort((a, b) => a - b);
-
-    // We skip the cheapest 'mandatoryCategorySlotsUsed' players because they are already accounted for 
-    // in the category-specific reservation (worst-case scenario: they are the same players)
-    // Wait, actually, the most conservative approach:
-    // We take the sum of cheapest category players, AND then take the cheapest remaining players for flexible slots.
-    
-    let generalPoolReservation = 0;
-    for (let i = 0; i < flexibleSlotsCount; i++) {
-        // Offset by mandatory count to pick the 'next' cheapest players
-        const priceIndex = mandatoryCategorySlotsUsed + i;
-        const priceMatch = allPoolPrices[priceIndex] !== undefined ? allPoolPrices[priceIndex] : (state.basePrice || 100);
-        generalPoolReservation += priceMatch;
+        // Flexible slots (any category) to reach max squad size
+        const flexibleSlots = Math.max(0, remainingSlotsIfBought - mandatorySlotsAfterCurrent);
+        totalReservedFunds += (flexibleSlots * globalBasePrice);
     }
 
-    const totalReservedFunds = totalCategoryReservation + generalPoolReservation;
-    const maxBid = team.budget - totalReservedFunds;
+    const maxPossibleBid = team.budget - totalReservedFunds;
 
-    // --- 4. Validation Rules ---
+    // 2. Validation Rules
     let allowBid = true;
     let reason = null;
 
-    if (maxBid < (currentPlayer?.basePrice || 0)) {
+    // Check Squad Limit
+    if (currentSquadCount >= maxPlayersPerTeam) {
         allowBid = false;
-        reason = "Cannot afford base price after reserving funds for squad completion";
+        reason = "Squad is full";
     }
 
-    // Check if squad is already full
-    if (currentSquadCount >= targetSquadSize) {
-        allowBid = false;
-        reason = "Squad is already full";
-    }
-    
-    // Check Category Max (Optional, but good for completeness)
-    if (currentPlayer && currentPlayer.category) {
+    // Check Category Max Limit
+    if (allowBid && currentPlayer && currentPlayer.category) {
         const catConfig = categories.find(c => c.name === currentPlayer.category);
         if (catConfig && catConfig.maxPerTeam > 0) {
-            const currentCount = team.players.filter(p => p.category === currentPlayer.category).length;
-            if (currentCount >= catConfig.maxPerTeam) {
+            const countInCat = team.players.filter(p => p.category === currentPlayer.category).length;
+            if (countInCat >= catConfig.maxPerTeam) {
                 allowBid = false;
-                reason = `Maximum limit for ${catConfig.name} reached`;
+                reason = `Limit for ${catConfig.name} reached`;
             }
+        }
+    }
+
+    // Check Budget vs Base Price (and reservation)
+    if (allowBid && currentPlayer) {
+        const effectiveBase = getEffectiveBasePrice(currentPlayer, categories);
+        if (team.budget < effectiveBase) {
+            allowBid = false;
+            reason = "Budget below base price";
+        } else if (autoReserveFunds && maxPossibleBid < effectiveBase) {
+            allowBid = false;
+            reason = "Reserved funds required";
         }
     }
 
     return {
-        maxBid,
+        maxBid: maxPossibleBid,
         reservedFunds: totalReservedFunds,
-        remainingSlots,
+        remainingSlots: remainingSlotsIfBought,
         allowBid,
         reason,
         categoryStatus
