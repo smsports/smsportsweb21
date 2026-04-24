@@ -688,7 +688,48 @@ const ProjectorScreen: React.FC = () => {
 
   if (display.status === 'FINISHED') return <div className="h-screen w-full bg-slate-900 text-white flex flex-col relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black font-sans"><div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div><Header /><div className="flex-1 flex flex-col items-center justify-center p-8 z-10 animate-slide-up"><div className="text-center"><h1 className="text-5xl lg:text-9xl font-black text-yellow-400 tracking-widest uppercase drop-shadow-[0_0_45px_rgba(250,204,21,0.6)]">AUCTION COMPLETED</h1><div className="h-3 w-64 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mx-auto mt-10 rounded-full"></div><p className="text-2xl lg:text-4xl text-gray-500 uppercase tracking-[0.6em] font-light mt-12 animate-pulse">Thank You For Watching</p></div></div><Marquee show={!!(state.sponsorConfig?.showOnProjector && state.sponsors.length > 0)} content={marqueeContent} layout={state.projectorLayout} /></div>;
 
-  if (display.status === 'WAITING' || !display.player) return <div className={`h-screen w-full flex flex-col relative overflow-hidden ${state.projectorLayout === 'IPL' ? 'bg-slate-950' : 'bg-gray-100'}`}><Header /><div className="flex-1 flex flex-col items-center justify-center p-10 z-10"><div className={`p-16 rounded-[3rem] shadow-2xl text-center border-2 animate-fade-in ${state.projectorLayout === 'IPL' ? 'bg-slate-900/50 backdrop-blur-xl border-yellow-500/30' : 'bg-white border-gray-200'}`}><h1 className={`text-6xl font-black tracking-widest mb-6 ${state.projectorLayout === 'IPL' ? 'text-yellow-400' : 'text-gray-800'}`}>{state.status === AuctionStatus.NotStarted ? "AUCTION STARTING SOON" : "AWAITING SELECTION"}</h1><p className={`${state.projectorLayout === 'IPL' ? 'text-slate-400' : 'text-gray-500'} text-2xl animate-pulse font-bold tracking-widest uppercase`}>The next player will appear shortly...</p></div></div><Marquee show={!!(state.sponsorConfig?.showOnProjector && state.sponsors.length > 0)} content={marqueeContent} layout={state.projectorLayout} /></div>;
+  if (display.status === 'WAITING' || !display.player) {
+    const tName = state.tournamentName || "LIVE AUCTION";
+    const tLogo = state.auctionLogoUrl || state.systemLogoUrl;
+
+    return (
+      <div className={`h-screen w-full flex flex-col relative overflow-hidden ${state.projectorLayout === 'IPL' ? 'bg-[#020617]' : 'bg-gray-100'}`}>
+        <Header />
+        <div className="flex-1 flex flex-col items-center justify-center p-10 z-10">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`p-20 rounded-[4rem] shadow-[0_0_100px_rgba(59,130,246,0.3)] text-center border-4 relative overflow-hidden backdrop-blur-2xl ${state.projectorLayout === 'IPL' ? 'bg-slate-900/40 border-yellow-500/20' : 'bg-white border-gray-100'}`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none"></div>
+            
+            {tLogo && (
+              <motion.img 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                src={tLogo} 
+                className="h-32 w-auto mx-auto mb-10 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
+                referrerPolicy="no-referrer"
+              />
+            )}
+            
+            <h1 className={`text-7xl lg:text-8xl font-black tracking-tighter mb-8 italic uppercase ${state.projectorLayout === 'IPL' ? 'golden-text glow-text-gold' : 'text-gray-900'}`}>
+              {tName}
+            </h1>
+            
+            <div className="flex flex-col items-center gap-4">
+               <div className={`h-1 w-48 rounded-full mb-4 ${state.projectorLayout === 'IPL' ? 'bg-yellow-500' : 'bg-gray-900'}`}></div>
+               <p className={`${state.projectorLayout === 'IPL' ? 'text-blue-400' : 'text-gray-500'} text-3xl animate-pulse font-black tracking-[0.2em] uppercase italic`}>
+                 {state.status === AuctionStatus.NotStarted ? "AUCTION STARTING SOON" : "AWAITING SELECTION"}
+               </p>
+               <p className="text-white/40 text-sm font-bold uppercase tracking-widest mt-4">Stay tuned for the next player</p>
+            </div>
+          </motion.div>
+        </div>
+        <Marquee show={!!(state.sponsorConfig?.showOnProjector && state.sponsors.length > 0)} content={marqueeContent} layout={state.projectorLayout} />
+      </div>
+    );
+  }
 
   const { player, bid, bidder, status } = display;
   const layout = state.projectorLayout || 'STANDARD';
@@ -875,7 +916,7 @@ const ProjectorScreen: React.FC = () => {
                                           </motion.h2>
                                       </div>
 
-                                      <div className="grid grid-cols-2 gap-6">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                            <motion.div 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -884,10 +925,27 @@ const ProjectorScreen: React.FC = () => {
                                             >
                                                 <div className="relative z-10">
                                                     <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-0.5">PLAYER SKILL</p>
-                                                    <p className="text-3xl font-black text-white italic tracking-tighter leading-tight">{player?.role || player?.speciality}</p>
+                                                    <p className="text-2xl font-black text-white italic tracking-tighter leading-tight truncate">{player?.role || player?.speciality}</p>
                                                 </div>
-                                                <Trophy className="absolute right-[-10px] bottom-[-10px] w-20 h-20 text-white/5 rotate-[-12deg]" />
-                                           </motion.div>
+                                                <Trophy className="absolute right-[-5px] bottom-[-5px] w-14 h-14 text-white/5 rotate-[-12deg]" />
+                                            </motion.div>
+                                            
+                                            <motion.div 
+                                                 initial={{ opacity: 0, y: 20 }}
+                                                 animate={{ opacity: 1, y: 0 }}
+                                                 transition={{ delay: 0.35 }}
+                                                 className="bg-slate-900/60 p-4 rounded-3xl border border-white/10 flex flex-col justify-center px-6 shadow-inner relative overflow-hidden"
+                                             >
+                                                 <div className="relative z-10">
+                                                     <p className="text-yellow-500/60 text-[10px] font-black uppercase tracking-widest mb-0.5 font-mono">BASE PRICE</p>
+                                                     <p className="text-4xl font-black text-white italic tracking-tighter font-mono leading-none">
+                                                         ₹ {player ? getEffectiveBasePrice(player, state.categories).toLocaleString() : '0'}
+                                                     </p>
+                                                 </div>
+                                                 <div className="absolute right-[-10px] bottom-[-10px] opacity-10">
+                                                     <Wallet className="w-16 h-16 text-white" />
+                                                 </div>
+                                            </motion.div>
                                            <motion.div 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -895,8 +953,8 @@ const ProjectorScreen: React.FC = () => {
                                                 className="bg-slate-900/80 p-4 rounded-3xl border border-white/10 flex items-center justify-between"
                                             >
                                                 <div className="flex-1">
-                                                    <p className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-1 italic opacity-80">
-                                                        {bidder ? 'CURRENT BID' : 'BASE PRICE'}
+                                                    <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-0.5 italic opacity-80">
+                                                        {bidder ? 'CURRENT BID' : 'OPENING BID'}
                                                     </p>
                                                     <p className="text-5xl font-black text-white italic tracking-tighter uppercase leading-tight font-mono drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                                                         ₹ {bid.toLocaleString()}
@@ -979,15 +1037,31 @@ const ProjectorScreen: React.FC = () => {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-3xl overflow-hidden"
+                                        className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-[50px] overflow-hidden"
                                     >
+                                        {/* Particle Bursts */}
+                                        {[...Array(12)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                                                animate={{ 
+                                                    scale: [0, 1.5, 0], 
+                                                    x: (Math.random() - 0.5) * 1200, 
+                                                    y: (Math.random() - 0.5) * 1200,
+                                                    opacity: [1, 1, 0]
+                                                }}
+                                                transition={{ duration: 2.5, ease: "easeOut", delay: 0.1 }}
+                                                className="absolute w-4 h-4 bg-yellow-500 rounded-full"
+                                            />
+                                        ))}
+
                                         <motion.div
-                                            initial={{ scale: 0, rotate: -45 }}
-                                            animate={{ scale: 1.2, rotate: -8 }}
-                                            transition={{ type: "spring", stiffness: 200, damping: 10 }}
-                                            className="bg-yellow-500 text-black font-black text-[12vw] px-24 py-10 shadow-[0_0_150px_rgba(234,179,8,0.8)] border-[15px] border-black flex flex-col items-center italic tracking-tighter ring-[30px] ring-white/10 relative z-20"
+                                            initial={{ scale: 0, rotate: -45, y: -100 }}
+                                            animate={{ scale: 1.4, rotate: -8, y: 0 }}
+                                            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                            className="bg-yellow-500 text-black font-black text-[14vw] px-32 py-12 shadow-[0_0_200px_rgba(234,179,8,0.9)] border-[20px] border-black flex flex-col items-center italic tracking-tighter ring-[40px] ring-white/10 relative z-20"
                                         >
-                                            <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">SOLD</span>
+                                            <span className="drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]">SOLD</span>
                                         </motion.div>
 
                                         <motion.div 
@@ -1052,22 +1126,22 @@ const ProjectorScreen: React.FC = () => {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="bg-black/60 px-5 py-4 rounded-2xl border-2 border-white/10 flex items-center gap-5 hover:bg-blue-900/40 transition-all border-l-4 border-l-blue-500 shadow-2xl min-w-[240px] flex-1"
+                                        className="bg-black/60 px-6 py-5 rounded-2xl border-2 border-white/10 flex items-center gap-6 hover:bg-blue-900/40 transition-all border-l-[6px] border-l-blue-500 shadow-2xl min-w-[320px] flex-1 max-w-[450px]"
                                       >
                                           {team.logoUrl ? (
-                                              <img src={team.logoUrl} className="w-14 h-14 object-contain bg-white p-1.5 rounded-full shrink-0 shadow-lg border border-white/10" referrerPolicy="no-referrer" />
+                                              <img src={team.logoUrl} className="w-16 h-16 object-contain bg-white p-2 rounded-full shrink-0 shadow-lg border-2 border-white/20" referrerPolicy="no-referrer" />
                                           ) : (
-                                              <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center font-black text-xl shrink-0 italic text-blue-400 border border-white/10">
-                                                  {team.name.charAt(0)}
-                                              </div>
+                                                  <div className="w-16 h-16 bg-gradient-to-br from-blue-700 to-blue-900 rounded-full flex items-center justify-center font-black text-2xl shrink-0 italic text-white border-2 border-white/20 shadow-lg">
+                                                      {team.name.charAt(0)}
+                                                  </div>
                                           )}
                                           <div className="min-w-0 flex-1">
-                                              <p className="text-blue-300 font-bold text-[10px] uppercase truncate tracking-widest leading-none mb-2 opacity-60">{team.name}</p>
+                                              <p className="text-blue-200 font-black text-xs uppercase tracking-wider leading-tight mb-2 drop-shadow-sm whitespace-normal break-words line-clamp-2 h-8 overflow-visible">{team.name}</p>
                                               <div className="flex items-center justify-between">
-                                                  <p className="text-white font-mono font-black text-2xl italic leading-none truncate drop-shadow-md">
+                                                  <p className="text-white font-mono font-black text-3xl italic leading-none drop-shadow-md whitespace-nowrap">
                                                        ₹ {team.budget.toLocaleString()}
                                                   </p>
-                                                  <div className="bg-blue-500/20 px-2 py-0.5 rounded text-[8px] font-black text-blue-400 border border-blue-400/20 font-mono">
+                                                  <div className="bg-blue-500/20 px-3 py-1 rounded-lg text-[10px] font-black text-blue-400 border border-blue-400/20 font-mono">
                                                       {team.players.length} / {state.maxPlayersPerTeam}
                                                   </div>
                                               </div>
