@@ -73,6 +73,7 @@ const AuthScreen: React.FC = () => {
     const handleTeamSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null); setIsLoading(true);
+        const tid = selectedTeamId.trim().toUpperCase();
         try {
             const auctionsSnapshot = await db.collection('auctions').get();
             let matchedTeam: any = null;
@@ -80,11 +81,11 @@ const AuthScreen: React.FC = () => {
             let auctionId: string = "";
             for (const doc of auctionsSnapshot.docs) {
                 // Try searching by teamCode first (New T-series ID)
-                let teamQuery = await doc.ref.collection('teams').where('teamCode', '==', selectedTeamId).limit(1).get();
+                let teamQuery = await doc.ref.collection('teams').where('teamCode', '==', tid).limit(1).get();
                 
                 // Fallback to searching by document ID (For older teams)
                 if (teamQuery.empty) {
-                    teamQuery = await doc.ref.collection('teams').where('id', '==', selectedTeamId).limit(1).get();
+                    teamQuery = await doc.ref.collection('teams').where('id', '==', tid).limit(1).get();
                 }
 
                 if (!teamQuery.empty) {
@@ -95,7 +96,13 @@ const AuthScreen: React.FC = () => {
                 }
             }
             if (!matchedTeam) throw new Error("Team ID not found.");
-            if (matchedTeam.password && matchedTeam.password !== teamPassword) throw new Error("Incorrect Password.");
+            
+            const storedPassword = String(matchedTeam.password || '').trim();
+            const enteredPassword = String(teamPassword || '').trim();
+
+            if (storedPassword && storedPassword !== enteredPassword) {
+                throw new Error("Incorrect Password.");
+            }
 
             localStorage.setItem('sm_sports_team_session', JSON.stringify({ role: 'TEAM_OWNER', teamId: matchedTeamDocId, auctionId }));
             await auth.signInAnonymously();

@@ -713,7 +713,7 @@ const AuctionManage: React.FC = () => {
                             budget: Number(row.Budget) || settingsForm.purseValue, 
                             players: [], 
                             logoUrl: '',
-                            password: String(row.Password || row.password || '')
+                            password: String(row.Password || row.password || '').trim()
                         });
                     } else {
                         batch.set(ref, { id: ref.id, name: row.Name || row.name, category: row.Category || 'Standard', role: row.Role || 'All Rounder', basePrice: Number(row.BasePrice) || settingsForm.basePrice, nationality: 'India', photoUrl: '', stats: { matches: 0, runs: 0, wickets: 0 } });
@@ -3205,7 +3205,7 @@ const AuctionManage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Team Password</label>
-                                        <input type="text" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.password || ''} onChange={e => setEditItem({...editItem, password: e.target.value})} placeholder="Set team access password" />
+                                        <input type="text" className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-700 focus:bg-white focus:border-blue-400 outline-none transition-all" value={editItem?.password || ''} onChange={e => setEditItem({...editItem, password: e.target.value.trim()})} placeholder="Set team access password" />
                                     </div>
                                     {editItem?.teamCode && (
                                         <div>
