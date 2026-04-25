@@ -583,7 +583,7 @@ const LiveAdminPanel: React.FC = () => {
                         let reason = '';
                         if (team.budget < nextBid) { allowed = false; reason = 'NO FUNDS'; }
                         else if (state.highestBidder?.id === team.id) { allowed = false; reason = 'LEADING'; }
-                        else if (team.players.length >= (maxPlayersPerTeam || 25)) { allowed = false; reason = 'FULL'; }
+                        else if ((team.players || []).length >= (maxPlayersPerTeam || 25)) { allowed = false; reason = 'FULL'; }
                         else if (currentPlayer) {
                             if (currentPlayer.category) {
                                 const catConfig = categories.find(c => c.name === currentPlayer.category);

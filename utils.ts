@@ -25,7 +25,7 @@ export const calculateMaxBid = (
         basePrice: globalBasePrice = 100
     } = state;
 
-    const currentSquadCount = team.players.length;
+    const currentSquadCount = (team.players || []).length;
     const remainingSlotsIfBought = Math.max(0, maxPlayersPerTeam - (currentSquadCount + 1));
 
     if (unlimitedPurse) {
@@ -46,7 +46,8 @@ export const calculateMaxBid = (
 
     if (autoReserveFunds) {
         categories.forEach(cat => {
-            const countInTeam = team.players.filter(p => p.category === cat.name).length;
+            const playersList = team.players || [];
+            const countInTeam = playersList.filter(p => p.category === cat.name).length;
             let neededForMin = Math.max(0, (cat.minPerTeam || 0) - countInTeam);
 
             // If current player is in this category, they help fulfill the requirement
@@ -89,7 +90,8 @@ export const calculateMaxBid = (
     if (allowBid && currentPlayer && currentPlayer.category) {
         const catConfig = categories.find(c => c.name === currentPlayer.category);
         if (catConfig && catConfig.maxPerTeam > 0) {
-            const countInCat = team.players.filter(p => p.category === currentPlayer.category).length;
+            const playersList = team.players || [];
+            const countInCat = playersList.filter(p => p.category === currentPlayer.category).length;
             if (countInCat >= catConfig.maxPerTeam) {
                 allowBid = false;
                 reason = `Limit for ${catConfig.name} reached`;

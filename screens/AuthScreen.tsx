@@ -92,20 +92,39 @@ const AuthScreen: React.FC = () => {
                 }
 
                 if (!teamQuery.empty) {
-                    matchedTeam = teamQuery.docs[0].data();
-                    matchedTeamDocId = teamQuery.docs[0].id;
-                    auctionId = doc.id;
-                    break;
+                    const tempMatchedTeam = teamQuery.docs[0].data();
+                    const tempMatchedTeamDocId = teamQuery.docs[0].id;
+                    const tempAuctionId = doc.id;
+                    
+                    const storedPassword = String(tempMatchedTeam.password || '').trim();
+                    const enteredPassword = String(teamPassword || '').trim();
+
+                    // If a password is set, check it. If it matches, we found our team!
+                    // If it doesn't match, we keep searching other auctions just in case there's another team with same code but different password
+                    if (storedPassword) {
+                        if (storedPassword.toLowerCase() === enteredPassword.toLowerCase()) {
+                            matchedTeam = tempMatchedTeam;
+                            matchedTeamDocId = tempMatchedTeamDocId;
+                            auctionId = tempAuctionId;
+                            break;
+                        }
+                        // If password didn't match, we don't 'break', we keep looking in other auctions.
+                        // This handles the case where same T-Code exists in multiple auctions.
+                    } else {
+                        // No password set on this team, assume this is the one if user entered no password too
+                        if (!enteredPassword) {
+                            matchedTeam = tempMatchedTeam;
+                            matchedTeamDocId = tempMatchedTeamDocId;
+                            auctionId = tempAuctionId;
+                            break;
+                        }
+                    }
                 }
             }
-            if (!matchedTeam) throw new Error("Team ID not found.");
-            
-            const storedPassword = String(matchedTeam.password || '').trim();
-            const enteredPassword = String(teamPassword || '').trim();
 
-            // Using case-insensitive comparison for better UX if the user is sure they have the right password
-            if (storedPassword && storedPassword.toLowerCase() !== enteredPassword.toLowerCase()) {
-                throw new Error("Incorrect Password.");
+            if (!matchedTeam) {
+                // If we finished the loop and matchedTeam is still null, it's either ID not found OR password wrong for all found instances
+                throw new Error("Invalid Team ID or Password.");
             }
 
             localStorage.setItem('sm_sports_team_session', JSON.stringify({ role: 'TEAM_OWNER', teamId: matchedTeamDocId, auctionId }));
