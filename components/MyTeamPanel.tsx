@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { useAuction } from '../hooks/useAuction';
 import { useTheme } from '../contexts/ThemeContext';
-import { Gavel, Wallet, Shirt, Users } from 'lucide-react';
+import { Gavel, Wallet, Shirt, Users, Info } from 'lucide-react';
+import { calculateMaxBid } from '../utils';
 
 const MyTeamPanel: React.FC = () => {
   const { state, placeBid, userProfile, nextBid } = useAuction();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { teams, highestBidder } = state;
+  const { teams, highestBidder, currentPlayerId, players } = state;
   const [activeTab, setActiveTab] = useState<'MY_SQUAD' | 'ALL_TEAMS'>('MY_SQUAD');
 
   // Find the specific team belonging to this logged-in user
@@ -20,7 +21,13 @@ const MyTeamPanel: React.FC = () => {
       </div>
   );
 
-  const canAfford = userTeam.budget >= nextBid;
+  const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
+  const { maxBidAllowed } = React.useMemo(() => {
+    const result = calculateMaxBid(userTeam, state, currentPlayer);
+    return { maxBidAllowed: result.maxBid };
+  }, [userTeam, state, currentPlayer]);
+
+  const canAfford = userTeam.budget >= nextBid && (state.unlimitedPurse || maxBidAllowed >= nextBid);
   const isLeading = highestBidder && String(highestBidder.id) === String(userTeam.id);
 
   const handleBid = async () => {
@@ -47,13 +54,22 @@ const MyTeamPanel: React.FC = () => {
                 {userTeam.name.charAt(0)}
             </div>
         )}
-        <div>
+        <div className="flex-1">
             <h3 className={`text-xl font-black uppercase tracking-tighter italic ${isDark ? 'text-white' : 'text-gray-900'}`}>{userTeam.name}</h3>
-            <p className="flex items-center mt-1">
-                <Wallet className={`w-3.5 h-3.5 mr-2 ${isDark ? 'text-accent' : 'text-blue-500'}`} /> 
-                <span className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{userTeam.budget}</span>
-                <span className={`text-[9px] font-black uppercase tracking-widest ml-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Left</span>
-            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                <p className="flex items-center">
+                    <Wallet className={`w-3.5 h-3.5 mr-2 ${isDark ? 'text-accent' : 'text-blue-500'}`} /> 
+                    <span className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{userTeam.budget}</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest ml-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Left</span>
+                </p>
+                {currentPlayer && !state.unlimitedPurse && (
+                    <p className="flex items-center">
+                        <Info className={`w-3.5 h-3.5 mr-2 ${isDark ? 'text-accent/60' : 'text-blue-400'}`} />
+                        <span className={`text-lg font-black tracking-tight ${isDark ? 'text-accent' : 'text-blue-600'}`}>₹{Math.max(0, Math.floor(maxBidAllowed))}</span>
+                        <span className={`text-[9px] font-black uppercase tracking-widest ml-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Bid Limit</span>
+                    </p>
+                )}
+            </div>
         </div>
       </div>
       

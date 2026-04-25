@@ -74,20 +74,14 @@ const BiddingPanel: React.FC = () => {
                 {/* Header Stats */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-white/5">
                     <div className="w-full sm:w-auto text-center sm:text-left flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-start px-2 sm:px-0">
-                        <div>
-                            <p className={`text-[10px] md:text-xs font-black uppercase tracking-[0.3em] mb-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Your Purse</p>
+                        <div className="flex flex-col gap-1">
+                            <p className={`text-[10px] md:text-xs font-black uppercase tracking-[0.3em] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Your Purse</p>
                             <p className={`text-2xl md:text-4xl font-black tabular-nums leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{userTeam.budget}</p>
                         </div>
-                        {isPaused && (
-                            <div className={`sm:hidden px-3 py-1.5 rounded-xl border-2 flex items-center ${isDark ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-red-50 border-red-200 text-red-600'}`}>
-                                <span className="text-[9px] font-black uppercase tracking-widest flex items-center"><Lock className="w-3 h-3 mr-1.5"/> Paused</span>
-                            </div>
-                        )}
                         {!isSquadFull && !unlimitedPurse && (
-                            <div className="mt-4 text-left hidden sm:block">
-                                <p className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-accent/80' : 'text-blue-600/80'}`}>
-                                    Max Safe Bid: ₹{Math.max(0, Math.floor(maxBidAllowed))}
-                                </p>
+                            <div className="flex flex-col gap-1 items-end sm:items-start">
+                                <p className={`text-[10px] md:text-xs font-black uppercase tracking-[0.3em] ${isDark ? 'text-accent/80' : 'text-blue-600/80'}`}>Max Bid On Current Player</p>
+                                <p className={`text-xl md:text-2xl font-black tabular-nums leading-none ${isDark ? 'text-accent' : 'text-blue-600'}`}>₹{Math.max(0, Math.floor(maxBidAllowed))}</p>
                             </div>
                         )}
                     </div>
