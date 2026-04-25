@@ -76,10 +76,13 @@ const AuthScreen: React.FC = () => {
         const tid = selectedTeamId.trim().toUpperCase();
         try {
             const auctionsSnapshot = await db.collection('auctions').get();
+            const sortedAuctions = auctionsSnapshot.docs.sort((a, b) => (b.data().createdAt || 0) - (a.data().createdAt || 0));
+            
             let matchedTeam: any = null;
             let matchedTeamDocId: string = "";
             let auctionId: string = "";
-            for (const doc of auctionsSnapshot.docs) {
+
+            for (const doc of sortedAuctions) {
                 // Try searching by teamCode first (New T-series ID)
                 let teamQuery = await doc.ref.collection('teams').where('teamCode', '==', tid).limit(1).get();
                 
@@ -100,7 +103,8 @@ const AuthScreen: React.FC = () => {
             const storedPassword = String(matchedTeam.password || '').trim();
             const enteredPassword = String(teamPassword || '').trim();
 
-            if (storedPassword && storedPassword !== enteredPassword) {
+            // Using case-insensitive comparison for better UX if the user is sure they have the right password
+            if (storedPassword && storedPassword.toLowerCase() !== enteredPassword.toLowerCase()) {
                 throw new Error("Incorrect Password.");
             }
 
