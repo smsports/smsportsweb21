@@ -15,17 +15,18 @@ const MyTeamPanel: React.FC = () => {
   // Find the specific team belonging to this logged-in user
   const userTeam = teams.find(t => String(t.id) === String(userProfile?.teamId));
   
+  const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
+  const { maxBidAllowed } = React.useMemo(() => {
+    if (!userTeam) return { maxBidAllowed: 0 };
+    const result = calculateMaxBid(userTeam, state, currentPlayer);
+    return { maxBidAllowed: result.maxBid };
+  }, [userTeam, state, currentPlayer]);
+
   if (!userTeam) return (
       <div className={`rounded-[2rem] p-8 text-center border-2 border-dashed ${isDark ? 'bg-secondary/50 border-zinc-800 text-zinc-500' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
           <p className="text-xs font-black uppercase tracking-widest">Team data not found.</p>
       </div>
   );
-
-  const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
-  const { maxBidAllowed } = React.useMemo(() => {
-    const result = calculateMaxBid(userTeam, state, currentPlayer);
-    return { maxBidAllowed: result.maxBid };
-  }, [userTeam, state, currentPlayer]);
 
   const canAfford = userTeam.budget >= nextBid && (state.unlimitedPurse || maxBidAllowed >= nextBid);
   const isLeading = highestBidder && String(highestBidder.id) === String(userTeam.id);

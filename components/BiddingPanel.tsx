@@ -11,9 +11,33 @@ const BiddingPanel: React.FC = () => {
     const { teams, highestBidder, biddingStatus, currentBid, currentPlayerId, players, status, categories, roles, maxPlayersPerTeam, basePrice: globalBasePrice, unlimitedPurse, autoReserveFunds } = state;
     const [isBidding, setIsBidding] = useState(false);
 
-    if (!userProfile || !userProfile.teamId) return null;
+    const userTeam = teams.find(t => String(t.id) === String(userProfile?.teamId));
+    const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
 
-    const userTeam = teams.find(t => String(t.id) === String(userProfile.teamId));
+    // --- SMART PURSE VALIDATION ---
+    const { reservedFunds, remainingSlots, categoryStatus, maxBidAllowed, allowBid, reason } = useMemo(() => {
+        if (!userTeam) return {
+            reservedFunds: 0,
+            remainingSlots: 0,
+            categoryStatus: [],
+            maxBidAllowed: 0,
+            allowBid: false,
+            reason: 'Team not found'
+        };
+
+        const result = calculateMaxBid(userTeam, state, currentPlayer);
+
+        return {
+            reservedFunds: result.reservedFunds,
+            remainingSlots: result.remainingSlots,
+            categoryStatus: result.categoryStatus,
+            maxBidAllowed: result.maxBid,
+            allowBid: result.allowBid,
+            reason: result.reason
+        };
+    }, [userTeam?.players, categories, roles, maxPlayersPerTeam, state.basePrice, currentPlayer, unlimitedPurse, userTeam?.budget]);
+
+    if (!userProfile || !userProfile.teamId) return null;
     if (!userTeam) return null;
 
     if (status !== 'IN_PROGRESS') {
@@ -25,22 +49,6 @@ const BiddingPanel: React.FC = () => {
             </div>
         );
     }
-
-    const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
-
-    // --- SMART PURSE VALIDATION ---
-    const { reservedFunds, remainingSlots, categoryStatus, maxBidAllowed, allowBid, reason } = useMemo(() => {
-        const result = calculateMaxBid(userTeam, state, currentPlayer);
-
-        return {
-            reservedFunds: result.reservedFunds,
-            remainingSlots: result.remainingSlots,
-            categoryStatus: result.categoryStatus,
-            maxBidAllowed: result.maxBid,
-            allowBid: result.allowBid,
-            reason: result.reason
-        };
-    }, [userTeam.players, categories, roles, maxPlayersPerTeam, state.basePrice, currentPlayer, unlimitedPurse, userTeam.budget]);
 
     const targetSquadSize = maxPlayersPerTeam || 11;
     const isSquadFull = targetSquadSize - userTeam.players.length <= 0;
