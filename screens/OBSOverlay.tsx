@@ -52,6 +52,144 @@ const Marquee = React.memo(({ content, show, layout }: { content: string[], show
     );
 });
 
+const SystemLogoFrame = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => (
+    <div className="absolute top-6 left-6 h-16 bg-slate-950 rounded-xl border-2 border-yellow-500 p-2 shadow-2xl flex items-center gap-3 z-50 overflow-hidden pr-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+        <div className="flex flex-col relative z-10">
+            <span className="text-white font-black text-lg tracking-tighter leading-none">{tournamentName || "AUCTION"}</span>
+            <span className="text-yellow-500 text-[6px] font-bold uppercase tracking-[0.2em] mt-0.5 italic text-right">Live System</span>
+        </div>
+        {systemLogoUrl ? (
+            <img src={systemLogoUrl} className="h-full object-contain relative z-10" alt="Logo" />
+        ) : (
+            <Trophy className="h-6 w-6 text-yellow-500 opacity-40 shrink-0" />
+        )}
+    </div>
+));
+
+const TopCenterLogo = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => (
+  <div className="absolute top-4 left-1/2 -translate-x-1/2 h-32 z-50 animate-fade-in">
+      {systemLogoUrl ? (
+          <img src={systemLogoUrl} className="h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" alt="Center Logo" />
+      ) : (
+          <div className="flex items-center gap-6 bg-black/90 px-12 py-5 rounded-3xl border-2 border-white/10 shadow-2xl">
+              <Trophy className="w-16 h-16 text-yellow-500" />
+              <div className="flex flex-col">
+                  <span className="text-white text-4xl font-black italic tracking-tighter leading-none uppercase">{tournamentName || "AUCTION"}</span>
+                  <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-1 text-right">Live Engine</span>
+              </div>
+          </div>
+      )}
+  </div>
+));
+
+const SponsorLogo = React.memo(({ show, currentSponsor, sponsorsCount }: { show: boolean, currentSponsor: any, sponsorsCount: number }) => (
+    show && sponsorsCount > 0 && currentSponsor && (
+        <div className="absolute top-6 right-6 w-40 h-24 bg-white/90 backdrop-blur rounded-xl shadow-lg p-2 flex items-center justify-center z-50 border-2 border-white/20 overflow-hidden">
+             <img src={currentSponsor.imageUrl} className="max-w-full max-h-full object-contain transition-opacity duration-500" alt="Sponsor" />
+        </div>
+    )
+));
+
+const IPLTicker = React.memo(({ teams, systemLogoUrl }: { teams: Team[], systemLogoUrl?: string }) => {
+    const sortedTeams = useMemo(() => [...teams].sort((a,b) => b.budget - a.budget), [teams]);
+    const topSold = useMemo(() => teams.flatMap(t => t.players).sort((a,b) => (b.soldPrice || 0) - (a.soldPrice || 0)).slice(0, 5), [teams]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [viewMode, setViewMode] = useState<'PURSE' | 'TOP_BUY'>('PURSE');
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (viewMode === 'PURSE' && topSold.length > 0 && Math.random() > 0.7) {
+                setViewMode('TOP_BUY');
+            } else {
+                setViewMode('PURSE');
+                setCurrentIndex(prev => (prev + 1) % Math.max(1, sortedTeams.length));
+            }
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [sortedTeams.length, viewMode, topSold.length]);
+
+    if (sortedTeams.length === 0) return null;
+    const t = sortedTeams[currentIndex];
+    const top = topSold[Math.floor(Math.random() * topSold.length)];
+
+    return (
+        <div className="fixed bottom-0 left-0 w-full bg-[#001c4b] h-10 flex items-center border-t-2 border-[#fbbf24]/50 z-[100] font-sans shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+            <div className="bg-[#fbbf24] h-full px-8 flex items-center shrink-0 skew-x-[-15deg] -ml-4 pr-12 relative z-20 shadow-[10px_0_20px_rgba(0,0,0,0.4)]">
+                <span className="text-black font-black text-[10px] uppercase tracking-widest italic skew-x-[15deg]">
+                    {viewMode === 'PURSE' ? 'Purse Remaining' : 'Tournament Top Buy'}
+                </span>
+            </div>
+            <div className="flex-1 overflow-hidden relative h-full">
+                <AnimatePresence mode="wait">
+                   <motion.div 
+                       key={viewMode === 'PURSE' ? `purse-${t?.id}` : `top-${top?.id}`}
+                       initial={{ y: 30, opacity: 0 }}
+                       animate={{ y: 0, opacity: 1 }}
+                       exit={{ y: -30, opacity: 0 }}
+                       className="flex items-center justify-between px-10 h-full w-full"
+                   >
+                       {viewMode === 'PURSE' ? (
+                           <>
+                               <div className="flex items-center gap-3 italic">
+                                   <div className="bg-white p-1 rounded-full shadow-lg">
+                                       <img src={t.logoUrl} className="w-4 h-4 object-contain" />
+                                   </div>
+                                   <span className="text-white font-black text-xs uppercase tracking-tighter">{t.name}</span>
+                               </div>
+                               <div className="flex items-center gap-6">
+                                   <span className="text-[#fbbf24] font-black text-sm uppercase tracking-tighter italic drop-shadow-md">
+                                       ₹ {t.budget >= 10000000 ? (t.budget/10000000).toFixed(2) + 'Cr' : (t.budget/100000).toFixed(2) + 'Lks'}
+                                   </span>
+                                   <div className="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                       <User className="w-2.5 h-2.5 text-white/40" />
+                                       <span className="text-white/80 font-bold text-[9px] uppercase tracking-widest leading-none">
+                                           {t.players.length} Signed
+                                       </span>
+                                   </div>
+                               </div>
+                           </>
+                       ) : (
+                           <>
+                               <div className="flex items-center gap-3 italic text-white font-black text-xs uppercase tracking-tighter">
+                                   <span className="text-[#fbbf24]">STAR PLAYER:</span> {top.name}
+                               </div>
+                               <div className="flex items-center gap-4">
+                                   <span className="text-[#fbbf24] font-black text-sm uppercase tracking-tighter italic">₹ {(top.soldPrice || 0) >= 10000000 ? ((top.soldPrice || 0)/10000000).toFixed(2) + 'Cr' : ((top.soldPrice || 0)/100000).toFixed(2) + 'Lks'}</span>
+                                   <span className="text-white/40 font-bold text-[9px] uppercase italic">To {top.soldTo}</span>
+                               </div>
+                           </>
+                       )}
+                   </motion.div>
+                </AnimatePresence>
+            </div>
+            <div className="h-full bg-black/40 px-6 flex items-center border-l border-white/10 shrink-0">
+                <div className="flex flex-col items-end mr-3">
+                    <span className="text-[8px] font-black text-[#fbbf24] uppercase tracking-[0.2em] italic leading-none">Live Auction</span>
+                    <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] italic leading-none mt-0.5">VERSION 2.0</span>
+                </div>
+                {systemLogoUrl && <img src={systemLogoUrl} className="h-6 object-contain opacity-50 contrast-125" />}
+            </div>
+        </div>
+    );
+});
+
+const OverlayCard = React.memo(({ children, title, tickerShow, tickerContent, layout, currentSponsor, sponsorsCount, showSponsor }: any) => (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative p-12 bg-transparent">
+        <SponsorLogo show={showSponsor} currentSponsor={currentSponsor} sponsorsCount={sponsorsCount} />
+        <div className="bg-gradient-to-br from-[#0f172a]/95 via-[#020617]/95 to-black/95 backdrop-blur-2xl rounded-[2.5rem] border-2 border-cyan-500/40 shadow-[0_0_80px_rgba(6,182,212,0.25)] p-0 w-full max-w-6xl animate-slide-up overflow-hidden relative mt-20">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_transparent_100%)] opacity-20"></div>
+            <div className="bg-gradient-to-r from-blue-900/50 via-indigo-900/50 to-blue-900/50 px-10 py-6 border-b-2 border-cyan-500/30 flex items-center justify-center relative">
+                <div className="absolute left-0 top-0 h-full w-3 bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.6)]"></div>
+                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400 uppercase tracking-[0.2em] drop-shadow-lg text-center italic">{title}</h1>
+            </div>
+            <div className="p-10 max-h-[75vh] overflow-y-auto custom-scrollbar relative z-10">{children}</div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+        </div>
+        <Marquee show={tickerShow} content={tickerContent} layout={layout} />
+    </div>
+));
+
 const OBSOverlay: React.FC = () => {
   const { state, joinAuction } = useAuction();
   const { id: auctionId } = useParams<{ id: string }>();
@@ -84,34 +222,6 @@ const OBSOverlay: React.FC = () => {
     return items;
   }, [state.sponsorConfig?.showHighlights, state.teams, state.auctionLog, state.tournamentName, state.sponsors]);
 
-    useEffect(() => {
-        document.body.style.backgroundColor = 'transparent';
-        document.documentElement.style.backgroundColor = 'transparent';
-    }, []);
-
-  useEffect(() => { if (auctionId) joinAuction(auctionId); }, [auctionId]);
-
-  useEffect(() => {
-      const { currentPlayerId, players, currentBid, highestBidder, status, teams } = state;
-      const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
-      if (status === AuctionStatus.Finished) { setDisplay({ player: null, bid: 0, bidder: null, status: 'FINISHED' }); return; }
-      if (currentPlayer) {
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          let derivedStatus: 'LIVE' | 'SOLD' | 'UNSOLD' | 'FINISHED' = 'LIVE';
-          if (status === AuctionStatus.Sold || currentPlayer.status === 'SOLD') derivedStatus = 'SOLD';
-          else if (status === AuctionStatus.Unsold || currentPlayer.status === 'UNSOLD') derivedStatus = 'UNSOLD';
-          let resolvedBidder = highestBidder;
-          if (derivedStatus === 'SOLD' && !resolvedBidder && currentPlayer.soldTo) {
-             const winningTeam = teams.find(t => t.name === currentPlayer.soldTo);
-             if (winningTeam) resolvedBidder = winningTeam;
-          }
-          const effectiveBase = getEffectiveBasePrice(currentPlayer, state.categories);
-          setDisplay({ player: currentPlayer, bid: currentPlayer.soldPrice || currentBid || effectiveBase, bidder: resolvedBidder, status: derivedStatus });
-      } else if (display.status !== 'WAITING' && display.status !== 'FINISHED') {
-          timeoutRef.current = setTimeout(() => { setDisplay({ player: null, bid: 0, bidder: null, status: 'WAITING' }); }, 2000); 
-      }
-  }, [state]);
-
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [rightPanelType, setRightPanelType] = useState<any>('PURSES');
 
@@ -119,7 +229,7 @@ const OBSOverlay: React.FC = () => {
     if (state.obsLayout !== 'IPL') return;
     const interval = setInterval(() => {
       setShowRightPanel(prev => !prev);
-    }, 12000); // 12 seconds per cycle
+    }, 12000); 
     return () => clearInterval(interval);
   }, [state.obsLayout]);
 
@@ -133,151 +243,54 @@ const OBSOverlay: React.FC = () => {
      }
   }, [showRightPanel, state.obsLayout]);
 
-  const IPLTicker = () => {
-     const teams = useMemo(() => [...state.teams].sort((a,b) => b.budget - a.budget), [state.teams]);
-     const topSold = useMemo(() => state.teams.flatMap(t => t.players).sort((a,b) => (b.soldPrice || 0) - (a.soldPrice || 0)).slice(0, 5), [state.teams]);
-     const [currentIndex, setCurrentIndex] = useState(0);
-     const [viewMode, setViewMode] = useState<'PURSE' | 'TOP_BUY'>('PURSE');
+  useEffect(() => {
+      document.body.style.backgroundColor = 'transparent';
+      document.documentElement.style.backgroundColor = 'transparent';
+  }, []);
 
-     useEffect(() => {
-         const interval = setInterval(() => {
-             if (viewMode === 'PURSE' && topSold.length > 0 && Math.random() > 0.7) {
-                 setViewMode('TOP_BUY');
-             } else {
-                 setViewMode('PURSE');
-                 setCurrentIndex(prev => (prev + 1) % Math.max(1, teams.length));
-             }
-         }, 5000);
-         return () => clearInterval(interval);
-     }, [teams.length, viewMode, topSold.length]);
+  useEffect(() => { if (auctionId) joinAuction(auctionId); }, [auctionId]);
 
-     if (teams.length === 0) return null;
-     const t = teams[currentIndex];
-     const top = topSold[Math.floor(Math.random() * topSold.length)];
-
-     return (
-         <div className="fixed bottom-0 left-0 w-full bg-[#001c4b] h-10 flex items-center border-t-2 border-[#fbbf24]/50 z-[100] font-sans shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-             <div className="bg-[#fbbf24] h-full px-8 flex items-center shrink-0 skew-x-[-15deg] -ml-4 pr-12 relative z-20 shadow-[10px_0_20px_rgba(0,0,0,0.4)]">
-                 <span className="text-black font-black text-[10px] uppercase tracking-widest italic skew-x-[15deg]">
-                     {viewMode === 'PURSE' ? 'Purse Remaining' : 'Tournament Top Buy'}
-                 </span>
-             </div>
-             <div className="flex-1 overflow-hidden relative h-full">
-                 <AnimatePresence mode="wait">
-                    <motion.div 
-                        key={viewMode === 'PURSE' ? `purse-${t?.id}` : `top-${top?.id}`}
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -30, opacity: 0 }}
-                        className="flex items-center justify-between px-10 h-full w-full"
-                    >
-                        {viewMode === 'PURSE' ? (
-                            <>
-                                <div className="flex items-center gap-3 italic">
-                                    <div className="bg-white p-1 rounded-full shadow-lg">
-                                        <img src={t.logoUrl} className="w-4 h-4 object-contain" />
-                                    </div>
-                                    <span className="text-white font-black text-xs uppercase tracking-tighter">{t.name}</span>
-                                </div>
-                                <div className="flex items-center gap-6">
-                                    <span className="text-[#fbbf24] font-black text-sm uppercase tracking-tighter italic drop-shadow-md">
-                                        ₹ {t.budget >= 10000000 ? (t.budget/10000000).toFixed(2) + 'Cr' : (t.budget/100000).toFixed(2) + 'Lks'}
-                                    </span>
-                                    <div className="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                                        <User className="w-2.5 h-2.5 text-white/40" />
-                                        <span className="text-white/80 font-bold text-[9px] uppercase tracking-widest leading-none">
-                                            {t.players.length} Signed
-                                        </span>
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-3 italic text-white font-black text-xs uppercase tracking-tighter">
-                                    <span className="text-[#fbbf24]">STAR PLAYER:</span> {top.name}
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-[#fbbf24] font-black text-sm uppercase tracking-tighter italic">₹ {(top.soldPrice || 0) >= 10000000 ? ((top.soldPrice || 0)/10000000).toFixed(2) + 'Cr' : ((top.soldPrice || 0)/100000).toFixed(2) + 'Lks'}</span>
-                                    <span className="text-white/40 font-bold text-[9px] uppercase italic">To {top.soldTo}</span>
-                                </div>
-                            </>
-                        )}
-                    </motion.div>
-                 </AnimatePresence>
-             </div>
-             <div className="h-full bg-black/40 px-6 flex items-center border-l border-white/10 shrink-0">
-                 <div className="flex flex-col items-end mr-3">
-                     <span className="text-[8px] font-black text-[#fbbf24] uppercase tracking-[0.2em] italic leading-none">Live Auction</span>
-                     <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] italic leading-none mt-0.5">VERSION 2.0</span>
-                 </div>
-                 {state.systemLogoUrl && <img src={state.systemLogoUrl} className="h-6 object-contain opacity-50 contrast-125" />}
-             </div>
-         </div>
-     );
-  };
+  useEffect(() => {
+      const { currentPlayerId, players, currentBid, highestBidder, status, teams, categories } = state;
+      const currentPlayer = currentPlayerId ? players.find(p => String(p.id) === String(currentPlayerId)) : null;
+      if (status === AuctionStatus.Finished) { setDisplay({ player: null, bid: 0, bidder: null, status: 'FINISHED' }); return; }
+      if (currentPlayer) {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          let derivedStatus: 'LIVE' | 'SOLD' | 'UNSOLD' | 'FINISHED' = 'LIVE';
+          if (status === AuctionStatus.Sold || currentPlayer.status === 'SOLD') derivedStatus = 'SOLD';
+          else if (status === AuctionStatus.Unsold || currentPlayer.status === 'UNSOLD') derivedStatus = 'UNSOLD';
+          let resolvedBidder = highestBidder;
+          if (derivedStatus === 'SOLD' && !resolvedBidder && currentPlayer.soldTo) {
+             const winningTeam = teams.find(t => t.name === currentPlayer.soldTo);
+             if (winningTeam) resolvedBidder = winningTeam;
+          }
+          const effectiveBase = getEffectiveBasePrice(currentPlayer, categories);
+          setDisplay({ player: currentPlayer, bid: currentPlayer.soldPrice || currentBid || effectiveBase, bidder: resolvedBidder, status: derivedStatus });
+      } else if (display.status !== 'WAITING' && display.status !== 'FINISHED') {
+          timeoutRef.current = setTimeout(() => { setDisplay({ player: null, bid: 0, bidder: null, status: 'WAITING' }); }, 2000); 
+      }
+  }, [state.currentPlayerId, state.players, state.currentBid, state.highestBidder, state.status, state.teams, state.categories]);
 
   if (window.location.protocol === 'blob:') return <div className="min-h-screen w-full flex items-center justify-center bg-black/90 p-10"><div className="bg-red-600/20 border border-red-500 text-white p-8 rounded-xl text-center"><h1 className="text-2xl font-bold mb-2">Preview Mode Detected</h1><p>Please deploy the app to use the OBS Overlay.</p></div></div>;
 
-  const SystemLogoFrame = () => (
-      <div className="absolute top-6 left-6 h-16 bg-slate-950 rounded-xl border-2 border-yellow-500 p-2 shadow-2xl flex items-center gap-3 z-50 overflow-hidden pr-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-          <div className="flex flex-col relative z-10">
-              <span className="text-white font-black text-lg tracking-tighter leading-none">{state.tournamentName || "AUCTION"}</span>
-              <span className="text-yellow-500 text-[6px] font-bold uppercase tracking-[0.2em] mt-0.5 italic text-right">Live System</span>
-          </div>
-          {state.systemLogoUrl ? (
-              <img src={state.systemLogoUrl} className="h-full object-contain relative z-10" alt="Logo" />
-          ) : (
-              <Trophy className="h-6 w-6 text-yellow-500 opacity-40 shrink-0" />
-          )}
-      </div>
-  );
-
-  const TopCenterLogo = () => (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 h-32 z-50 animate-fade-in">
-        {state.systemLogoUrl ? (
-            <img src={state.systemLogoUrl} className="h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" alt="Center Logo" />
-        ) : (
-            <div className="flex items-center gap-6 bg-black/90 px-12 py-5 rounded-3xl border-2 border-white/10 shadow-2xl">
-                <Trophy className="w-16 h-16 text-yellow-500" />
-                <div className="flex flex-col">
-                    <span className="text-white text-4xl font-black italic tracking-tighter leading-none uppercase">{state.tournamentName || "AUCTION"}</span>
-                    <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-1 text-right">Live Engine</span>
-                </div>
-            </div>
-        )}
-    </div>
-  );
-
-  const SponsorLogo = () => (
-      state.sponsorConfig?.showOnOBS && state.sponsors.length > 0 && (
-          <div className="absolute top-6 right-6 w-40 h-24 bg-white/90 backdrop-blur rounded-xl shadow-lg p-2 flex items-center justify-center z-50 border-2 border-white/20 overflow-hidden">
-               <img src={state.sponsors[currentSponsorIndex]?.imageUrl} className="max-w-full max-h-full object-contain transition-opacity duration-500" alt="Sponsor" />
-          </div>
-      )
-  );
-
   if (state.adminViewOverride && state.adminViewOverride.type !== 'NONE') {
       const { type, data } = state.adminViewOverride;
-      const OverlayCard = ({ children, title }: any) => (
-          <div className="min-h-screen w-full flex flex-col items-center justify-center relative p-12 bg-transparent">
-              <SponsorLogo />
-              <div className="bg-gradient-to-br from-[#0f172a]/95 via-[#020617]/95 to-black/95 backdrop-blur-2xl rounded-[2.5rem] border-2 border-cyan-500/40 shadow-[0_0_80px_rgba(6,182,212,0.25)] p-0 w-full max-w-6xl animate-slide-up overflow-hidden relative mt-20">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_transparent_100%)] opacity-20"></div>
-                  <div className="bg-gradient-to-r from-blue-900/50 via-indigo-900/50 to-blue-900/50 px-10 py-6 border-b-2 border-cyan-500/30 flex items-center justify-center relative">
-                      <div className="absolute left-0 top-0 h-full w-3 bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.6)]"></div>
-                      <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400 uppercase tracking-[0.2em] drop-shadow-lg text-center italic">{title}</h1>
-                  </div>
-                  <div className="p-10 max-h-[75vh] overflow-y-auto custom-scrollbar relative z-10">{children}</div>
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-              </div>
-              <Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} />
-          </div>
-      );
+      const showSponsor = state.sponsorConfig?.showOnOBS ?? false;
+      const tickerShow = state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false;
+      
+      const cardProps = {
+          tickerShow,
+          tickerContent: marqueeContent,
+          layout: state.obsLayout,
+          currentSponsor: state.sponsors[currentSponsorIndex],
+          sponsorsCount: state.sponsors.length,
+          showSponsor
+      };
+
       if (type === 'SQUAD' && data?.teamId) {
           const team = state.teams.find(t => String(t.id) === String(data.teamId));
           if (team) return (
-            <OverlayCard title={team.name}>
+            <OverlayCard title={team.name} {...cardProps}>
                 <div className="flex flex-col gap-8">
                     <div className="flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
                         <div className="flex items-center gap-6">
@@ -442,6 +455,16 @@ const OBSOverlay: React.FC = () => {
 
   return (
     <>
+        <SponsorLogo 
+            show={state.sponsorConfig?.showOnOBS ?? false} 
+            currentSponsor={state.sponsors[currentSponsorIndex]} 
+            sponsorsCount={state.sponsors.length} 
+        />
+        
+        {layout !== 'IPL' && (
+             <SystemLogoFrame tournamentName={state.tournamentName} systemLogoUrl={state.systemLogoUrl} />
+        )}
+
         {layout === 'IPL' && (
             <div className="min-h-screen w-full relative font-sans overflow-hidden bg-transparent select-none">
                  {/* Top Left: Removed Auction Logo */}
@@ -718,7 +741,7 @@ const OBSOverlay: React.FC = () => {
                     )}
                  </AnimatePresence>
 
-                 <IPLTicker />
+                 <IPLTicker teams={state.teams} systemLogoUrl={state.systemLogoUrl} />
             </div>
         )}
         {layout === 'STANDARD' && (

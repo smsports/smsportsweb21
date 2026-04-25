@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { calculateMaxBid, getEffectiveBasePrice } from '../utils';
 
 const LiveAdminPanel: React.FC = () => {
-  const { state, userProfile, sellPlayer, passPlayer, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, toggleSelectionMode, updateTheme, activeAuctionId, placeBid, nextBid, updateSponsorConfig, correctPlayerSale, setAdminView } = useAuction();
+  const { state, userProfile, sellPlayer, passPlayer, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, toggleSelectionMode, updateTheme, activeAuctionId, placeBid, nextBid, updateSponsorConfig, correctPlayerSale, setAdminView, repairAuctionDocument } = useAuction();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { teams, players, biddingStatus, playerSelectionMode, categories, maxPlayersPerTeam } = state;

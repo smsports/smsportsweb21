@@ -321,12 +321,12 @@ const addLog = async (log: Omit<AuctionLog, 'id'>) => {
         return state.teams.find(t => String(t.id) === String(state.highestBidderId)) || null;
     }, [state.highestBidderId, state.teams]);
 
-    const activeState = {
+    const activeState = useMemo(() => ({
         ...state,
         unsoldPlayers: derivedUnsoldPlayers,
         currentPlayerIndex: derivedCurrentPlayerIndex,
         highestBidder: derivedHighestBidder
-    };
+    }), [state, derivedUnsoldPlayers, derivedCurrentPlayerIndex, derivedHighestBidder]);
 
     const nextBid = useMemo(() => {
         const { currentPlayerId, players, currentBid, bidIncrement, bidSlabs, categories } = state;
@@ -384,12 +384,14 @@ const addLog = async (log: Omit<AuctionLog, 'id'>) => {
         }
 
         const log = { message: `${team.name} bid ${amount}`, timestamp: Date.now(), type: 'BID' as const };
+        // Don't await log write to keep UI responsive
+        db.collection('auctions').doc(activeAuctionId).collection('auctionLogs').add(log).catch(e => console.error("Log error", e));
+
         await db.collection('auctions').doc(activeAuctionId).update({
             currentBid: amount, 
             highestBidderId: team.id, 
             timer: 10
         });
-        await addLog(log);
     };
 
     const sellPlayer = async (teamId?: string | number, customPrice?: number) => {
