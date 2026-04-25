@@ -163,6 +163,7 @@ export interface AuctionState {
   currentPlayerIndex: number | null; // Derived helper
   currentBid: number | null;
   highestBidder: Team | null;
+  highestBidderId?: string | number | null;
   timer: number;
   bidIncrement: number; // Global fallback increment
   bidSlabs?: BidIncrementSlab[]; // Global fallback slabs
@@ -177,6 +178,7 @@ export interface AuctionState {
   projectorLayout: ProjectorLayout;
   obsLayout: OBSLayout;
   adminViewOverride: AdminViewOverride | null;
+  registrationConfig?: RegistrationConfig; // Added for central management and size monitoring
   maxPlayersPerTeam?: number; // Global Squad Limit
   basePrice: number; // Global fallback base price
   systemLogoUrl?: string; // Global System Branding Logo
@@ -552,4 +554,5 @@ export interface AuctionContextType {
   joinAuction: (id: string) => void;
   activeAuctionId: string | null;
   nextBid: number;
+  repairAuctionDocument: () => Promise<boolean>;
 }

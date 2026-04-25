@@ -898,6 +898,35 @@ const LiveAdminPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* REPAIR DOCUMENT SIZE BUTTON */}
+      <div className={`rounded-2xl p-2.5 mb-6 flex justify-between items-center border transition-all duration-500 ${isDark ? 'bg-primary/40 border-accent/10' : 'bg-gray-50 border-blue-500/10'}`}>
+        <div className="flex items-center gap-3 ml-2">
+            <ShieldAlert className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`} />
+            <div>
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Size Repair</p>
+                <p className="text-[8px] font-bold text-zinc-500 uppercase">Legacy Cleanup</p>
+            </div>
+        </div>
+        <button
+          onClick={async () => {
+            if (window.confirm("This will overwrite your auction document with a clean version, removing legacy bulky data (like old player/team lists) that exceeds 1MB limits. Your sub-collections are safe. Continue?")) {
+              try {
+                setIsProcessing(true);
+                await repairAuctionDocument();
+                showNotification("Repair successful! Document size reset.", "success");
+              } catch (e: any) {
+                showNotification("Repair failed: " + e.message);
+              } finally {
+                setIsProcessing(false);
+              }
+            }
+          }}
+          className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-red-950/20 hover:text-red-400 hover:border-red-900/50' : 'bg-white border-gray-100 text-gray-400 hover:text-red-500'} border`}
+        >
+          {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : 'Run Repair'}
+        </button>
+      </div>
+
       <div className="mb-8 space-y-4">
         {/* UNDO BANNER */}
         {lastAction && (

@@ -17,6 +17,7 @@ const initialState: AuctionState = {
     currentPlayerIndex: null,
     currentBid: null,
     highestBidder: null,
+    highestBidderId: null,
     timer: 0,
     bidIncrement: 0,
     bidSlabs: [],
@@ -146,17 +147,22 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (doc.exists) {
                 const data = doc.data();
                 if (data) {
-                    setState(prev => ({
-                        ...prev,
-                        ...data,
-                        bidSlabs: data.slabs || [],
-                        tournamentName: data.title || prev.tournamentName,
-                        auctionLogoUrl: data.logoUrl || prev.auctionLogoUrl,
-                        sponsorConfig: data.sponsorConfig || prev.sponsorConfig || { showOnOBS: false, showOnProjector: false, loopInterval: 5 },
-                        maxPlayersPerTeam: data.playersPerTeam || 25,
-                        isPaid: data.isPaid || false,
-                        createdBy: data.createdBy || ''
-                    }));
+                    setState(prev => {
+                        const highestBidderId = data.highestBidderId || (data.highestBidder?.id);
+                        return {
+                            ...prev,
+                            ...data,
+                            highestBidderId,
+                            registrationConfig: data.registrationConfig,
+                            bidSlabs: data.slabs || [],
+                            tournamentName: data.title || prev.tournamentName,
+                            auctionLogoUrl: data.logoUrl || prev.auctionLogoUrl,
+                            sponsorConfig: data.sponsorConfig || prev.sponsorConfig || { showOnOBS: false, showOnProjector: false, loopInterval: 5 },
+                            maxPlayersPerTeam: data.playersPerTeam || 25,
+                            isPaid: data.isPaid || false,
+                            createdBy: data.createdBy || ''
+                        };
+                    });
                 }
             } else {
                 setError("Auction not found");
@@ -197,28 +203,88 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error("Sponsors Listener Error:", err);
         });
 
-        // 1. ADD SUBCONTENT LISTENER FOR LOGS
-        const unsubLogs = db.collection('auctions').doc(activeAuctionId).collection('auctionLogs')
-            .orderBy('timestamp', 'desc')
-            .limit(30) // Only keep last 30 for performance
-            .onSnapshot(snap => {
-                const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuctionLog));
-                setState(prev => ({ ...prev, auctionLog: logs }));
-            }, err => {
-                console.error("Logs Listener Error:", err);
-            });
+    // 1. ADD SUBCONTENT LISTENER FOR LOGS
+    const unsubLogs = db.collection('auctions').doc(activeAuctionId).collection('auctionLogs')
+        .orderBy('timestamp', 'desc')
+        .limit(30) // Only keep last 30 for performance
+        .onSnapshot(snap => {
+            const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuctionLog));
+            setState(prev => ({ ...prev, auctionLog: logs }));
+        }, err => {
+            console.error("Logs Listener Error:", err);
+        });
 
-        return () => {
-            unsubscribe();
-            unsubTeams();
-            unsubPlayers();
-            unsubCategories();
-            unsubSponsors();
-            unsubLogs();
-        };
-    }, [activeAuctionId]);
+    return () => {
+        unsubscribe();
+        unsubTeams();
+        unsubPlayers();
+        unsubCategories();
+        unsubSponsors();
+        unsubLogs();
+    };
+}, [activeAuctionId]);
 
-    const addLog = async (log: Omit<AuctionLog, 'id'>) => {
+// 2. Bulky Field Cleanup (AGGRESSIVE PRUNING)
+useEffect(() => {
+    if (!activeAuctionId || !userProfile || (userProfile.role !== UserRole.ADMIN && userProfile.role !== UserRole.SUPER_ADMIN)) return;
+
+    const performAggressiveCleanup = async () => {
+        try {
+            const auctionRef = db.collection('auctions').doc(activeAuctionId);
+            const doc = await auctionRef.get();
+            if (!doc.exists) return;
+            const data = doc.data();
+            if (!data) return;
+
+            const bulkyFields = ['players', 'teams', 'auctionLog', 'unsoldPlayers', 'registrations'];
+            let needsCleanup = false;
+            bulkyFields.forEach(f => { if (data[f] !== undefined) needsCleanup = true; });
+
+            // If we find any bulky field, use a transaction to REWRITE the entire document with only safe fields.
+            // This is necessary because if a document is already over the 1MB limit, standard updates might fail.
+            // A transaction.set() replaces the whole document, reducing its size immediately.
+            if (needsCleanup) {
+                console.log("🚀 SM SPORTS: Bulky data detected in main document. Initiating emergency size reduction...");
+                await db.runTransaction(async (transaction) => {
+                    const freshDoc = await transaction.get(auctionRef);
+                    const freshData = freshDoc.data() || {};
+                    
+                    // Whitelist only safe, non-bulky fields
+                    const cleanData: any = {};
+                    const safeFields = [
+                        'title', 'status', 'currentPlayerId', 'currentBid', 'highestBidderId', 
+                        'timer', 'bidIncrement', 'slabs', 'registrationConfig', 'logoUrl',
+                        'tournamentName', 'fullTournamentName', 'season', 'date', 'matchesDate',
+                        'sport', 'venue', 'eventVenue', 'purseValue', 'basePrice', 'playersPerTeam',
+                        'totalTeams', 'dateTBD', 'unlimitedPurse', 'autoReserveFunds', 'isPaid',
+                        'planId', 'autoDeleteAt', 'isLifetime', 'hideScoringSection', 'createdBy',
+                        'sponsorConfig', 'projectorLayout', 'obsLayout', 'adminViewOverride',
+                        'biddingStatus', 'playerSelectionMode', 'auctionLogoUrl'
+                    ];
+
+                    safeFields.forEach(field => {
+                        if (freshData[field] !== undefined) {
+                            cleanData[field] = freshData[field];
+                        }
+                    });
+
+                    // Ensure highestBidder object is gone
+                    if (cleanData.highestBidder) delete cleanData.highestBidder;
+
+                    transaction.set(auctionRef, cleanData);
+                    console.log("✅ SM SPORTS: Auction document size reduced successfully.");
+                });
+            }
+        } catch (e) {
+            console.error("Critical Cleanup Error:", e);
+        }
+    };
+    
+    const timer = setTimeout(performAggressiveCleanup, 2000);
+    return () => clearTimeout(timer);
+}, [activeAuctionId, userProfile]);
+
+const addLog = async (log: Omit<AuctionLog, 'id'>) => {
         if (!activeAuctionId) return;
         try {
             await db.collection('auctions').doc(activeAuctionId).collection('auctionLogs').add(log);
@@ -250,10 +316,16 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return idx !== -1 ? idx : null;
     }, [state.currentPlayerId, derivedUnsoldPlayers]);
 
+    const derivedHighestBidder = useMemo(() => {
+        if (!state.highestBidderId) return null;
+        return state.teams.find(t => String(t.id) === String(state.highestBidderId)) || null;
+    }, [state.highestBidderId, state.teams]);
+
     const activeState = {
         ...state,
         unsoldPlayers: derivedUnsoldPlayers,
-        currentPlayerIndex: derivedCurrentPlayerIndex
+        currentPlayerIndex: derivedCurrentPlayerIndex,
+        highestBidder: derivedHighestBidder
     };
 
     const nextBid = useMemo(() => {
@@ -313,7 +385,9 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         const log = { message: `${team.name} bid ${amount}`, timestamp: Date.now(), type: 'BID' as const };
         await db.collection('auctions').doc(activeAuctionId).update({
-            currentBid: amount, highestBidder: team, timer: 10
+            currentBid: amount, 
+            highestBidderId: team.id, 
+            timer: 10
         });
         await addLog(log);
     };
@@ -361,7 +435,11 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const log = { message: `${player.name} SOLD to ${finalTeam.name} for ${finalPrice}`, timestamp: Date.now(), type: 'SOLD' as const };
             const logRef = auctionRef.collection('auctionLogs').doc();
             transaction.set(logRef, log);
-            transaction.update(auctionRef, { status: AuctionStatus.Sold, currentBid: finalPrice, highestBidder: finalTeam });
+            transaction.update(auctionRef, { 
+                status: AuctionStatus.Sold, 
+                currentBid: finalPrice, 
+                highestBidderId: finalTeam.id 
+            });
         });
     };
 
@@ -401,7 +479,12 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const resetCurrentPlayer = async () => {
         if (!activeAuctionId || !state.currentPlayerId) return;
-        await db.collection('auctions').doc(activeAuctionId).update({ currentBid: 0, highestBidder: null, timer: 10, status: AuctionStatus.InProgress });
+        await db.collection('auctions').doc(activeAuctionId).update({ 
+            currentBid: 0, 
+            highestBidderId: null, 
+            timer: 10, 
+            status: AuctionStatus.InProgress 
+        });
     };
 
     const endAuction = async () => {
@@ -427,7 +510,15 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (item.type === 'PLAYER') { batch.update(item.ref, { status: firebase.firestore.FieldValue.delete(), soldPrice: firebase.firestore.FieldValue.delete(), soldTo: firebase.firestore.FieldValue.delete() }); }
                 else { batch.update(item.ref, { budget: defaultPurse, players: [] }); }
             });
-            if (i === 0) { batch.update(auctionRef, { status: AuctionStatus.NotStarted, currentPlayerId: null, currentBid: 0, highestBidder: null, timer: 0 }); }
+            if (i === 0) { 
+                batch.update(auctionRef, { 
+                    status: AuctionStatus.NotStarted, 
+                    currentPlayerId: null, 
+                    currentBid: 0, 
+                    highestBidderId: null, 
+                    timer: 0 
+                }); 
+            }
             await batch.commit();
             
             // Delete logs in chunks
@@ -647,9 +738,47 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
     };
 
+    const repairAuctionDocument = async () => {
+        if (!activeAuctionId) return;
+        try {
+            const auctionRef = db.collection('auctions').doc(activeAuctionId);
+            const doc = await auctionRef.get();
+            if (!doc.exists) return;
+            const freshData = doc.data() || {};
+            
+            const cleanData: any = {};
+            const safeFields = [
+                'title', 'status', 'currentPlayerId', 'currentBid', 'highestBidderId', 
+                'timer', 'bidIncrement', 'slabs', 'registrationConfig', 'logoUrl',
+                'tournamentName', 'fullTournamentName', 'season', 'date', 'matchesDate',
+                'sport', 'venue', 'eventVenue', 'purseValue', 'basePrice', 'playersPerTeam',
+                'totalTeams', 'dateTBD', 'unlimitedPurse', 'autoReserveFunds', 'isPaid',
+                'planId', 'autoDeleteAt', 'isLifetime', 'hideScoringSection', 'createdBy',
+                'sponsorConfig', 'projectorLayout', 'obsLayout', 'adminViewOverride',
+                'biddingStatus', 'playerSelectionMode', 'auctionLogoUrl'
+            ];
+
+            safeFields.forEach(field => {
+                if (freshData[field] !== undefined) {
+                    cleanData[field] = freshData[field];
+                }
+            });
+
+            // Handle legacy highestBidder object
+            if (cleanData.highestBidder) delete cleanData.highestBidder;
+
+            await db.collection('auctions').doc(activeAuctionId).set(cleanData);
+            console.log("✅ SM SPORTS: Manual Repair Successful.");
+            return true;
+        } catch (e) {
+            console.error("Manual Repair Error:", e);
+            throw e;
+        }
+    };
+
     return (
         <AuctionContext.Provider value={{
-            state: activeState, userProfile, setUserProfile, placeBid, sellPlayer, passPlayer, correctPlayerSale, initiateTrade, processTrade, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, updateSponsorConfig, toggleSelectionMode, updateTheme, setAdminView, logout, error, joinAuction, activeAuctionId, nextBid
+            state: activeState, userProfile, setUserProfile, placeBid, sellPlayer, passPlayer, correctPlayerSale, initiateTrade, processTrade, startAuction, undoPlayerSelection, endAuction, resetAuction, resetCurrentPlayer, resetUnsoldPlayers, updateBiddingStatus, updateSponsorConfig, toggleSelectionMode, updateTheme, setAdminView, logout, error, joinAuction, activeAuctionId, nextBid, repairAuctionDocument
         }}>
             {children}
         </AuctionContext.Provider>
