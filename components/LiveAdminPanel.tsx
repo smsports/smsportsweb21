@@ -240,9 +240,10 @@ const LiveAdminPanel: React.FC = () => {
           await sellPlayer(selectedTeamId, finalPrice);
           setLastAction({ playerId: pid, type: 'SOLD', name: pName });
           setIsSellingMode(false);
-      } catch(e) {
+          showNotification("Player sold successfully!", "success");
+      } catch(e: any) {
           console.error(e);
-          showNotification("Failed to sell player. Check console.");
+          showNotification(e.message || "Failed to sell player. Check console.");
       } finally {
           setIsProcessing(false);
       }
@@ -588,7 +589,8 @@ const LiveAdminPanel: React.FC = () => {
                             if (currentPlayer.category) {
                                 const catConfig = categories.find(c => c.name === currentPlayer.category);
                                 if (catConfig && catConfig.maxPerTeam > 0) {
-                                    const count = team.players.filter(p => p.category === currentPlayer.category).length;
+                                    const playersList = team.players || [];
+                                    const count = playersList.filter(p => p.category === currentPlayer.category).length;
                                     if (count >= catConfig.maxPerTeam) { allowed = false; reason = 'CAT LIMIT'; }
                                 }
                             }

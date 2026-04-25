@@ -341,6 +341,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const teamDoc = await transaction.get(teamRef);
             if (!teamDoc.exists) throw new Error("Target team document does not exist");
             const teamData = teamDoc.data() as Team;
+            const currentPlayers = teamData.players || [];
+            const currentBudget = teamData.budget || 0;
             transaction.update(playerRef, { status: 'SOLD', soldPrice: finalPrice, soldTo: finalTeam.name });
             
             // OPTIMIZATION: Store only essential data in the team's player list to save space
@@ -353,8 +355,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 soldTo: finalTeam.name,
                 status: 'SOLD'
             };
-            const updatedPlayers = [...(teamData.players || []), minimalPlayerData];
-            const newBudget = (teamData.budget || 0) - finalPrice;
+            const updatedPlayers = [...currentPlayers, minimalPlayerData];
+            const newBudget = currentBudget - finalPrice;
             transaction.update(teamRef, { budget: newBudget, players: updatedPlayers });
             const log = { message: `${player.name} SOLD to ${finalTeam.name} for ${finalPrice}`, timestamp: Date.now(), type: 'SOLD' as const };
             const logRef = auctionRef.collection('auctionLogs').doc();

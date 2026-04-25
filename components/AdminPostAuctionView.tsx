@@ -16,10 +16,11 @@ const AdminPostAuctionView: React.FC = () => {
 
     // Calculate Global Stats
     const totalSpent = state.teams.reduce((acc, team) => {
-        return acc + team.players.reduce((tSum, p) => tSum + (Number(p.soldPrice) || 0), 0);
+        const playersList = team.players || [];
+        return acc + playersList.reduce((tSum, p) => tSum + (Number(p.soldPrice) || 0), 0);
     }, 0);
 
-    const totalSoldPlayers = state.teams.reduce((acc, team) => acc + team.players.length, 0);
+    const totalSoldPlayers = state.teams.reduce((acc, team) => acc + (team.players || []).length, 0);
 
     const handleMasterDownload = () => {
         // Generate CSV for ALL players across ALL teams
@@ -27,7 +28,7 @@ const AdminPostAuctionView: React.FC = () => {
         let rows: any[] = [];
 
         state.teams.forEach(team => {
-            team.players.forEach(p => {
+            (team.players || []).forEach(p => {
                 rows.push([
                     `"${p.name}"`,
                     `"${p.category}"`,
@@ -141,7 +142,7 @@ const AdminPostAuctionView: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {state.teams.map(team => {
-                    const teamSpent = team.players.reduce((sum, p) => sum + (Number(p.soldPrice) || 0), 0);
+                    const teamSpent = (team.players || []).reduce((sum, p) => sum + (Number(p.soldPrice) || 0), 0);
                     return (
                         <div key={team.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
@@ -155,7 +156,7 @@ const AdminPostAuctionView: React.FC = () => {
                                     )}
                                     <h3 className="font-bold text-gray-800 truncate max-w-[150px]">{team.name}</h3>
                                 </div>
-                                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">{team.players.length} Players</span>
+                                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">{(team.players || []).length} Players</span>
                             </div>
                             
                             <div className="p-5 grid grid-cols-2 gap-4 text-sm">

@@ -131,7 +131,7 @@ const MyTeamPanel: React.FC = () => {
                         <div key={t.id} className={`p-3 rounded-2xl border transition-all flex justify-between items-center ${t.id === userTeam.id ? (isDark ? 'bg-accent/10 border-accent/30' : 'bg-blue-50 border-blue-500/30') : (isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-gray-50 border-gray-100')}`}>
                             <div className="flex items-center gap-3">
                                 <span className={`text-xs font-black uppercase tracking-tight ${t.id === userTeam.id ? (isDark ? 'text-accent' : 'text-blue-600') : (isDark ? 'text-zinc-300' : 'text-gray-700')}`}>{t.name}</span>
-                                <span className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>({t.players.length})</span>
+                                <span className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>({(t.players || []).length})</span>
                             </div>
                             <span className={`font-black text-xs ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{t.budget}</span>
                         </div>
