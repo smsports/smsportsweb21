@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
-import { AuctionContextType, AuctionState, UserProfile, Team, Player, AuctionStatus, BiddingStatus, AdminViewOverride, BidIncrementSlab, UserRole, SponsorConfig, AuctionLog, TradeRecord } from '../types';
+import { AuctionContextType, AuctionState, UserProfile, Team, Player, RegisteredPlayer, AuctionStatus, BiddingStatus, AdminViewOverride, BidIncrementSlab, UserRole, SponsorConfig, AuctionLog, TradeRecord } from '../types';
 import { db, auth } from '../firebase';
 import firebase from 'firebase/compat/app';
 import { calculateMaxBid, getEffectiveBasePrice } from '../utils';
@@ -22,6 +22,7 @@ const initialState: AuctionState = {
     bidIncrement: 0,
     bidSlabs: [],
     auctionLog: [],
+    registrations: [],
     biddingStatus: 'PAUSED',
     playerSelectionMode: 'MANUAL',
     auctionLogoUrl: '',
@@ -188,6 +189,13 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }, err => {
             console.error("Players Listener Error:", err);
         });
+
+        const unsubRegistrations = db.collection('auctions').doc(activeAuctionId).collection('registrations').onSnapshot(snap => {
+            const regs = snap.docs.map(d => ({ id: d.id, ...d.data() } as RegisteredPlayer));
+            setState(prev => ({ ...prev, registrations: regs }));
+        }, err => {
+            console.error("Registrations Listener Error:", err);
+        });
         
         const unsubCategories = db.collection('auctions').doc(activeAuctionId).collection('categories').onSnapshot(snap => {
              const categories = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
@@ -218,11 +226,27 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         unsubscribe();
         unsubTeams();
         unsubPlayers();
+        unsubRegistrations();
         unsubCategories();
         unsubSponsors();
         unsubLogs();
     };
 }, [activeAuctionId]);
+
+// 1.5. Auto-Completion Check
+useEffect(() => {
+    if (!activeAuctionId || state.status === AuctionStatus.Finished || state.status === AuctionStatus.NotStarted) return;
+    
+    // Check if any players are still available in the pool (neither SOLD nor UNSOLD)
+    const available = state.players.filter(p => !p.status || (p.status !== 'SOLD' && p.status !== 'UNSOLD'));
+    
+    // If no players left in pool AND no player currently active on the bidding floor
+    if (available.length === 0 && state.players.length > 0 && !state.currentPlayerId) {
+        console.log("🏁 SM SPORTS: All players processed. Auto-completing auction...");
+        db.collection('auctions').doc(activeAuctionId).update({ status: AuctionStatus.Finished })
+            .catch(e => console.error("Auto end error:", e));
+    }
+}, [state.players, state.status, activeAuctionId, state.currentPlayerId]);
 
 // 2. Bulky Field Cleanup (AGGRESSIVE PRUNING)
 useEffect(() => {

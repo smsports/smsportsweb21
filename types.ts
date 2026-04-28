@@ -179,6 +179,7 @@ export interface AuctionState {
   obsLayout: OBSLayout;
   adminViewOverride: AdminViewOverride | null;
   registrationConfig?: RegistrationConfig; // Added for central management and size monitoring
+  registrations: RegisteredPlayer[]; // Full profiles from registration form
   maxPlayersPerTeam?: number; // Global Squad Limit
   basePrice: number; // Global fallback base price
   systemLogoUrl?: string; // Global System Branding Logo

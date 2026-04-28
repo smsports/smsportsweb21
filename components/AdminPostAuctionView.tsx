@@ -2,17 +2,49 @@
 import React, { useState } from 'react';
 import { useAuction } from '../hooks/useAuction';
 import { Team, UserRole } from '../types';
-import { Download, Trophy, Users, Wallet, ArrowLeft, Eye, X, RefreshCw, AlertOctagon } from 'lucide-react';
+import { Download, Trophy, Users, Wallet, ArrowLeft, Eye, X, RefreshCw, AlertOctagon, CheckSquare, Square, ChevronDown, ChevronUp, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TeamPostAuctionView from './TeamPostAuctionView';
+import * as XLSX from 'xlsx';
 
 const AdminPostAuctionView: React.FC = () => {
     const { state, userProfile, resetAuction } = useAuction();
     const navigate = useNavigate();
     const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
     const [isResetting, setIsResetting] = useState(false);
+    const [showExportOptions, setShowExportOptions] = useState(false);
 
-    const isAdmin = userProfile?.role === UserRole.ADMIN;
+    const isAdmin = userProfile?.role === UserRole.ADMIN || userProfile?.role === UserRole.SUPER_ADMIN;
+
+    // Define Fields for Export
+    const basicFields = [
+        { id: 'playerNumber', label: 'Player Number' },
+        { id: 'name', label: 'Player Name' },
+        { id: 'category', label: 'Category' },
+        { id: 'role', label: 'Role' },
+        { id: 'soldPrice', label: 'Sold Price' },
+        { id: 'teamName', label: 'Team Name' },
+        { id: 'mobile', label: 'Mobile' },
+        { id: 'dob', label: 'DOB' },
+        { id: 'gender', label: 'Gender' },
+        { id: 'playerType', label: 'Player Type (Reg)' },
+    ];
+
+    const customFields = state.registrationConfig?.customFields || [];
+    const allFieldOptions = [
+        ...basicFields,
+        ...customFields.map(f => ({ id: f.id, label: f.label }))
+    ];
+
+    const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([
+        'playerNumber', 'name', 'category', 'role', 'soldPrice', 'teamName', 'mobile'
+    ]);
+
+    const toggleField = (id: string) => {
+        setSelectedFieldIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
 
     // Calculate Global Stats
     const totalSpent = state.teams.reduce((acc, team) => {
@@ -22,39 +54,55 @@ const AdminPostAuctionView: React.FC = () => {
 
     const totalSoldPlayers = state.teams.reduce((acc, team) => acc + (team.players || []).length, 0);
 
-    const handleMasterDownload = () => {
-        // Generate CSV for ALL players across ALL teams
-        const headers = ["Player Name", "Category", "Role", "Sold Price", "Sold To (Team)"];
-        let rows: any[] = [];
+    const handleExport = (teamOnly?: Team) => {
+        const playersToExport: any[] = [];
+        const targetTeams = teamOnly ? [teamOnly] : state.teams;
 
-        state.teams.forEach(team => {
+        targetTeams.forEach(team => {
             (team.players || []).forEach(p => {
-                rows.push([
-                    `"${p.name}"`,
-                    `"${p.category}"`,
-                    `"${p.speciality || p.category}"`,
-                    p.soldPrice || 0,
-                    `"${team.name}"`
-                ]);
+                // Find full registration data from state.registrations
+                const regData = state.registrations.find(rp => rp.fullName === p.name) as any;
+                
+                const row: any = {};
+                
+                // Map Basic Fields
+                if (selectedFieldIds.includes('playerNumber')) row['Player Number'] = regData?.playerNumber || '';
+                if (selectedFieldIds.includes('name')) row['Player Name'] = p.name;
+                if (selectedFieldIds.includes('category')) row['Category'] = p.category;
+                if (selectedFieldIds.includes('role')) row['Role'] = p.role || p.speciality;
+                if (selectedFieldIds.includes('soldPrice')) row['Sold Price'] = p.soldPrice || 0;
+                if (selectedFieldIds.includes('teamName')) row['Team Name'] = team.name;
+
+                if (selectedFieldIds.includes('mobile')) row['Mobile Number'] = regData?.mobile || '';
+                if (selectedFieldIds.includes('dob')) row['DOB'] = regData?.dob || '';
+                if (selectedFieldIds.includes('gender')) row['Gender'] = regData?.gender || '';
+                if (selectedFieldIds.includes('playerType')) row['Player Type (Reg)'] = regData?.playerType || '';
+
+                // Map Custom Fields
+                customFields.forEach(cf => {
+                    if (selectedFieldIds.includes(cf.id)) {
+                        row[cf.label] = regData?.[cf.id] || '';
+                    }
+                });
+
+                playersToExport.push(row);
             });
         });
 
-        // Sort by Price Descending
-        rows.sort((a, b) => Number(b[3]) - Number(a[3]));
+        if (playersToExport.length === 0) {
+            alert("No data to export.");
+            return;
+        }
 
-        const csvContent = [
-            headers.join(","),
-            ...rows.map(row => row.join(","))
-        ].join("\n");
+        const ws = XLSX.utils.json_to_sheet(playersToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Auction Summary");
+        
+        const fileName = teamOnly
+            ? `${teamOnly.name.replace(/\s+/g, '_')}_Detailed_Squad.xlsx`
+            : `MASTER_AUCTION_DATA_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `MASTER_AUCTION_DATA_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        XLSX.writeFile(wb, fileName);
     };
 
     const handleFullReset = async () => {
@@ -62,7 +110,6 @@ const AdminPostAuctionView: React.FC = () => {
         setIsResetting(true);
         try {
             await resetAuction();
-            // Context will update state to NotStarted, which Dashboard will react to.
         } catch (e) {
             console.error(e);
         } finally {
@@ -72,7 +119,6 @@ const AdminPostAuctionView: React.FC = () => {
 
     return (
         <div className="container mx-auto p-4 md:p-8 max-w-6xl">
-            
             {/* Modal for viewing individual team details */}
             {selectedTeam && (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
@@ -84,7 +130,6 @@ const AdminPostAuctionView: React.FC = () => {
                             <X className="w-6 h-6" />
                         </button>
                         <div className="pt-10">
-                             {/* Reuse the existing Team View */}
                              <TeamPostAuctionView team={selectedTeam} />
                         </div>
                     </div>
@@ -118,21 +163,59 @@ const AdminPostAuctionView: React.FC = () => {
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Players Sold</p>
                         <p className="text-3xl font-black text-blue-600">{totalSoldPlayers}</p>
                     </div>
-                    <div className="p-6 flex items-center justify-center">
+                    <div className="p-6 flex flex-col items-center justify-center gap-3">
                         {isAdmin ? (
-                            <button 
-                                onClick={handleMasterDownload}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95"
-                            >
-                                <Download className="w-5 h-5 mr-2" /> Export Master Data
-                            </button>
+                            <>
+                                <button 
+                                    onClick={() => setShowExportOptions(!showExportOptions)}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <FileSpreadsheet className="w-5 h-5 mr-2" /> 
+                                    {showExportOptions ? 'Hide Export Options' : 'Export Master Data'}
+                                    {showExportOptions ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+                                </button>
+                                {showExportOptions && (
+                                    <button 
+                                        onClick={() => handleExport()}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all"
+                                    >
+                                        Download Master Excel
+                                    </button>
+                                )}
+                            </>
                         ) : (
-                            <div className="text-gray-400 text-sm italic">
-                                Master Export (Admin Only)
-                            </div>
+                            <div className="text-gray-400 text-sm italic">Master Export (Admin Only)</div>
                         )}
                     </div>
                 </div>
+
+                {/* Export Options Panel (In-place) */}
+                {isAdmin && showExportOptions && (
+                    <div className="p-8 bg-zinc-50 border-b border-gray-200 animate-in fade-in slide-in-from-top-4 duration-300">
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                            Select Fields to Include in Export
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                            {allFieldOptions.map(field => (
+                                <button
+                                    key={field.id}
+                                    onClick={() => toggleField(field.id)}
+                                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                                        selectedFieldIds.includes(field.id)
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                            : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 font-medium'
+                                    }`}
+                                >
+                                    {selectedFieldIds.includes(field.id) ? <CheckSquare className="w-4 h-4 shrink-0" /> : <Square className="w-4 h-4 shrink-0" />}
+                                    <span className="text-[10px] font-bold uppercase tracking-wider leading-tight">{field.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-6 text-[10px] text-gray-400 font-medium uppercase tracking-widest leading-relaxed">
+                            Tip: Selected fields will be applied to both Master Export and Individual Team Exports below.
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Teams Grid */}
@@ -148,9 +231,9 @@ const AdminPostAuctionView: React.FC = () => {
                             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     {team.logoUrl ? (
-                                        <img src={team.logoUrl} className="w-10 h-10 rounded-full border border-gray-200 object-contain"/>
+                                        <img src={team.logoUrl} className="w-10 h-10 rounded-full border border-gray-200 object-contain" alt={team.name}/>
                                     ) : (
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 uppercase">
                                             {team.name.charAt(0)}
                                         </div>
                                     )}
@@ -161,22 +244,30 @@ const AdminPostAuctionView: React.FC = () => {
                             
                             <div className="p-5 grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <p className="text-gray-400 text-xs uppercase font-bold">Spent</p>
-                                    <p className="font-bold text-gray-800">{teamSpent}</p>
+                                    <p className="text-gray-400 text-xs uppercase font-bold tracking-widest">Spent</p>
+                                    <p className="font-black text-gray-800 text-lg">₹{teamSpent}</p>
                                 </div>
                                 <div>
-                                    <p className="text-gray-400 text-xs uppercase font-bold">Remaining</p>
-                                    <p className="font-bold text-green-600">{team.budget}</p>
+                                    <p className="text-gray-400 text-xs uppercase font-bold tracking-widest">Remaining</p>
+                                    <p className="font-black text-green-600 text-lg">₹{team.budget}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-auto p-4 bg-gray-50 border-t border-gray-100">
+                            <div className="mt-auto flex flex-col gap-2 p-4 bg-gray-50 border-t border-gray-100">
                                 <button 
                                     onClick={() => setSelectedTeam(team)}
-                                    className="w-full bg-white border border-gray-300 hover:border-blue-400 hover:text-blue-600 text-gray-600 font-semibold py-2 rounded transition-colors flex items-center justify-center text-sm"
+                                    className="w-full bg-white border border-gray-300 hover:border-blue-400 hover:text-blue-600 text-gray-600 font-bold py-2.5 rounded-lg transition-all flex items-center justify-center text-xs uppercase tracking-widest shadow-sm active:scale-95"
                                 >
-                                    <Eye className="w-4 h-4 mr-2" /> View Full Squad
+                                    <Eye className="w-4 h-4 mr-2" /> View Squad
                                 </button>
+                                {isAdmin && (
+                                    <button 
+                                        onClick={() => handleExport(team)}
+                                        className="w-full bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center text-[10px] uppercase tracking-widest active:scale-95"
+                                    >
+                                        <Download className="w-3.5 h-3.5 mr-2" /> Export Team Excel
+                                    </button>
+                                )}
                             </div>
                         </div>
                     );
@@ -197,7 +288,7 @@ const AdminPostAuctionView: React.FC = () => {
                         <button 
                             onClick={handleFullReset}
                             disabled={isResetting}
-                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow transition-colors flex items-center whitespace-nowrap"
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow transition-colors flex items-center whitespace-nowrap active:scale-95"
                         >
                             <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? 'animate-spin' : ''}`} />
                             {isResetting ? 'Resetting...' : 'Reset Auction'}
