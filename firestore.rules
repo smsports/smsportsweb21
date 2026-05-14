@@ -47,7 +47,6 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/auctions/$(auctionId)) && 
          get(/databases/$(database)/documents/auctions/$(auctionId)).data.createdBy == request.auth.uid) ||
         // Admin fallbacks
-        request.auth.token.email == "send.smsports@gmail.com" ||
         request.auth.token.email == "info.digitalmount@gmail.com" ||
         request.auth.token.email == "mezabiullakhan@gmail.com"
       );
@@ -62,7 +61,7 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/auctions/$(auctionId)/staff/$(request.auth.uid))) ||
         // Universal edit access if the user specifically requested it for their environment
         // We'll trust the createdBy check mostly, but also include common admin emails as fallback
-        request.auth.token.email in ["mezabiullakhan@gmail.com", "zabiullakhanofficial@gmail.com", "info.digitalmount@gmail.com", "send.smsports@gmail.com"]
+        request.auth.token.email in ["mezabiullakhan@gmail.com", "zabiullakhanofficial@gmail.com", "info.digitalmount@gmail.com"]
       );
     }
 
@@ -98,6 +97,23 @@ service cloud.firestore {
       return isValidString(data.name, 1, 100) &&
              isValidString(data.category, 1, 50) &&
              isValidString(data.role, 1, 50);
+    }
+
+    function isValidUser(data) {
+      return isValidString(data.email, 3, 200) &&
+             isValidString(data.name, 1, 100);
+    }
+
+    function isValidRegistration(data) {
+      return isValidString(data.fullName, 1, 100) &&
+             (data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 20) &&
+             data.submittedAt is number;
+    }
+
+    function isValidCaptainCode(data) {
+      return isValidString(data.code, 1, 50) &&
+             data.usageLimit is number &&
+             data.currentUsage is number;
     }
 
     // ===============================================================
@@ -149,9 +165,12 @@ service cloud.firestore {
         isSuperAdmin()
       );
 
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && (
-        request.auth.uid == userId || 
+        (request.auth.uid == userId && isValidUser(incoming()) && (
+          // Immortal Field (Pillar 9): prevent them from changing their own role or UID
+          incoming().role == existing().role || isSuperAdmin()
+        )) || 
         isSuperAdmin()
       );
       allow delete: if isSuperAdmin();
@@ -211,7 +230,7 @@ service cloud.firestore {
 
       match /registrations/{regId} {
         allow read, list: if isAdmin(auctionId) || isSuperAdmin();
-        allow create: if isValidString(incoming().fullName, 1, 100) && (incoming().mobile is string || incoming().email is string);
+        allow create: if isValidRegistration(incoming());
         allow update, delete: if isAdmin(auctionId) || isSuperAdmin();
       }
 
@@ -223,6 +242,10 @@ service cloud.firestore {
       match /captainCodes/{codeId} {
         allow read, list: if true;
         allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow update: if (
+          incoming().diff(existing()).affectedKeys().hasOnly(['currentUsage', 'teamCodes']) &&
+          incoming().currentUsage == existing().currentUsage + 1
+        ) || isAdmin(auctionId) || isSuperAdmin();
       }
 
       match /sponsors/{sponsorId} {

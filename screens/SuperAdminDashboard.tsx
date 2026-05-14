@@ -198,7 +198,7 @@ const SuperAdminDashboard: React.FC = () => {
 
     const filteredAuctions = auctions.filter(a => {
         const term = searchTerm.toLowerCase();
-        const matchesSearch = a.title.toLowerCase().includes(term) || a.id?.toLowerCase().includes(term);
+        const matchesSearch = (a.title || '').toLowerCase().includes(term) || (a.id || '').toLowerCase().includes(term);
         const matchesStatus = auctionStatusFilter === 'ALL' || 
                              (auctionStatusFilter === 'PAID' && a.isPaid) || 
                              (auctionStatusFilter === 'FREE' && !a.isPaid);
@@ -207,7 +207,7 @@ const SuperAdminDashboard: React.FC = () => {
 
     const filteredUsers = userRegistry.filter(u => {
         const term = searchTerm.toLowerCase();
-        const matchesSearch = u.email.toLowerCase().includes(term) || u.uid.toLowerCase().includes(term);
+        const matchesSearch = (u.email || '').toLowerCase().includes(term) || (u.uid || '').toLowerCase().includes(term);
         const matchesRole = userRoleFilter === 'ALL' || u.role === userRoleFilter;
         return matchesSearch && matchesRole;
     });

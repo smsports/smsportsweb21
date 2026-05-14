@@ -47,8 +47,24 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [activeAuctionId, setActiveAuctionId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const handleFirestoreError = (error: any, operationType: string, path: string | null) => {
+        const errInfo = {
+            error: error instanceof Error ? error.message : String(error),
+            authInfo: {
+                userId: auth.currentUser?.uid,
+                email: auth.currentUser?.email,
+                emailVerified: auth.currentUser?.emailVerified,
+                isAnonymous: auth.currentUser?.isAnonymous
+            },
+            operationType,
+            path
+        };
+        console.error('Firestore Error: ', JSON.stringify(errInfo));
+    };
+
     // Global Settings Listener
     useEffect(() => {
+        const path = 'appConfig/globalSettings';
         const unsub = db.collection('appConfig').doc('globalSettings').onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
@@ -58,9 +74,14 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     systemTagline: data?.systemTagline || 'Your streaming partner',
                     hideScoringSection: data?.hideScoringSection || false
                 }));
+            } else {
+                // If it doesn't exist, we fallback to defaults but don't error
+                console.warn(`SM SPORTS: ${path} document not found. Using defaults.`);
             }
         }, err => {
-            console.error("Global Settings Listener Error:", err);
+            handleFirestoreError(err, 'GET', path);
+            // Non-fatal warning if global settings fail. We use defaults in state.
+            console.warn(`SM SPORTS: Could not load ${path}. Using internal defaults. Check Firestore rules if this is unintended.`);
         });
         return () => unsub();
     }, []);
@@ -107,13 +128,14 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 });
                             }
                         }, err => {
+                            handleFirestoreError(err, 'GET', `users/${data.uid}`);
                             console.error("Staff Profile Listener Error:", err);
                         });
                     } else {
                         setUserProfile({ uid: user.uid, email: 'viewer@smsports.com', role: UserRole.VIEWER });
                     }
                 } else {
-                    const SUPER_ADMIN_EMAILS = ['mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com', 'info.digitalmount@gmail.com'];
+                    const SUPER_ADMIN_EMAILS = ['info.digitalmount@gmail.com', 'mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com'];
                     const isSuperAdminAccount = user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
 
                     profileUnsub = db.collection('users').doc(user.uid).onSnapshot(doc => {
@@ -129,7 +151,28 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         };
                         setUserProfile(profile);
                     }, err => {
+                        handleFirestoreError(err, 'GET', `users/${user.uid}`);
                         console.error("User Profile Listener Error:", err);
+                        
+                        // GRACEFUL FAIL: If profile fetch fails but they are a hardcoded admin, allow them in.
+                        if (isSuperAdminAccount) {
+                            console.warn("SM SPORTS: Profile fetch failed, but admin email detected. Granting emergency access.");
+                            setUserProfile({
+                                uid: user.uid,
+                                email: user.email || '',
+                                name: user.displayName || 'System Admin',
+                                role: UserRole.SUPER_ADMIN,
+                                plan: { type: 'ENTERPRISE', maxTeams: 100, maxAuctions: 100 }
+                            });
+                        } else {
+                            // Non-admin fail: provide a basic viewer profile so they aren't stuck on the loader
+                            setUserProfile({
+                                uid: user.uid,
+                                email: user.email || '',
+                                name: user.displayName || 'Guest User',
+                                role: UserRole.VIEWER
+                            });
+                        }
                     });
                 }
             } else {

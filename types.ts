@@ -203,7 +203,7 @@ export enum UserRole {
 }
 
 export interface UserPlan {
-    type: 'FREE' | 'BASIC' | 'PREMIUM';
+    type: 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
     maxTeams: number;
     maxAuctions: number;
     expiresAt?: number;
@@ -350,7 +350,7 @@ export interface RegistrationConfig {
     terms: string;
     bannerUrl?: string; 
     logoUrl?: string;
-    theme?: 'DEFAULT' | 'ADVAYA';
+    theme?: 'DEFAULT' | 'ADVAYA' | 'NAVY_GOLDEN' | 'CLASSIC_NEON';
     customSuccessMessage?: string;
     welcomePopup?: WelcomePopupConfig;
     maxRegistrations?: number;
@@ -359,6 +359,14 @@ export interface RegistrationConfig {
     organizerContacts?: OrganizerContact[];
     enableWaitlist?: boolean;
     waitlistMessage?: string;
+    enableCaptainCodes?: boolean;
+    enablePlayerCodes?: boolean;
+    jerseyDetailsEnabled?: boolean;
+    jerseyFields?: {
+        name: BasicFieldConfig;
+        number: BasicFieldConfig;
+        size: BasicFieldConfig & { options: string[] };
+    };
     customFields: FormField[];
     basicFields?: {
         name: BasicFieldConfig;

@@ -99,6 +99,14 @@ const DEFAULT_REG_CONFIG: RegistrationConfig = {
         mobile: { show: true, required: true },
         gender: { show: true, required: true },
         role: { show: true, required: true }
+    },
+    enableCaptainCodes: true,
+    enablePlayerCodes: true,
+    jerseyDetailsEnabled: false,
+    jerseyFields: {
+        name: { show: true, required: true },
+        number: { show: true, required: true },
+        size: { show: true, required: true, options: ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'] }
     }
 };
 
@@ -108,7 +116,7 @@ const AuctionManage: React.FC = () => {
     const { userProfile } = useAuction();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'SETTINGS' | 'TEAMS' | 'PLAYERS' | 'REQUESTS' | 'CATEGORIES' | 'ROLES' | 'SPONSORS' | 'REGISTRATION' | 'WAITLIST' | 'CAPTAIN_CODES' | 'RECOLLECTION'>('SETTINGS');
+    const [activeTab, setActiveTab] = useState<'SETTINGS' | 'TEAMS' | 'PLAYERS' | 'REQUESTS' | 'CATEGORIES' | 'ROLES' | 'SPONSORS' | 'REGISTRATION' | 'WAITLIST' | 'CAPTAIN_CODES' | 'RECOLLECTION' | 'EXPORT'>('SETTINGS');
     const [loading, setLoading] = useState(true);
     const [auction, setAuction] = useState<AuctionSetup | null>(null);
 
@@ -175,7 +183,8 @@ const AuctionManage: React.FC = () => {
     
     // PDF Export States
     const [pdfTheme, setPdfTheme] = useState<'NORMAL' | 'ADVAYA'>('NORMAL');
-    const [selectedFields, setSelectedFields] = useState<string[]>(['playerNumber', 'fullName', 'mobile', 'dob', 'gender', 'playerType', 'profilePic']);
+    const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'mobile', 'category', 'role', 'soldPrice', 'soldTo']);
+    const [viewSummary, setViewSummary] = useState(false);
     const [playersPerPage, setPlayersPerPage] = useState<1 | 2 | 4 | 6 | 9 | 'LIST'>(1);
     const [exportCategorizedPDF, setExportCategorizedPDF] = useState(false);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -282,6 +291,72 @@ const AuctionManage: React.FC = () => {
         } catch (e: any) {
             showNotification("Update failed: " + e.message);
         }
+    };
+
+    const handleExportExcel = (mode: 'MASTER') => {
+        if (!id) return;
+        
+        const wb = XLSX.utils.book_new();
+        
+        // Prepare Data for each team
+        teams.forEach(team => {
+            const teamPlayers = players.filter(p => p.soldTo === team.name);
+            
+            const sheetData = teamPlayers.map(p => {
+                const row: any = {};
+                
+                // Get corresponding registration for custom fields and jersey info
+                // Match by ID or name (fallback)
+                const reg = registrations.find(r => String(r.id) === String(p.id)) || registrations.find(r => r.fullName === p.name);
+
+                selectedFields.forEach(fieldId => {
+                    if (fieldId === 'name') row['Player Name'] = p.name;
+                    else if (fieldId === 'category') row['Category'] = p.category;
+                    else if (fieldId === 'role') row['Role'] = p.role;
+                    else if (fieldId === 'soldPrice') row['Sold Price'] = p.soldPrice;
+                    else if (fieldId === 'soldTo') row['Team'] = p.soldTo;
+                    else if (fieldId === 'isTraded') row['Traded'] = p.isTraded ? 'YES' : 'NO';
+                    else if (fieldId === 'mobile') row['Mobile'] = reg?.mobile || (p as any).mobile || '-';
+                    else if (fieldId === 'jerseyName') row['Jersey Name'] = reg?.jerseyName || '-';
+                    else if (fieldId === 'jerseyNumber') row['Jersey Number'] = reg?.jerseyNumber || '-';
+                    else if (fieldId === 'jerseySize') row['Jersey Size'] = reg?.jerseySize || '-';
+                    else if (fieldId.startsWith('cf_')) {
+                        const fieldIdClean = fieldId.replace('cf_', '');
+                        const fieldConfig = regConfig.customFields.find(f => f.id === fieldIdClean);
+                        const fieldLabel = fieldConfig?.label || fieldIdClean;
+                        row[fieldLabel] = reg ? (reg as any)[fieldIdClean] || '-' : '-';
+                    }
+                });
+                
+                return row;
+            });
+
+            if (sheetData.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(sheetData);
+                XLSX.utils.book_append_sheet(wb, ws, team.name.substring(0, 31).replace(/[\[\]\*\?\/\\]/g, '')); 
+            }
+        });
+
+        // Add an "All Sold Players" sheet
+        const allSold = players.filter(p => p.status === 'SOLD').map(p => ({
+            'Team': p.soldTo,
+            'Player Name': p.name,
+            'Category': p.category,
+            'Role': p.role,
+            'Price': p.soldPrice
+        }));
+        
+        if (allSold.length > 0) {
+            const wsAll = XLSX.utils.json_to_sheet(allSold);
+            XLSX.utils.book_append_sheet(wb, wsAll, "Master Summary");
+        } else {
+            // Add a placeholder sheet if no one sold yet
+            const wsEmpty = XLSX.utils.json_to_sheet([{ Message: "No players sold yet." }]);
+            XLSX.utils.book_append_sheet(wb, wsEmpty, "Summary");
+        }
+
+        XLSX.writeFile(wb, `${auction?.title || 'Auction'}_Summary.xlsx`);
+        showNotification("Excel exported successfully!", "success");
     };
 
     // Captain Code State
@@ -1304,7 +1379,7 @@ const AuctionManage: React.FC = () => {
                         </div>
                     </div>
                     <div className={`flex p-0.5 rounded-xl border overflow-x-auto no-scrollbar ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-100 border-gray-200'}`}>
-                        {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION'].map(tab => (
+                        {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
                             <button key={tab} onClick={() => setActiveTab(tab as any)}
                                 className={`px-4 py-2 text-[10px] font-black uppercase transition-all rounded-lg whitespace-nowrap ${
                                     activeTab === tab 
@@ -2224,6 +2299,104 @@ const AuctionManage: React.FC = () => {
                                     </div>
 
                                     <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
+                                        <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.25em] mb-2 flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4"/> Registration Access
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-black uppercase text-gray-800">Captain Codes</p>
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Enable captain-only registration codes</p>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="sr-only peer"
+                                                        checked={regConfig.enableCaptainCodes ?? true}
+                                                        onChange={e => setRegConfig({...regConfig, enableCaptainCodes: e.target.checked})}
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-black uppercase text-gray-800">Player Codes</p>
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Enable team-specific player codes</p>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="sr-only peer"
+                                                        checked={regConfig.enablePlayerCodes ?? true}
+                                                        onChange={e => setRegConfig({...regConfig, enablePlayerCodes: e.target.checked})}
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.25em] flex items-center gap-2">
+                                                <Tag className="w-4 h-4"/> Jersey Details
+                                            </h3>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="sr-only peer"
+                                                    checked={regConfig.jerseyDetailsEnabled || false}
+                                                    onChange={e => setRegConfig({...regConfig, jerseyDetailsEnabled: e.target.checked})}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                            </label>
+                                        </div>
+                                        {regConfig.jerseyDetailsEnabled && (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                {[
+                                                    { id: 'name', label: 'Name on Jersey' },
+                                                    { id: 'number', label: 'Number on Jersey' },
+                                                    { id: 'size', label: 'Jersey Size' }
+                                                ].map(field => (
+                                                    <div key={field.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <p className="text-[10px] font-black uppercase text-gray-800 mb-2">{field.label}</p>
+                                                        <div className="flex items-center gap-4">
+                                                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    className="w-3 h-3 rounded text-indigo-600"
+                                                                    checked={(regConfig.jerseyFields?.[field.id as keyof typeof regConfig.jerseyFields] as any)?.show ?? true}
+                                                                    onChange={e => {
+                                                                        const fields = { ...regConfig.jerseyFields };
+                                                                        // @ts-ignore
+                                                                        fields[field.id] = { ...(fields[field.id] || {}), show: e.target.checked };
+                                                                        setRegConfig({ ...regConfig, jerseyFields: fields as any });
+                                                                    }}
+                                                                />
+                                                                <span className="text-[8px] font-bold uppercase text-gray-500">Show</span>
+                                                            </label>
+                                                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    className="w-3 h-3 rounded text-indigo-600"
+                                                                    checked={(regConfig.jerseyFields?.[field.id as keyof typeof regConfig.jerseyFields] as any)?.required ?? true}
+                                                                    onChange={e => {
+                                                                        const fields = { ...regConfig.jerseyFields };
+                                                                        // @ts-ignore
+                                                                        fields[field.id] = { ...(fields[field.id] || {}), required: e.target.checked };
+                                                                        setRegConfig({ ...regConfig, jerseyFields: fields as any });
+                                                                    }}
+                                                                />
+                                                                <span className="text-[8px] font-bold uppercase text-gray-500">Required</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
                                         <h3 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.25em] mb-2 flex items-center gap-2">
                                             <Phone className="w-4 h-4"/> Organizer Contacts
                                         </h3>
@@ -2348,7 +2521,8 @@ const AuctionManage: React.FC = () => {
                                             <div className="flex gap-3">
                                                 {[
                                                     { id: 'DEFAULT', label: 'Standard (Clean)' },
-                                                    { id: 'ADVAYA', label: 'ADVAYA (Kingdom Battle)' }
+                                                    { id: 'ADVAYA', label: 'ADVAYA (Kingdom Battle)' },
+                                                    { id: 'NAVY_GOLDEN', label: 'Navy & Golden (Classic)' }
                                                 ].map(t => (
                                                     <button 
                                                         key={t.id}
@@ -3043,6 +3217,218 @@ const AuctionManage: React.FC = () => {
                 {activeTab === 'RECOLLECTION' && (
                     <div className="space-y-6 animate-fade-in">
                         <RecollectionManager embedded={true} />
+                    </div>
+                )}
+                {activeTab === 'EXPORT' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <div className={`rounded-[2rem] border shadow-sm p-8 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-green-100 text-green-600 rounded-2xl">
+                                        <FileSpreadsheet className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h2 className={`text-2xl font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Auction Summary & Export</h2>
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Export team lists and player data to Excel</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+                                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Total Teams</p>
+                                        <p className="text-xl font-black text-blue-700">{teams.length}</p>
+                                    </div>
+                                    <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
+                                        <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Sold Players</p>
+                                        <p className="text-xl font-black text-indigo-700">{players.filter(p => p.status === 'SOLD').length}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div className="lg:col-span-2 space-y-6">
+                                    <div className={`p-6 rounded-3xl border ${isDark ? 'bg-zinc-950/50 border-zinc-800' : 'bg-gray-50/50 border-gray-100'}`}>
+                                        <h3 className={`text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                                            <ListChecks className="w-4 h-4" /> Select Fields to Include
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {[
+                                                { id: 'name', label: 'Player Name' },
+                                                { id: 'mobile', label: 'Mobile Number' },
+                                                { id: 'category', label: 'Category' },
+                                                { id: 'role', label: 'Role' },
+                                                { id: 'soldPrice', label: 'Sold Price' },
+                                                { id: 'soldTo', label: 'Sold To (Team)' },
+                                                { id: 'isTraded', label: 'Trade Info' },
+                                                ...regConfig.customFields.map(f => ({ id: `cf_${f.id}`, label: f.label })),
+                                                ...(regConfig.jerseyDetailsEnabled ? [
+                                                    { id: 'jerseyName', label: 'Jersey Name' },
+                                                    { id: 'jerseyNumber', label: 'Jersey Number' },
+                                                    { id: 'jerseySize', label: 'Jersey Size' }
+                                                ] : [])
+                                            ].map(field => (
+                                                <button
+                                                    key={field.id}
+                                                    onClick={() => {
+                                                        const current = [...(selectedFields || [])];
+                                                        if (current.includes(field.id)) {
+                                                            setSelectedFields(current.filter(f => f !== field.id));
+                                                        } else {
+                                                            setSelectedFields([...current, field.id]);
+                                                        }
+                                                    }}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                                                        selectedFields.includes(field.id)
+                                                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                        : (isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700' : 'bg-white border-gray-200 text-gray-400 hover:border-blue-200')
+                                                    }`}
+                                                >
+                                                    {selectedFields.includes(field.id) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                                                    <span className="text-[10px] font-black uppercase tracking-tight truncate">{field.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-4">
+                                        <button
+                                            onClick={() => {
+                                                const allFields = [
+                                                    'name', 'mobile', 'category', 'role', 'soldPrice', 'soldTo', 'isTraded',
+                                                    ...regConfig.customFields.map(f => `cf_${f.id}`),
+                                                    ...(regConfig.jerseyDetailsEnabled ? ['jerseyName', 'jerseyNumber', 'jerseySize'] : [])
+                                                ];
+                                                setSelectedFields(allFields);
+                                            }}
+                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'}`}
+                                        >
+                                            Select All
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedFields(['name', 'soldPrice', 'soldTo'])}
+                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'}`}
+                                        >
+                                            Reset Defaults
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className={`p-8 rounded-3xl border text-center space-y-4 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-green-50/50 border-green-100'}`}>
+                                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-green-600/10">
+                                            <FileSpreadsheet className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h4 className={`text-lg font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Export Master File</h4>
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>One file with all team tabs</p>
+                                        </div>
+                                        <p className="text-xs text-gray-500 leading-relaxed italic">
+                                            Generates a professional Excel workbook where each team gets its own sheet containing their purchased players.
+                                        </p>
+                                        <button 
+                                            onClick={() => handleExportExcel('MASTER')}
+                                            className="w-full btn-golden py-4 rounded-2xl flex items-center justify-center gap-3"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                            Download Master Excel
+                                        </button>
+                                    </div>
+
+                                    <div className={`p-8 rounded-3xl border text-center space-y-4 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-indigo-50/50 border-indigo-100'}`}>
+                                        <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/10">
+                                            <Printer className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h4 className={`text-lg font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Auction Summary</h4>
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>View final squad standings</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setViewSummary(true)}
+                                                className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700' : 'bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50'}`}
+                                            >
+                                                <Eye className="w-4 h-4" /> View Summary
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Summary View Overlay */}
+                        {viewSummary && (
+                            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex flex-col items-center justify-center p-4">
+                                <div className={`w-full max-w-6xl h-full max-h-[90vh] rounded-[2.5rem] flex flex-col shadow-2xl overflow-hidden ${isDark ? 'bg-zinc-950 border border-zinc-800' : 'bg-white'}`}>
+                                    <div className={`p-8 border-b flex justify-between items-center ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gray-50/50'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-600/20">
+                                                <Trophy className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className={`text-2xl font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Final Squad Standings</h3>
+                                                <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Real-time auction results overview</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setViewSummary(false)} className={`p-4 rounded-2xl transition-all ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-gray-400'}`}><X className="w-8 h-8" /></button>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                            {teams.map(team => {
+                                                const teamPlayers = players.filter(p => p.soldTo === team.name);
+                                                const spent = teamPlayers.reduce((acc, p) => acc + (p.soldPrice || 0), 0);
+                                                return (
+                                                    <div key={team.id} className={`rounded-3xl border transition-all ${isDark ? 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700' : 'bg-white border-gray-100 shadow-sm hover:shadow-md'}`}>
+                                                        <div className={`p-6 border-b flex items-center gap-4 ${isDark ? 'border-zinc-800' : 'border-gray-50'}`}>
+                                                            {team.logoUrl ? (
+                                                                <img src={team.logoUrl} className="w-12 h-12 object-contain bg-white rounded-xl p-1 border border-gray-100" />
+                                                            ) : (
+                                                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black text-xl">{team.name[0].toUpperCase()}</div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className={`text-sm font-black uppercase truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{team.name}</h4>
+                                                                <div className="flex items-center justify-between mt-1">
+                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Players: {teamPlayers.length}</p>
+                                                                    <p className="text-xs font-black text-blue-500 uppercase tracking-tight">Spent: {spent.toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 space-y-2">
+                                                            {teamPlayers.length === 0 ? (
+                                                                <div className="py-8 text-center opacity-30">
+                                                                    <Users className="w-8 h-8 mx-auto mb-2" />
+                                                                    <span className="text-[9px] font-black uppercase tracking-widest">No players acquired</span>
+                                                                </div>
+                                                            ) : (
+                                                                teamPlayers.map(p => (
+                                                                    <div key={p.id} className={`flex items-center justify-between p-2 rounded-xl text-[10px] ${isDark ? 'bg-zinc-950/30 hover:bg-zinc-950/60' : 'bg-gray-50/50 hover:bg-gray-50 transition-colors'}`}>
+                                                                        <div className="min-w-0">
+                                                                            <p className={`font-black uppercase truncate ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{p.name}</p>
+                                                                            <p className="text-[8px] font-bold text-gray-400 flex items-center gap-1 uppercase tracking-tighter">
+                                                                                <Tag className="w-2 h-2" /> {p.category} • {p.role}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-right ml-2 shrink-0">
+                                                                            <p className="font-black text-blue-600">₹{p.soldPrice?.toLocaleString()}</p>
+                                                                            {p.isTraded && <span className="text-[7px] font-black bg-amber-100 text-amber-700 px-1 rounded uppercase">Traded</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className={`p-8 border-t flex justify-end gap-4 ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gray-50/50 order-gray-50'}`}>
+                                        <button onClick={() => setViewSummary(false)} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white border text-gray-400 hover:bg-gray-50'}`}>Close Preview</button>
+                                        <button onClick={() => handleExportExcel('MASTER')} className="btn-golden px-10 py-3 rounded-2xl flex items-center gap-2">
+                                            <FileSpreadsheet className="w-4 h-4" /> Download Complete Summary
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

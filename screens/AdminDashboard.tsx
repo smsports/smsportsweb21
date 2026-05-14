@@ -283,8 +283,8 @@ const AdminDashboard: React.FC = () => {
 
   const renderAuctions = () => {
     const filteredAuctions = auctions.filter(a => {
-        const matchesSearch = a.title.toLowerCase().includes(auctionSearchQuery.toLowerCase()) || 
-                             a.sport?.toLowerCase().includes(auctionSearchQuery.toLowerCase());
+        const matchesSearch = (a.title || '').toLowerCase().includes(auctionSearchQuery.toLowerCase()) || 
+                             (a.sport || '').toLowerCase().includes(auctionSearchQuery.toLowerCase());
         const matchesStatus = auctionStatusFilter === 'ALL' || 
                              (auctionStatusFilter === 'PAID' && a.isPaid) || 
                              (auctionStatusFilter === 'FREE' && !a.isPaid);
