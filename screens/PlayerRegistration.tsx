@@ -75,19 +75,17 @@ const compressImage = async (file: File): Promise<string> => {
 };
 
 const WarriorInput = ({ label, value, onChange, type = "text", required = false, placeholder = "", options = [], theme = "ADVAYA" }: any) => {
-    const isNavyGolden = theme === 'NAVY_GOLDEN';
-    const isClassicNeon = theme === 'CLASSIC_NEON';
+    const isNavyGolden = theme?.toUpperCase() === 'NAVY_GOLDEN';
+    const isClassicNeon = theme?.toUpperCase() === 'CLASSIC_NEON';
     
     const baseClasses = isClassicNeon
         ? "w-full bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.15)] peer"
         : isNavyGolden 
-        ? "bg-[#001f3f]/60 border-2 border-[#ffd700]/30 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#ffd700] focus:shadow-[0_0_15px_rgba(255,215,0,0.2)] peer"
+        ? "w-full bg-[#070B0A] border-2 border-[#A6FF00]/20 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_15px_rgba(166,255,0,0.2)] peer"
         : "w-full bg-black/40 border-2 border-amber-900/30 rounded-2xl px-6 py-4 pt-10 font-bold text-amber-100 outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_15px_rgba(251,191,36,0.2)] peer";
 
-    const labelClasses = isClassicNeon
-        ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#A6FF00]/40 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
-        : isNavyGolden
-        ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#ffd700]/50 transition-all peer-focus:text-[#ffd700] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
+    const labelClasses = isClassicNeon || isNavyGolden
+        ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#A6FF00]/50 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
         : "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-amber-500/50 transition-all peer-focus:text-amber-500 pointer-events-none select-none max-w-[calc(100%-3rem)] truncate";
 
     return (
@@ -104,27 +102,21 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
             ) : type === 'select' ? (
                 <div className="pt-10 pb-2">
                     <div className="flex flex-wrap gap-2">
-                        {options.map((opt: string) => (
+                        {options.map((opt: string, idx: number) => (
                             <button
-                                key={opt}
+                                key={`input-opt-${opt}-${idx}`}
                                 type="button"
                                 onClick={() => onChange({ target: { value: opt } })}
-                                className={isClassicNeon
+                                 className={isClassicNeon || isNavyGolden
                                     ? `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
                                         value === opt 
                                         ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
                                         : 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
                                     }`
-                                    : isNavyGolden 
-                                    ? `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                        value === opt 
-                                        ? 'bg-[#ff851b] border-[#ff851b] text-white shadow-lg shadow-[#ff851b]/20' 
-                                        : 'bg-[#001f3f]/40 border-[#ffd700]/30 text-[#ffd700]/50 hover:border-[#ffd700]/50'
-                                    }`
                                     : `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
                                         value === opt 
-                                        ? (isClassicNeon ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20') 
-                                        : (isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/40 hover:border-[#A6FF00]/60' : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50')
+                                        ? 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20' 
+                                        : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
                                     }`
                                 }
                             >
@@ -158,17 +150,15 @@ const WarriorCard = ({ children, title, icon: Icon, className = "", theme = "ADV
         <div className={isClassicNeon
             ? `bg-[#0F1413] border-2 border-[#A6FF00]/5 rounded-[2rem] p-8 relative overflow-hidden group shadow-2xl ${className}`
             : isNavyGolden 
-            ? `bg-[#001f3f]/60 border-2 border-[#ffd700]/20 rounded-[2.5rem] p-8 relative overflow-hidden group ${className}`
+            ? `bg-[#070B0A] border-2 border-[#A6FF00]/20 rounded-[2.5rem] p-8 relative overflow-hidden group ${className}`
             : `bg-black/60 border-2 border-amber-900/20 rounded-[2.5rem] p-8 relative overflow-hidden group ${className}`
         }>
             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                 <Icon className="w-24 h-24" />
             </div>
-            <h3 className={isClassicNeon
-                ? "text-[11px] font-black text-[#A6FF00] uppercase tracking-[0.4em] mb-8 flex items-center gap-3 drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]"
-                : isNavyGolden 
-                ? "text-[11px] font-black text-[#ffd700] uppercase tracking-[0.3em] mb-8 flex items-center gap-3"
-                : "text-[11px] font-black text-amber-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-3"
+            <h3 className={isClassicNeon || isNavyGolden
+                ? "text-[11px] font-black text-[#A6FF00] uppercase tracking-[0.4em] mb-8 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(166,255,0,0.3)]"
+                : `text-[11px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-[0.3em] mb-8 flex items-center gap-3`
             }>
                 <Icon className="w-4 h-4" /> {title}
             </h3>
@@ -179,7 +169,7 @@ const WarriorCard = ({ children, title, icon: Icon, className = "", theme = "ADV
     );
 };
 
-const JerseyPreview = ({ name, number, auctionLogo, theme, viewMode = 'back' }: { name: string, number: string, auctionLogo?: string, theme?: string, viewMode?: 'front' | 'back' }) => {
+const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'back' }: { name: string, number: string, auctionLogo?: string, theme?: string, season?: any, viewMode?: 'front' | 'back' }) => {
     const isNavyGolden = theme === 'NAVY_GOLDEN';
     const isClassicNeon = theme === 'CLASSIC_NEON';
     
@@ -196,7 +186,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, viewMode = 'back' }: 
                         isClassicNeon 
                         ? 'border-[#A6FF00]/40 shadow-[#A6FF00]/10 bg-[#070B0A]' 
                         : isNavyGolden 
-                        ? 'border-[#ffd700]/30 shadow-[#ffd700]/20 bg-[#001f3f]' 
+                        ? 'border-[#A6FF00]/30 shadow-[#A6FF00]/20 bg-[#121212]' 
                         : 'border-amber-500/30 shadow-amber-500/20 bg-amber-950'
                     }`}
                 >
@@ -228,7 +218,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, viewMode = 'back' }: 
                                 animate={{ scale: 1, opacity: 1 }}
                                 className={`text-[9rem] md:text-[10rem] font-black leading-none tracking-tighter ${
                                     isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_40px_rgba(166,255,0,0.5)]' :
-                                    isNavyGolden ? 'text-[#ffd700]' : 'golden-text'
+                                    isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_30px_rgba(166,255,0,0.3)]' : 'golden-text'
                                 } font-sans italic`}
                             >
                                 {number || "00"}
@@ -262,14 +252,14 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, viewMode = 'back' }: 
                                 </div>
                                 <div className="absolute inset-0 flex items-center justify-center text-center">
                                     <h4 className="text-4xl font-black text-white italic tracking-tighter drop-shadow-2xl uppercase">
-                                        {auction?.season || "SEASON 1"}
+                                        {season ? `SEASON ${season.toString().replace(/[^0-9]/g, '') || season}` : ""}
                                     </h4>
                                 </div>
                             </div>
 
                             <div className="mt-auto mb-10 text-center px-8">
                                 <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1">
-                                    {isClassicNeon ? 'UNLEASH THE POWER' : 'UNLEASH THE WARRIOR'}
+                                    {isClassicNeon ? 'UNLEASH THE POWER' : 'REGISTRATION OPEN'}
                                 </p>
                                 <div className="w-12 h-0.5 bg-[#A6FF00] mx-auto" />
                             </div>
@@ -356,9 +346,38 @@ const PlayerRegistration: React.FC = () => {
     const profileInputRef = useRef<HTMLInputElement>(null);
     const paymentInputRef = useRef<HTMLInputElement>(null);
 
-    const isAdvaya = config?.theme === 'ADVAYA';
-    const isNavyGolden = config?.theme === 'NAVY_GOLDEN';
-    const isClassicNeon = config?.theme === 'CLASSIC_NEON';
+    const isAdvaya = config?.theme?.toUpperCase() === 'ADVAYA';
+    const isNavyGolden = config?.theme?.toUpperCase() === 'NAVY_GOLDEN';
+    const isClassicNeon = config?.theme?.toUpperCase() === 'CLASSIC_NEON';
+
+    useEffect(() => {
+        if (config) {
+            // Priority 1: Poster takes precedence if provided
+            if (config.welcomePosterUrl) {
+                setShowPoster(true);
+                setShowBattleEntrance(false);
+                setBattleStarted(false);
+            } 
+            // Priority 2: Classic Neon - Remove its theme-specific welcome page per user request
+            else if (isClassicNeon) {
+                setShowPoster(false);
+                setShowBattleEntrance(false);
+                setBattleStarted(true);
+            }
+            // Priority 3: Default behavior for other themes
+            else if (isAdvaya || isNavyGolden) {
+                setShowPoster(false);
+                setShowBattleEntrance(true);
+                setBattleStarted(false);
+            }
+            else {
+                // Non-themed or default
+                setShowPoster(false);
+                setShowBattleEntrance(false);
+                setBattleStarted(true);
+            }
+        }
+    }, [config, isClassicNeon, isAdvaya, isNavyGolden]);
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -635,7 +654,7 @@ const PlayerRegistration: React.FC = () => {
                 contact: formData.mobile,
                 email: ''
             },
-            theme: { color: isClassicNeon ? "#A6FF00" : isNavyGolden ? "#ffd700" : "#fbbf24" },
+            theme: { color: (isClassicNeon || isNavyGolden) ? "#A6FF00" : "#fbbf24" },
             modal: { ondismiss: () => setSubmitting(false) }
         };
         const rzp = new (window as any).Razorpay(options);
@@ -708,9 +727,9 @@ const PlayerRegistration: React.FC = () => {
             }
         }
 
-        // Battle Oath
+        // Tournament Terms
         if (!formData.battleOath) {
-            missingFields.push("Battle Oath Acceptance");
+            missingFields.push("Tournament Terms Acceptance");
         }
 
         if (missingFields.length > 0) {
@@ -845,7 +864,7 @@ const PlayerRegistration: React.FC = () => {
                         {isClassicNeon ? 'VALIDATION COMPLETE!' : isAdvaya ? 'Battle Enrolled!' : 'Registration Successful!'}
                     </h2>
                     <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-8 ${isClassicNeon ? 'text-[#A6FF00]/50' : isAdvaya ? 'text-amber-500/50' : 'text-gray-400'}`}>
-                        {isClassicNeon ? 'Elite Roster Access Confirmed' : isAdvaya ? 'Warrior Registry Confirmed' : 'Your spot is reserved'}
+                        {isClassicNeon ? 'Elite Roster Access Confirmed' : 'Registration Confirmed'}
                     </p>
                     
                     <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -872,19 +891,19 @@ const PlayerRegistration: React.FC = () => {
 
                     <div className="space-y-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                            {isAdvaya && !isClassicNeon && !isNavyGolden ? 'Your Warrior ID' : 'Your Player ID'}: <span className={isAdvaya && !isClassicNeon && !isNavyGolden ? 'text-amber-200' : isClassicNeon ? 'text-[#A6FF00]' : 'text-gray-900'}>{playerID || 'WAR-7782'}</span>
+                            Your Player ID: <span className={isAdvaya && !isClassicNeon && !isNavyGolden ? 'text-amber-200' : isClassicNeon ? 'text-[#A6FF00]' : 'text-gray-900'}>{playerID || 'PID-7782'}</span>
                         </p>
                         
                         {(config?.organizerContacts || []).length > 0 && (
                             <div className="space-y-2">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Organizer Contacts</p>
-                                {(config?.organizerContacts || []).map((contact, idx) => (
-                                    <div key={idx} className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${isAdvaya ? 'bg-amber-500/5 border-amber-500/10 text-amber-500/70' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                                 {(config?.organizerContacts || []).map((contact, idx) => (
+                                    <div key={`contact-idx-${idx}`} className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${isAdvaya ? 'bg-amber-500/5 border-amber-500/10 text-amber-500/70' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                         <div className="flex items-center gap-3">
                                             <Phone className="w-4 h-4" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{contact.name}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-inherit">{contact.name}</span>
                                         </div>
-                                        <span className="text-[10px] font-black tracking-widest">{contact.phone}</span>
+                                        <span className="text-[10px] font-black tracking-widest text-inherit">{contact.phone}</span>
                                     </div>
                                 ))}
                             </div>
@@ -921,11 +940,11 @@ const PlayerRegistration: React.FC = () => {
     const steps = [
         { id: 'details', label: isClassicNeon ? 'OVERVIEW' : isAdvaya ? 'Battle Intel' : 'Tournament Info' },
         { id: 'personal', label: isClassicNeon ? 'PROFILE' : isAdvaya ? 'Personal Info' : 'Player Info' },
-        { id: 'role', label: isClassicNeon ? 'PLAYING ROLE' : isAdvaya ? 'Role Selection' : 'Skill Selection' },
-        ...(config?.customFields && config.customFields.length > 0 ? [{ id: 'custom', label: isClassicNeon ? 'ATTRIBUTES' : isAdvaya ? 'Attributes' : 'Details' }] : []),
-        ...(config?.jerseyDetailsEnabled ? [{ id: 'jersey', label: isClassicNeon ? 'KIT CUSTOM' : 'Jersey Details' }] : []),
-        ...(config?.includePayment && config.paymentMethod === 'MANUAL' ? [{ id: 'payment', label: isClassicNeon ? 'VERIFICATION' : isAdvaya ? 'Payment' : 'Verification' }] : []),
-        { id: 'rules', label: isClassicNeon ? 'OATH' : isAdvaya ? 'Rules' : 'Terms' }
+        { id: 'role', label: isClassicNeon ? 'ROLE' : isAdvaya ? 'Role Selection' : 'Skill Selection' },
+        ...(config?.customFields && config.customFields.length > 0 ? [{ id: 'custom', label: isClassicNeon ? 'DETAILS' : isAdvaya ? 'Attributes' : 'Details' }] : []),
+        ...(config?.jerseyDetailsEnabled ? [{ id: 'jersey', label: isClassicNeon ? 'KIT' : 'Jersey Details' }] : []),
+        ...(config?.includePayment && config.paymentMethod === 'MANUAL' ? [{ id: 'payment', label: isClassicNeon ? 'PAYMENT' : isAdvaya ? 'Payment' : 'Verification' }] : []),
+        { id: 'rules', label: isClassicNeon ? 'TERMS' : isAdvaya ? 'Rules' : 'Terms' }
     ];
 
     const currentStepId = steps[currentStep]?.id;
@@ -948,10 +967,10 @@ const PlayerRegistration: React.FC = () => {
                 className={`${isClassicNeon ? 'bg-[#0F1413] shadow-lg shadow-black/40' : isNavyGolden ? 'bg-[#001f3f]/60' : 'bg-black/60'} border-2 ${isClassicNeon ? 'border-[#A6FF00]/10 hover:border-[#A6FF00]/40' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2rem] p-6 text-center relative overflow-hidden group transition-all duration-300`}
             >
                 <div className="relative z-10">
-                    <div className={`w-14 h-14 ${isClassicNeon ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-transform duration-500 group-hover:scale-110`}>
-                        <Icon className={`w-7 h-7 ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_8px_rgba(166,255,0,0.5)]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}`} />
+                    <div className={`w-14 h-14 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-transform duration-500 group-hover:scale-110`}>
+                        <Icon className={`w-7 h-7 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_8px_rgba(166,255,0,0.5)]' : 'text-amber-500'}`} />
                     </div>
-                    <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : 'text-slate-500'}`}>{title}</h4>
+                    <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-slate-500'}`}>{title}</h4>
                     <p className={`text-xl font-bold uppercase tracking-tight italic mb-1 ${isClassicNeon ? 'text-white' : 'text-amber-50'}`}>{value}</p>
                     <p className={`text-[8px] font-bold text-slate-500 uppercase tracking-widest ${isClassicNeon ? 'opacity-60' : ''}`}>{description}</p>
                 </div>
@@ -961,12 +980,12 @@ const PlayerRegistration: React.FC = () => {
     };
 
     if (isAdvaya || isNavyGolden || isClassicNeon) {
-        if (!battleStarted && !config?.hideLandingPage) {
+        if (!battleStarted && !config?.hideLandingPage && !isClassicNeon) {
             return (
-                <div className={`min-h-screen ${isClassicNeon ? 'bg-[#070B0A]' : isNavyGolden ? 'bg-[#000a1a]' : 'bg-[#0a0a0a]'} text-amber-50 font-sans overflow-hidden relative particle-bg`}>
+                <div className={`min-h-screen ${isClassicNeon ? 'bg-[#070B0A]' : isNavyGolden ? 'bg-[#000a1a]' : 'bg-[#0a0a0a]'} ${isClassicNeon ? 'text-white' : 'text-amber-50'} font-sans overflow-hidden relative particle-bg`}>
                     {/* Glowing Borders */}
-                    <div className={`fixed inset-0 border-[12px] ${isClassicNeon ? 'border-[#A6FF00]/5' : isNavyGolden ? 'border-[#ffd700]/10' : 'border-amber-500/10'} pointer-events-none z-50`} />
-                    <div className={`fixed inset-0 border-[1px] ${isClassicNeon ? 'border-[#A6FF00]/10' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-500/20'} pointer-events-none z-50 m-2`} />
+                    <div className={`fixed inset-0 border-[12px] ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/10' : 'border-amber-500/10'} pointer-events-none z-50`} />
+                    <div className={`fixed inset-0 border-[1px] ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-500/20'} pointer-events-none z-50 m-2`} />
                     
                     {/* Stadium Floodlights for Classic Neon */}
                     {isClassicNeon && (
@@ -981,7 +1000,7 @@ const PlayerRegistration: React.FC = () => {
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
                         {[...Array(30)].map((_, i) => (
                             <motion.div
-                                key={i}
+                                key={`landing-particle-${i}`}
                                 initial={{ opacity: 0, scale: 0 }}
                                 animate={{ 
                                     opacity: [0, 0.4, 0],
@@ -994,7 +1013,7 @@ const PlayerRegistration: React.FC = () => {
                                     repeat: Infinity,
                                     ease: "linear"
                                 }}
-                                className={`absolute w-1 h-1 ${isClassicNeon ? 'bg-[#A6FF00]' : isNavyGolden ? 'bg-[#39ff14]' : 'bg-amber-400'} rounded-full blur-[1px]`}
+                                className={`absolute w-1 h-1 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-amber-400'} rounded-full blur-[1px]`}
                             />
                         ))}
                     </div>
@@ -1008,15 +1027,42 @@ const PlayerRegistration: React.FC = () => {
                                 exit={{ opacity: 0, scale: 1.1 }}
                                 className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6"
                             >
-                                <div className={`relative z-20 max-w-2xl w-full bg-black border-4 ${isClassicNeon ? 'border-[#A6FF00]/30 shadow-[0_0_50px_rgba(166,255,0,0.1)]' : isNavyGolden ? 'border-[#ffd700]/30 shadow-[0_0_50px_rgba(255,215,0,0.2)]' : 'border-amber-500/30 shadow-[0_0_50px_rgba(251,191,36,0.2)]'} rounded-[3rem] overflow-hidden`}>
+                                <div className={`relative z-20 max-w-2xl w-full bg-black border-4 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/40 shadow-[0_0_50px_rgba(166,255,0,0.2)]' : 'border-amber-500/30 shadow-[0_0_50px_rgba(251,191,36,0.2)]'} rounded-[3rem] overflow-hidden`}>
                                     <div className="w-full overflow-y-auto max-h-[90vh] custom-scrollbar">
                                         <img src={config?.bannerUrl} className="w-full h-auto block" />
-                                        <div className={`p-8 bg-black/95 border-t ${isClassicNeon ? 'border-[#A6FF00]/20' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-500/20'} text-center`}>
+                                        
+                                        {/* Showcase Gallery after Banner/Poster */}
+                                        {config?.showcaseImages && config.showcaseImages.length > 0 && (
+                                            <div className="p-8 space-y-8 bg-black/40">
+                                                <h3 className={`text-xl font-black italic uppercase tracking-tighter text-center ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`}>TOURNAMENT HIGHLIGHTS</h3>
+                                                <div className="grid grid-cols-1 gap-8">
+                                                    {config.showcaseImages.map((showcase, sidx) => (
+                                                        <motion.div 
+                                                            key={`showcase-gallery-${sidx}`}
+                                                            initial={{ opacity: 0, y: 30 }}
+                                                            whileInView={{ opacity: 1, y: 0 }}
+                                                            className={`relative rounded-3xl overflow-hidden border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'} bg-black/60 group`}
+                                                        >
+                                                            <div className="aspect-video w-full overflow-hidden">
+                                                                <img src={showcase.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                                                            </div>
+                                                            {showcase.caption && (
+                                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+                                                                    <p className="text-white text-sm font-black uppercase italic tracking-wider leading-tight">{showcase.caption}</p>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className={`p-8 bg-black/95 border-t ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/30' : 'border-amber-500/20'} text-center`}>
                                             <button 
                                                 onClick={() => setShowPoster(false)}
-                                                className={`${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black shadow-[0_0_30px_rgba(166,255,0,0.4)]' : isNavyGolden ? 'bg-[#ff851b] hover:bg-[#ffa04d] text-white shadow-[0_0_30px_rgba(255,133,27,0.4)]' : 'bg-amber-600 hover:bg-amber-500 text-black shadow-[0_0_30px_rgba(251,191,36,0.4)]'} font-black px-12 py-5 rounded-full text-lg uppercase tracking-widest transition-all shadow-2xl flex items-center gap-4 mx-auto active:scale-95`}
+                                                className={`${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black shadow-[0_0_30px_rgba(166,255,0,0.4)]' : 'bg-amber-600 hover:bg-amber-500 text-black shadow-[0_0_30px_rgba(251,191,36,0.4)]'} font-black px-12 py-5 rounded-full text-lg uppercase tracking-widest transition-all shadow-2xl flex items-center gap-4 mx-auto active:scale-95`}
                                             >
-                                                NEXT
+                                                REGISTER NOW
                                             </button>
                                         </div>
                                     </div>
@@ -1052,7 +1098,7 @@ const PlayerRegistration: React.FC = () => {
                                             />
                                             <div className="absolute inset-0 flex flex-col justify-center pointer-events-none">
                                                 <h3 className="text-4xl md:text-8xl font-black text-white italic pl-4 md:pl-12 text-left leading-none uppercase">
-                                                    {auction?.season ? `CPL SEASON ${auction.season}` : 'CPL SEASON 8'}
+                                                    {auction?.season && `SEASON ${auction.season}`}
                                                 </h3>
                                                 <div className="text-right pr-4 md:pr-12 space-y-2 mt-4">
                                                     <h1 className="text-5xl md:text-9xl font-black text-[#A6FF00] italic leading-none drop-shadow-[0_0_30px_rgba(166,255,0,0.5)] uppercase">PLAY FOR GLORY</h1>
@@ -1085,10 +1131,10 @@ const PlayerRegistration: React.FC = () => {
                                                 transition={{ duration: 1 }}
                                                 className="relative mb-4 z-20"
                                             >
-                                                <div className={`absolute inset-0 ${isClassicNeon ? 'bg-[#A6FF00]' : isNavyGolden ? 'bg-[#ffd700]' : 'bg-amber-500'} rounded-full blur-[60px] opacity-20 animate-pulse`}></div>
+                                                <div className={`absolute inset-0 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-amber-500'} rounded-full blur-[60px] opacity-20 animate-pulse`}></div>
                                                 <img 
                                                     src={config.logoUrl} 
-                                                    className="w-32 h-32 md:w-48 md:h-48 mx-auto object-contain drop-shadow-[0_0_20px_rgba(251,191,36,0.5)]" 
+                                                    className={`w-32 h-32 md:w-48 md:h-48 mx-auto object-contain ${isClassicNeon || isNavyGolden ? 'drop-shadow-[0_0_20px_rgba(166,255,0,0.5)]' : 'drop-shadow-[0_0_20px_rgba(251,191,36,0.5)]'}`} 
                                                     referrerPolicy="no-referrer"
                                                 />
                                             </motion.div>
@@ -1099,7 +1145,7 @@ const PlayerRegistration: React.FC = () => {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             transition={{ delay: 0.5 }}
-                                            className={`${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} font-cinzel font-black text-sm md:text-2xl uppercase tracking-[0.6em] mb-12 drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]`}
+                                            className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'golden-text'} font-cinzel font-black text-sm md:text-2xl uppercase tracking-[0.6em] mb-12 drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]`}
                                         >
                                             THE STAGE OF CRICKET DREAMS
                                         </motion.p>
@@ -1108,31 +1154,31 @@ const PlayerRegistration: React.FC = () => {
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ delay: 0.8, duration: 1 }}
-                                            className={`cinematic-frame border-beam-container max-w-4xl w-full p-1 md:p-2 mb-12 group ${isClassicNeon ? 'shadow-[0_0_60px_rgba(166,255,0,0.2)] border-[#A6FF00]/30' : isNavyGolden ? 'shadow-[0_0_60px_rgba(255,215,0,0.3)] border-[#ffd700]/30' : 'shadow-[0_0_60px_rgba(251,191,36,0.3)] border-amber-500/30'}`}
+                                            className={`cinematic-frame border-beam-container max-w-4xl w-full p-1 md:p-2 mb-12 group ${isClassicNeon || isNavyGolden ? 'shadow-[0_0_60px_rgba(166,255,0,0.2)] border-[#A6FF00]/30' : 'shadow-[0_0_60px_rgba(251,191,36,0.3)] border-amber-500/30'}`}
                                         >
-                                            <div className={`${isClassicNeon ? 'bg-[#070B0A]/95' : isNavyGolden ? 'bg-[#001f3f]/95' : 'bg-black/95'} rounded-[2.8rem] p-4 md:p-8 relative overflow-hidden text-white`}>
+                                            <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#070B0A]/95' : 'bg-black/95'} rounded-[2.8rem] p-4 md:p-8 relative overflow-hidden text-white`}>
                                                 {/* Stadium Lights Effect */}
-                                                <div className={`absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,${isClassicNeon ? 'rgba(166,255,0,0.15)' : isNavyGolden ? 'rgba(255,215,0,0.15)' : 'rgba(251,191,36,0.15)'}_0%,transparent_60%)]`} />
-                                                <div className={`absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_bottom_right,${isClassicNeon ? 'rgba(166,255,0,0.15)' : isNavyGolden ? 'rgba(255,215,0,0.15)' : 'rgba(251,191,36,0.15)'}_0%,transparent_60%)]`} />
+                                                <div className={`absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,${isClassicNeon || isNavyGolden ? 'rgba(166,255,0,0.15)' : 'rgba(251,191,36,0.15)'}_0%,transparent_60%)]`} />
+                                                <div className={`absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_bottom_right,${isClassicNeon || isNavyGolden ? 'rgba(166,255,0,0.15)' : 'rgba(251,191,36,0.15)'}_0%,transparent_60%)]`} />
                                                 
                                                 <div className="relative z-10 space-y-6">
                                                     <div className="space-y-2">
-                                                        <h2 className={`text-4xl md:text-8xl font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_20px_rgba(166,255,0,0.5)]' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]`}>
+                                                        <h2 className={`text-4xl md:text-8xl font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_20px_rgba(166,255,0,0.5)]' : 'golden-text'} tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]`}>
                                                             {auction?.title || "BBL 2026"}
                                                         </h2>
                                                         {auction?.fullTournamentName && (
-                                                            <p className={`text-sm md:text-2xl font-cinzel font-bold ${isClassicNeon ? 'text-[#A6FF00]/80' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} tracking-[0.3em] opacity-80`}>
+                                                            <p className={`text-sm md:text-2xl font-cinzel font-bold ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/80' : 'golden-text'} tracking-[0.3em] opacity-80`}>
                                                                 {auction.fullTournamentName}
                                                             </p>
                                                         )}
                                                     </div>
                                                     
                                                     <div className="flex flex-col items-center pt-4">
-                                                        <p className={`text-xs md:text-xl font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00]/70' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} uppercase tracking-[0.5em] mb-4 opacity-70`}>
+                                                        <p className={`text-xs md:text-xl font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'golden-text'} uppercase tracking-[0.5em] mb-4 opacity-70`}>
                                                             GET READY FOR
                                                         </p>
                                                         <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8">
-                                                            <span className={`text-4xl md:text-8xl font-cinzel font-black ${isClassicNeon ? 'text-white' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} tracking-tighter`}>
+                                                            <span className={`text-4xl md:text-8xl font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'golden-text'} tracking-tighter`}>
                                                                 SEASON
                                                             </span>
                                                             <motion.span 
@@ -1146,9 +1192,9 @@ const PlayerRegistration: React.FC = () => {
                                                                     repeat: Infinity, 
                                                                     ease: "easeInOut" 
                                                                 }}
-                                                                className={`text-8xl md:text-[12rem] font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_50px_rgba(166,255,0,0.6)]' : isNavyGolden ? 'text-[#ffd700] drop-shadow-[0_10px_50px_rgba(255,215,0,0.9)]' : 'golden-text drop-shadow-[0_10px_50px_rgba(251,191,36,0.9)]'} leading-none shine-effect inline-block`}
+                                                                className={`text-8xl md:text-[12rem] font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_50px_rgba(166,255,0,0.6)]' : isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_10px_50px_rgba(166,255,0,0.4)]' : 'golden-text drop-shadow-[0_10px_50px_rgba(251,191,36,0.9)]'} leading-none shine-effect inline-block`}
                                                             >
-                                                                {auction?.season || "4"}
+                                                                {auction?.season || ""}
                                                             </motion.span>
                                                         </div>
                                                     </div>
@@ -1163,28 +1209,28 @@ const PlayerRegistration: React.FC = () => {
                                             transition={{ delay: 1.2 }}
                                             className="space-y-6 mb-12"
                                         >
-                                            <h1 className={`text-6xl md:text-[10rem] font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_30px_rgba(166,255,0,0.4)]' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} uppercase tracking-tight drop-shadow-[0_10px_30px_rgba(251,191,36,0.5)]`}>
+                                            <h1 className={`text-6xl md:text-[10rem] font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_30px_rgba(166,255,0,0.4)]' : 'golden-text'} uppercase tracking-tight`}>
                                                 Welcome
                                             </h1>
                                             
                                             <div className="flex items-center justify-center gap-4 md:gap-8">
-                                                <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-r from-transparent ${isClassicNeon ? 'via-[#A6FF00]/50 to-[#A6FF00]' : isNavyGolden ? 'via-[#ffd700]/50 to-[#ffd700]' : 'via-amber-500/50 to-amber-500'}`} />
-                                                <p className={`text-[10px] md:text-2xl font-cinzel font-black ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'golden-text'} uppercase tracking-[0.4em] whitespace-nowrap drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]`}>
+                                                <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-r from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/50 to-[#A6FF00]' : 'via-amber-500/50 to-amber-500'}`} />
+                                                <p className={`text-[10px] md:text-2xl font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-100'} uppercase tracking-[0.4em] whitespace-nowrap`}>
                                                     JOIN THE BATTLE, CREATE YOUR LEGACY
                                                 </p>
-                                                <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-l from-transparent ${isClassicNeon ? 'via-[#A6FF00]/50 to-[#A6FF00]' : isNavyGolden ? 'via-[#ffd700]/50 to-[#ffd700]' : 'via-amber-500/50 to-amber-500'}`} />
+                                                <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-l from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/50 to-[#A6FF00]' : 'via-amber-500/50 to-amber-500'}`} />
                                             </div>
                                         </motion.div>
                                          {/* Enter Button */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.05, boxShadow: isClassicNeon ? "0 0 100px rgba(166,255,0,1)" : isNavyGolden ? "0 0 100px rgba(255,215,0,1)" : "0 0 100px rgba(251,191,36,1)" }}
+                                         <motion.button
+                                            whileHover={{ scale: 1.05, boxShadow: (isClassicNeon || isNavyGolden) ? "0 0 100px rgba(166,255,0,1)" : "0 0 100px rgba(251,191,36,1)" }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setBattleStarted(true)}
-                                            className={`relative group overflow-hidden ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : isNavyGolden ? 'bg-[#ff851b] hover:bg-[#ffa04d] text-white' : 'bg-amber-400 hover:bg-amber-300 text-white'} font-cinzel font-black px-8 py-4 md:px-20 md:py-6 rounded-full text-lg md:text-2xl uppercase tracking-[0.2em] transition-all shadow-[0_0_60px_rgba(251,191,36,0.8)] flex items-center justify-center gap-4 md:gap-10 mx-auto w-full max-w-[340px] md:max-w-none md:w-auto border-4 ${isClassicNeon ? 'border-[#A6FF00]/50' : isNavyGolden ? 'border-[#ffd700]/50' : 'border-amber-200/50'}`}
+                                            className={`relative group overflow-hidden ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black shadow-[0_0_60px_rgba(166,255,0,0.6)]' : 'bg-amber-400 hover:bg-amber-300 text-white shadow-[0_0_60px_rgba(251,191,36,0.8)]'} font-cinzel font-black px-8 py-4 md:px-20 md:py-6 rounded-full text-lg md:text-2xl uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 md:gap-10 mx-auto w-full max-w-[340px] md:max-w-none md:w-auto border-4 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/50' : 'border-amber-200/50'}`}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                            {isClassicNeon ? <Zap className="w-8 h-8 md:w-10 md:h-10" /> : <Sword className="w-8 h-8 md:w-10 md:h-10" />} 
-                                            {isClassicNeon ? 'START THE JOURNEY' : 'JOIN THE BATTLE'}
+                                            {(isClassicNeon || isNavyGolden) ? <Zap className="w-8 h-8 md:w-10 md:h-10" /> : <Sword className="w-8 h-8 md:w-10 md:h-10" />} 
+                                            {(isClassicNeon || isNavyGolden) ? 'START THE JOURNEY' : 'JOIN THE BATTLE'}
                                         </motion.button>
                                     </>
                                 )}
@@ -1196,13 +1242,13 @@ const PlayerRegistration: React.FC = () => {
         }
 
         return (
-            <div className={`min-h-screen ${isClassicNeon ? 'bg-[#070B0A]' : isNavyGolden ? 'bg-[#000a1a]' : 'bg-[#0a0a0a]'} text-amber-50 font-sans py-6 md:py-12 px-4 relative overflow-x-hidden`}>
+            <div className={`min-h-screen ${isClassicNeon ? 'bg-[#070B0A]' : isNavyGolden ? 'bg-[#000a08]' : 'bg-[#0a0a0a]'} ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-50'} font-sans py-6 md:py-12 px-4 relative overflow-x-hidden`}>
                 {/* Background Effects */}
-                <div className={`fixed inset-0 bg-[radial-gradient(circle_at_top_right,${isClassicNeon ? 'rgba(166,255,0,0.05)' : isNavyGolden ? 'rgba(255,215,0,0.05)' : 'rgba(251,191,36,0.05)'}_0%,transparent_50%)] pointer-events-none`} />
-                <div className={`fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,${isClassicNeon ? 'rgba(166,255,0,0.05)' : isNavyGolden ? 'rgba(255,215,0,0.05)' : 'rgba(251,191,36,0.05)'}_0%,transparent_50%)] pointer-events-none`} />
+                <div className={`fixed inset-0 bg-[radial-gradient(circle_at_top_right,${isClassicNeon || isNavyGolden ? 'rgba(166,255,0,0.1)' : 'rgba(251,191,36,0.05)'}_0%,transparent_50%)] pointer-events-none`} />
+                <div className={`fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,${isClassicNeon || isNavyGolden ? 'rgba(166,255,0,0.1)' : 'rgba(251,191,36,0.05)'}_0%,transparent_50%)] pointer-events-none`} />
                 
-                {/* Stadium atmosphere for Classic Neon */}
-                {isClassicNeon && (
+                {/* Stadium atmosphere for Classic Neon & Navy Golden */}
+                {(isClassicNeon || isNavyGolden) && (
                     <>
                         <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#A6FF00]/5 blur-[120px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
                         <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-[#A6FF00]/5 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2 pointer-events-none" />
@@ -1219,15 +1265,15 @@ const PlayerRegistration: React.FC = () => {
                         >
                             <button 
                                 onClick={() => navigate('/')}
-                                className={`p-3 rounded-2xl bg-white/5 border border-white/10 ${isClassicNeon ? 'text-[#A6FF00] hover:border-[#A6FF00]/50' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'} hover:bg-white/10 transition-all active:scale-90`}
+                                className={`p-3 rounded-2xl bg-white/5 border border-white/10 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] hover:border-[#A6FF00]/50' : 'text-amber-500'} hover:bg-white/10 transition-all active:scale-90`}
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <div className={`flex-1 h-[1px] bg-gradient-to-r from-transparent ${isClassicNeon ? 'via-[#A6FF00]/20' : isNavyGolden ? 'via-[#ffd700]/20' : 'via-amber-500/20'} to-transparent`} />
-                            <h2 className={`text-xl md:text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] italic' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'} uppercase tracking-tighter`}>{auction?.title}</h2>
-                            <div className={`flex-1 h-[1px] bg-gradient-to-l from-transparent ${isClassicNeon ? 'via-[#A6FF00]/20' : isNavyGolden ? 'via-[#ffd700]/20' : 'via-amber-500/20'} to-transparent`} />
-                            <div className={`px-4 py-2 rounded-2xl ${isClassicNeon ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/20 text-[#ffd700]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest flex items-center gap-2`}>
-                                <div className={`w-1.5 h-1.5 rounded-full ${isClassicNeon ? 'bg-[#A6FF00]' : 'bg-current'} animate-pulse`} />
+                            <div className={`flex-1 h-[1px] bg-gradient-to-r from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/20' : 'via-amber-500/20'} to-transparent`} />
+                            <h2 className={`text-xl md:text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] italic' : 'text-amber-500'} uppercase tracking-tighter`}>{auction?.title}</h2>
+                            <div className={`flex-1 h-[1px] bg-gradient-to-l from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/20' : 'via-amber-500/20'} to-transparent`} />
+                            <div className={`px-4 py-2 rounded-2xl ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest flex items-center gap-2`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-current'} animate-pulse`} />
                                 {approvedCount} {config?.maxRegistrations ? `of ${config.maxRegistrations}` : ''} ENROLLED
                             </div>
                         </motion.div>
@@ -1263,8 +1309,8 @@ const PlayerRegistration: React.FC = () => {
                                         className={`h-full rounded-full ${
                                             approvedCount >= config.maxRegistrations ? 'bg-red-500' :
                                             approvedCount > 30 ? 'bg-orange-500' :
-                                            isClassicNeon ? 'bg-[#A6FF00] shadow-[0_0_15px_rgba(166,255,0,0.5)]' :
-                                            isNavyGolden ? 'bg-gradient-to-r from-[#ffd700] to-[#ff851b]' : 'bg-gradient-to-r from-amber-600 to-amber-400'
+                                            isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] shadow-[0_0_15px_rgba(166,255,0,0.5)]' :
+                                            'bg-gradient-to-r from-amber-600 to-amber-400'
                                         }`}
                                     />
                                 </div>
@@ -1275,18 +1321,18 @@ const PlayerRegistration: React.FC = () => {
                         <div className="flex items-center justify-between gap-2 max-w-2xl mx-auto mb-8 overflow-x-auto no-scrollbar pb-2">
                             {steps.map((step, idx) => (
                                 <button 
-                                    key={step.id} 
+                                    key={`step-tracker-${step.id}-${idx}`} 
                                     onClick={() => setCurrentStep(idx)}
                                     className="flex-1 flex flex-col items-center gap-2 min-w-[80px] group transition-all"
                                 >
                                     <div className={`h-1 w-full rounded-full transition-all duration-500 ${
                                         idx <= currentStep 
-                                            ? (isClassicNeon ? 'bg-[#A6FF00] shadow-[0_0_10px_rgba(166,255,0,0.5)]' : isNavyGolden ? 'bg-[#ffd700] shadow-[0_0_10px_rgba(255,215,0,0.5)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]') 
+                                            ? (isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] shadow-[0_0_10px_rgba(166,255,0,0.5)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]') 
                                             : 'bg-white/10 group-hover:bg-white/20'}`} 
                                     />
                                     <span className={`text-[8px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
                                         idx === currentStep 
-                                            ? (isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500') 
+                                            ? (isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500') 
                                             : 'text-white/20 group-hover:text-white/40'}`}>
                                         {step.label}
                                     </span>
@@ -1310,74 +1356,96 @@ const PlayerRegistration: React.FC = () => {
                                         >
                                             {currentStepId === 'details' && (
                                                 <div className="space-y-8">
-                                                    <div className="text-center md:text-left space-y-4 mb-12">
-                                                        <h3 className={`text-4xl md:text-5xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_15px_rgba(166,255,0,0.3)] italic' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-100'} uppercase tracking-tighter`}>
-                                                            {isClassicNeon ? 'TOURNAMENT BRIEFING' : isNavyGolden ? 'Tournament Details' : 'Battle Intel'}
-                                                        </h3>
-                                                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                                            {isClassicNeon ? 'Operational intel for the upcoming season' : isNavyGolden ? 'Review tournament information' : 'Review the tournament details before joining the arena'}
-                                                        </p>
-                                                    </div>
-                                                    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${isClassicNeon ? 'md:grid-cols-2' : 'lg:grid-cols-5'}`}>
-                                                        <WarriorDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} />
-                                                        <WarriorDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="Tournament start" theme={config?.theme} />
-                                                        <WarriorDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} />
-                                                        <WarriorDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Venue location" theme={config?.theme} />
-                                                    </div>
-
-                                                    {isClassicNeon && (
-                                                        <div className="bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-[2.5rem] p-8 mt-8">
-                                                            <div className="flex items-center gap-4 mb-6">
-                                                                <div className="w-12 h-12 rounded-xl bg-[#A6FF00]/10 flex items-center justify-center border border-[#A6FF00]/20">
-                                                                    <Award className="w-6 h-6 text-[#A6FF00]" />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">Grand Prizes Highlights</h4>
-                                                                    <p className="text-[10px] font-bold text-[#A6FF00]/60 uppercase tracking-widest">{auction?.season || 'Season 1'} Rewards</p>
-                                                                </div>
+                                                    {config?.welcomePosterUrl ? (
+                                                        <div className="space-y-8 text-center">
+                                                            <div className={`relative rounded-[2.5rem] overflow-hidden border-2 ${isClassicNeon ? 'border-[#A6FF00]/20 shadown-[0_0_30px_rgba(166,255,0,0.1)]' : 'border-amber-500/20 shadow-2xl'}`}>
+                                                                <img src={config.welcomePosterUrl} className="w-full h-auto block" referrerPolicy="no-referrer" />
                                                             </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div className="bg-black/40 border border-white/5 rounded-2xl p-4">
-                                                                    <p className="text-[#A6FF00] font-black text-lg italic uppercase">{isClassicNeon ? 'WIN REWARD' : 'WIN BIKE'}</p>
-                                                                    <p className="text-[9px] text-white/40 uppercase font-bold">MAN OF THE SERIES</p>
-                                                                </div>
-                                                                <div className="bg-black/40 border border-white/5 rounded-2xl p-4">
-                                                                    <p className="text-white font-black text-lg italic uppercase">CASH PRIZES</p>
-                                                                    <p className="text-[9px] text-white/40 uppercase font-bold">TOP TEAMS & PLAYERS</p>
-                                                                </div>
-                                                            </div>
+                                                            <button 
+                                                                onClick={() => setCurrentStep(1)}
+                                                                className={`w-full max-w-sm mx-auto md:mx-0 py-5 rounded-full text-xl font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-4 ${isClassicNeon ? 'bg-[#A6FF00] text-black shadow-[0_0_30px_rgba(166,255,0,0.4)]' : 'bg-amber-600 text-white'}`}
+                                                            >
+                                                                REGISTER NOW <ChevronRight className="w-6 h-6" />
+                                                            </button>
                                                         </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="text-center md:text-left space-y-4 mb-12">
+                                                                <h3 className={`text-4xl md:text-5xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_15px_rgba(166,255,0,0.3)] italic' : 'text-amber-100'} uppercase tracking-tighter`}>
+                                                                    {isClassicNeon || isNavyGolden ? 'TOURNAMENT BRIEFING' : 'Tournament Intel'}
+                                                                </h3>
+                                                                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                                                                    {isClassicNeon || isNavyGolden ? 'Complete your registration for the upcoming season' : 'Review the tournament details before joining'}
+                                                                </p>
+                                                            </div>
+                                                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${isClassicNeon || isNavyGolden ? 'md:grid-cols-2' : 'lg:grid-cols-5'}`}>
+                                                                <WarriorDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} />
+                                                                <WarriorDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="League schedule" theme={config?.theme} />
+                                                                <WarriorDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} />
+                                                                <WarriorDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Tournament venue" theme={config?.theme} />
+                                                            </div>
+
+                                                            {isClassicNeon || isNavyGolden ? (
+                                                                <div className="bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-[2.5rem] p-8 mt-8 relative overflow-hidden group">
+                                                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                                                        <Bike className="w-32 h-32 text-[#A6FF00] -rotate-12 translate-x-12" />
+                                                                    </div>
+                                                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                                                        <div className="w-12 h-12 rounded-xl bg-[#A6FF00]/10 flex items-center justify-center border border-[#A6FF00]/20">
+                                                                            <Trophy className="w-6 h-6 text-[#A6FF00]" />
+                                                                        </div>
+                                                                        <div>
+                                                                            <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">Grand Season Rewards</h4>
+                                                                            <p className="text-[10px] font-bold text-[#A6FF00]/60 uppercase tracking-widest">Available for Season Top Performers</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                                                                        <div className="bg-black/40 border border-[#A6FF00]/10 rounded-2xl p-4 flex items-center gap-3">
+                                                                            <Bike className="w-6 h-6 text-[#A6FF00]" />
+                                                                            <div>
+                                                                                <p className="text-[#A6FF00] font-black text-lg italic uppercase line-clamp-1">WIN A BIKE</p>
+                                                                                <p className="text-[9px] text-white/40 uppercase font-bold">MAN OF THE SERIES</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="bg-black/40 border border-white/5 rounded-2xl p-4">
+                                                                            <p className="text-white font-black text-lg italic uppercase">CASH PRIZES</p>
+                                                                            <p className="text-[9px] text-white/40 uppercase font-bold">FOR TOP RANKERS</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+                                                            
+                                                            <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/10' : 'bg-black/40 border-amber-500/10'} border-2 rounded-[2.5rem] p-8 mt-12`}>
+                                                                <h4 className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
+                                                                    <Info className="w-4 h-4" /> {isClassicNeon || isNavyGolden ? 'OFFICIAL BRIEFING' : isAdvaya ? "Commander's Briefing" : "Tournament Briefing"}
+                                                                </h4>
+                                                                <p className="text-sm font-bold text-slate-400 leading-relaxed uppercase tracking-wide">
+                                                                    {config?.welcomePopup?.message || "Welcome to the ultimate cricket showdown. Ensure all your details are accurate as they will be used for the official player draft and auction process."}
+                                                                </p>
+                                                            </div>
+                                                        </>
                                                     )}
-                                                    
-                                                    <div className={`${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/10' : 'bg-black/40 border-amber-500/10'} border-2 rounded-[2.5rem] p-8 mt-12`}>
-                                                        <h4 className={`${isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
-                                                            <Info className="w-4 h-4" /> {isClassicNeon ? 'OFFICIAL BRIEFING' : isAdvaya ? "Commander's Briefing" : "Tournament Briefing"}
-                                                        </h4>
-                                                        <p className="text-sm font-bold text-slate-400 leading-relaxed uppercase tracking-wide">
-                                                            {config?.welcomePopup?.message || "Welcome to the ultimate cricket showdown. Ensure all your details are accurate as they will be used for the official player draft and auction process."}
-                                                        </p>
-                                                    </div>
                                                 </div>
                                             )}
 
                                             {currentStepId === 'personal' && (
                                 <div className="max-w-xl mx-auto space-y-8">
-                                    <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon ? 'PLAYER PROFILE' : isNavyGolden ? 'Player Info' : 'Player Identity'}
-                                        </h3>
-                                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                            {isNavyGolden ? 'Professional profile registration' : isClassicNeon ? 'Complete your player registration' : 'Establish your presence in the registry'}
-                                        </p>
-                                    </div>
+                                                    <div className="text-center mb-12">
+                                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                                            {isClassicNeon || isNavyGolden ? 'PLAYER PROFILE' : 'Player Identity'}
+                                                        </h3>
+                                                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                                                            {isClassicNeon || isNavyGolden ? 'Complete your player registration' : 'Establish your presence in the registry'}
+                                                        </p>
+                                                    </div>
                                     <div className="space-y-6">
                                         {/* Captain Option */}
                                         {config?.enableCaptainCodes && (
-                                            <div className={`${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/10' : isNavyGolden ? 'bg-[#ff851b]/10 border-[#ff851b]/20' : 'bg-amber-500/5 border-amber-500/10'} border-2 rounded-3xl p-6 space-y-4`}>
+                                            <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/10' : 'bg-amber-500/5 border-amber-500/10'} border-2 rounded-3xl p-6 space-y-4`}>
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ff851b]' : 'text-amber-500'} uppercase tracking-widest mb-1`}>Captain Registration</p>
-                                                        <h4 className={`text-sm font-black ${isClassicNeon ? 'text-white' : isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Are you registering as Captain?</h4>
+                                                        <p className={`text-[10px] font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-widest mb-1`}>Captain Registration</p>
+                                                        <h4 className={`text-sm font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Are you registering as Captain?</h4>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {[true, false].map(val => (
@@ -1394,8 +1462,8 @@ const PlayerRegistration: React.FC = () => {
                                                                 }}
                                                                 className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                                                     isCaptain === val 
-                                                                        ? (isClassicNeon ? 'bg-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : isNavyGolden ? 'bg-[#ff851b] text-white shadow-lg shadow-[#ff851b]/20' : 'bg-amber-600 text-black shadow-lg shadow-amber-600/20') 
-                                                                        : (isClassicNeon ? 'bg-black/40 text-[#A6FF00]/50 border-[#A6FF00]/20' : isNavyGolden ? 'bg-[#001f3f]/40 text-[#ffd700]/50 border-[#ffd700]/20' : 'bg-black/40 text-amber-500/50 border border-amber-900/20')
+                                                                        ? (isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : 'bg-amber-600 text-black shadow-lg shadow-amber-600/20') 
+                                                                        : (isClassicNeon || isNavyGolden ? 'bg-black/40 text-[#A6FF00]/50 border-[#A6FF00]/20' : 'bg-black/40 text-amber-500/50 border border-amber-900/20')
                                                                 }`}
                                                             >
                                                                 {val ? 'YES' : 'NO'}
@@ -1408,7 +1476,7 @@ const PlayerRegistration: React.FC = () => {
                                                     <motion.div 
                                                         initial={{ height: 0, opacity: 0 }}
                                                         animate={{ height: 'auto', opacity: 1 }}
-                                                        className={`pt-4 border-t ${isClassicNeon ? 'border-[#A6FF00]/10' : isNavyGolden ? 'border-[#ffd700]/10' : 'border-amber-500/10'} space-y-4`}
+                                                        className={`pt-4 border-t ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/10' : 'border-amber-500/10'} space-y-4`}
                                                     >
                                                         <div className="relative">
                                                             <input 
@@ -1416,12 +1484,12 @@ const PlayerRegistration: React.FC = () => {
                                                                 value={captainCode}
                                                                 onChange={e => setCaptainCode(e.target.value.toUpperCase())}
                                                                 placeholder="ENTER CAPTAIN CODE (e.g. ARSLT1)"
-                                                                className={`w-full ${isClassicNeon ? 'bg-black/40 border-[#A6FF00]/30 text-white focus:border-[#A6FF00]' : isNavyGolden ? 'bg-[#001f3f]/60 border-[#ffd700]/30 text-white focus:border-[#ffd700]' : 'bg-black/60 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'} rounded-2xl px-6 py-4 font-black outline-none uppercase font-mono`}
+                                                                className={`w-full ${isClassicNeon || isNavyGolden ? 'bg-black/40 border-[#A6FF00]/30 text-white focus:border-[#A6FF00]' : 'bg-black/60 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'} rounded-2xl px-6 py-4 font-black outline-none uppercase font-mono`}
                                                             />
                                                             <button 
                                                                 type="button"
                                                                 onClick={() => validateCaptainCode(captainCode)}
-                                                                className={`absolute right-2 top-2 bottom-2 ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : isNavyGolden ? 'bg-[#ff851b] hover:bg-[#ffa04d]' : 'bg-amber-600 hover:bg-amber-500'} text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all`}
+                                                                className={`absolute right-2 top-2 bottom-2 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : 'bg-amber-600 hover:bg-amber-500'} text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all`}
                                                             >
                                                                 VERIFY
                                                             </button>
@@ -1449,11 +1517,11 @@ const PlayerRegistration: React.FC = () => {
 
                                         {/* Team Code Option */}
                                         {!isCaptain && config?.enablePlayerCodes && (
-                                            <div className={`${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/10' : isNavyGolden ? 'bg-[#ff851b]/10 border-[#ff851b]/20' : 'bg-amber-500/5 border-amber-500/10'} border-2 rounded-3xl p-6 space-y-4`}>
+                                            <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/10' : 'bg-amber-500/5 border-amber-500/10'} border-2 rounded-3xl p-6 space-y-4`}>
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ff851b]' : 'text-amber-500'} uppercase tracking-widest mb-1`}>Team Registration</p>
-                                                        <h4 className={`text-sm font-black ${isClassicNeon ? 'text-white' : isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Do you have a Captain's Team Code?</h4>
+                                                        <p className={`text-[10px] font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-widest mb-1`}>Team Registration</p>
+                                                        <h4 className={`text-sm font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Do you have a Captain's Team Code?</h4>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {[true, false].map(val => (
@@ -1470,8 +1538,8 @@ const PlayerRegistration: React.FC = () => {
                                                                 }}
                                                                 className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                                                     hasTeamCode === val 
-                                                                        ? (isClassicNeon ? 'bg-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : isNavyGolden ? 'bg-[#ff851b] text-white shadow-lg shadow-[#ff851b]/20' : 'bg-amber-600 text-black shadow-lg shadow-amber-600/20') 
-                                                                        : (isClassicNeon ? 'bg-black/40 text-[#A6FF00]/50 border-[#A6FF00]/20' : isNavyGolden ? 'bg-[#001f3f]/40 text-[#ffd700]/50 border-[#ffd700]/20' : 'bg-black/40 text-amber-500/50 border border-amber-900/20')
+                                                                        ? (isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : 'bg-amber-600 text-black shadow-lg shadow-amber-600/20') 
+                                                                        : (isClassicNeon || isNavyGolden ? 'bg-black/40 text-[#A6FF00]/50 border-[#A6FF00]/20' : 'bg-black/40 text-amber-500/50 border border-amber-900/20')
                                                                 }`}
                                                             >
                                                                 {val ? 'YES' : 'NO'}
@@ -1484,7 +1552,7 @@ const PlayerRegistration: React.FC = () => {
                                                     <motion.div 
                                                         initial={{ height: 0, opacity: 0 }}
                                                         animate={{ height: 'auto', opacity: 1 }}
-                                                        className={`pt-4 border-t ${isClassicNeon ? 'border-[#A6FF00]/10' : isNavyGolden ? 'border-[#ffd700]/10' : 'border-amber-500/10'} space-y-4`}
+                                                        className={`pt-4 border-t ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/10' : 'border-amber-500/10'} space-y-4`}
                                                     >
                                                         <div className="relative">
                                                             <input 
@@ -1492,12 +1560,12 @@ const PlayerRegistration: React.FC = () => {
                                                                 value={teamCode}
                                                                 onChange={e => setTeamCode(e.target.value.toUpperCase())}
                                                                 placeholder="ENTER TEAM CODE (e.g. ARSPLAYERS)"
-                                                                className={`w-full ${isClassicNeon ? 'bg-black/40 border-[#A6FF00]/30 text-white focus:border-[#A6FF00]' : isNavyGolden ? 'bg-[#001f3f]/60 border-[#ffd700]/30 text-white focus:border-[#ffd700]' : 'bg-black/60 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'} rounded-2xl px-6 py-4 font-black outline-none uppercase font-mono`}
+                                                                className={`w-full ${isClassicNeon || isNavyGolden ? 'bg-black/40 border-[#A6FF00]/30 text-white focus:border-[#A6FF00]' : 'bg-black/60 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'} rounded-2xl px-6 py-4 font-black outline-none uppercase font-mono`}
                                                             />
                                                             <button 
                                                                 type="button"
                                                                 onClick={() => validateTeamCode(teamCode)}
-                                                                className={`absolute right-2 top-2 bottom-2 ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : isNavyGolden ? 'bg-[#ff851b] hover:bg-[#ffa04d]' : 'bg-amber-600 hover:bg-amber-500'} text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all`}
+                                                                className={`absolute right-2 top-2 bottom-2 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : 'bg-amber-600 hover:bg-amber-500'} text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all`}
                                                             >
                                                                 VERIFY
                                                             </button>
@@ -1530,7 +1598,7 @@ const PlayerRegistration: React.FC = () => {
                                                 onChange={(e: any) => setFormData({...formData, fullName: e.target.value})} 
                                                 placeholder="ENTER FULL NAME" 
                                                 required={!config?.basicFields || config?.basicFields?.name?.required !== false} 
-                                                theme={config?.theme}
+                                                theme={config?.theme?.toUpperCase()}
                                             />
                                         )}
                                         {(!config?.basicFields || config?.basicFields?.mobile?.show !== false) && (
@@ -1541,7 +1609,7 @@ const PlayerRegistration: React.FC = () => {
                                                 onChange={(e: any) => setFormData({...formData, mobile: e.target.value})} 
                                                 placeholder="10 DIGIT NUMBER" 
                                                 required={!config?.basicFields || config?.basicFields?.mobile?.required !== false} 
-                                                theme={config?.theme}
+                                                theme={config?.theme?.toUpperCase()}
                                             />
                                         )}
                                         {(!config?.basicFields || config?.basicFields?.dob?.show !== false) && (
@@ -1551,7 +1619,7 @@ const PlayerRegistration: React.FC = () => {
                                                 value={formData.dob} 
                                                 onChange={(e: any) => setFormData({...formData, dob: e.target.value})} 
                                                 required={!config?.basicFields || config?.basicFields?.dob?.required !== false} 
-                                                theme={config?.theme}
+                                                theme={config?.theme?.toUpperCase()}
                                             />
                                         )}
                                         
@@ -1564,29 +1632,29 @@ const PlayerRegistration: React.FC = () => {
                                                 options={['Male', 'Female', 'Other']}
                                                 required={config?.basicFields?.gender?.required !== false} 
                                                 placeholder="SELECT GENDER"
-                                                theme={config?.theme}
+                                                theme={config?.theme?.toUpperCase()}
                                             />
                                         )}
 
                                         {(!config?.basicFields || config.basicFields.photo?.show !== false) && (
                                             <div className="space-y-3">
-                                                <label className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}/50 ml-1`}>
-                                                    {isClassicNeon ? 'PLAYER PHOTO' : isAdvaya ? 'Warrior Portrait' : 'Player Photo'} {(config?.basicFields?.photo?.required !== false) && <span className="text-red-500">*</span>}
-                                                </label>
-                                                <div 
-                                                    onClick={() => profileInputRef.current?.click()}
-                                                    className={`w-full h-48 rounded-[2.5rem] ${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/20 hover:border-[#A6FF00]' : isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 hover:border-[#ffd700]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'} border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group`}
-                                                >
+                                        <label className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-blue-500'}/50 ml-1`}>
+                                            {isClassicNeon || isAdvaya || isNavyGolden ? 'PLAYER PHOTO' : 'Player Photo'} {(config?.basicFields?.photo?.required !== false) && <span className="text-red-500">*</span>}
+                                        </label>
+                                <div 
+                                    onClick={() => profileInputRef.current?.click()}
+                                    className={`w-full h-48 rounded-[2.5rem] ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/20 hover:border-[#A6FF00]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'} border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group`}
+                                >
                                                     {profilePic ? (
                                                         <div className="w-full h-full bg-white">
                                                             <img src={profilePic} className="w-full h-full object-cover" />
                                                         </div>
                                                     ) : (
                                                         <div className="text-center">
-                                                            <div className={`w-16 h-16 ${isClassicNeon ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-4 border`}>
-                                                                 <Upload className={`w-8 h-8 ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}`} />
+                                                            <div className={`w-16 h-16 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-4 border`}>
+                                                                 <Upload className={`w-8 h-8 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
                                                             </div>
-                                                            <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon ? 'text-[#A6FF00]/50' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}/50`}>{isClassicNeon ? 'Upload Photo' : 'Upload Portrait'}</p>
+                                                            <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-500'}/50`}>{isClassicNeon || isNavyGolden ? 'Upload Photo' : 'Upload Portrait'}</p>
                                                         </div>
                                                     )}
                                                     <input ref={profileInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setProfilePic(await compressImage(e.target.files[0])); }} />
@@ -1600,25 +1668,25 @@ const PlayerRegistration: React.FC = () => {
                             {currentStepId === 'role' && (
                                 <div className="space-y-8">
                                     <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon ? 'PICK YOUR ROLE' : isNavyGolden ? 'Skill Selection' : isAdvaya ? 'Combat Role' : 'Playing Role'}
+                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                            {isClassicNeon || isNavyGolden ? 'PICK YOUR ROLE' : isAdvaya ? 'Combat Role' : 'Playing Role'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                            {isNavyGolden ? 'Choose your primary playing role' : 'Select your primary skill on the field'}
+                                            {isClassicNeon || isNavyGolden ? 'Choose your primary playing role' : 'Select your primary skill on the field'}
                                         </p>
                                     </div>
                                     {(!config?.basicFields || config.basicFields.role?.show !== false) ? (
                                         <div className="max-w-xl mx-auto">
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                                                {roles.map(r => (
+                                                {roles.map((r, rIdx) => (
                                                     <button 
-                                                        key={r.id}
+                                                        key={`role-step-btn-${r.id}-${rIdx}`} 
                                                         type="button"
                                                         onClick={() => setFormData({...formData, playerType: r.name})}
                                                         className={`p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center gap-4 group relative overflow-hidden ${
                                                             formData.playerType === r.name 
-                                                                ? (isClassicNeon ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_30px_rgba(166,255,0,0.3)]' : isNavyGolden ? 'bg-[#ff851b] border-[#ff851b] text-white shadow-2xl shadow-[#ff851b]/30' : 'bg-amber-600 border-amber-600 text-black shadow-2xl shadow-amber-600/20') 
-                                                                : (isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/50 hover:border-[#A6FF00]/40' : isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 text-[#ffd700]/50 hover:border-[#ffd700]/50' : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50')
+                                                                ? (isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_30px_rgba(166,255,0,0.3)]' : 'bg-amber-600 border-amber-600 text-black shadow-2xl shadow-amber-600/20') 
+                                                                : (isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/50 hover:border-[#A6FF00]/40' : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50')
                                                         }`}
                                                     >
                                                         {isClassicNeon && formData.playerType === r.name && (
@@ -1640,9 +1708,9 @@ const PlayerRegistration: React.FC = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className={`p-12 text-center border-2 border-dashed rounded-[3rem] ${isClassicNeon ? 'border-[#A6FF00]/20' : 'border-amber-900/20'}`}>
-                                            <p className={`${isClassicNeon ? 'text-[#A6FF00]/50' : 'text-amber-500/50'} font-black uppercase tracking-widest`}>Role selection is hidden</p>
-                                        </div>
+                                                                    <div className={`p-12 text-center border-2 border-dashed rounded-[3rem] ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'}`}>
+                                                                        <p className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-500/50'} font-black uppercase tracking-widest`}>Role selection is hidden</p>
+                                                                    </div>
                                     )}
                                 </div>
                             )}
@@ -1650,17 +1718,17 @@ const PlayerRegistration: React.FC = () => {
                             {currentStepId === 'custom' && (
                                 <div className="max-w-xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon ? 'ADDITIONAL INTEL' : isNavyGolden ? 'Additional Details' : isAdvaya ? 'Warrior Attributes' : 'Additional Info'}
+                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                            {isClassicNeon || isNavyGolden ? 'ADDITIONAL INFO' : isAdvaya ? 'Player Attributes' : 'Additional Info'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                            {isNavyGolden ? 'Fill in specific tournament requirements' : 'Define your specific combat capabilities'}
+                                            {isClassicNeon || isNavyGolden ? 'Fill in specific tournament requirements' : 'Provide your specific details'}
                                         </p>
                                     </div>
                                         <div className="space-y-8">
                                             {(config?.customFields || []).map((field: any, idx: number) => (
                                                 <motion.div 
-                                                    key={field.id}
+                                                    key={`custom-step-${field.id}-${idx}`}
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.1 }}
@@ -1678,8 +1746,8 @@ const PlayerRegistration: React.FC = () => {
                                                 </motion.div>
                                             ))}
                                             {(config?.customFields || []).length === 0 && (
-                                                <div className={`p-12 text-center border-2 border-dashed rounded-[3rem] ${isClassicNeon ? 'border-[#A6FF00]/20' : 'border-amber-900/20'}`}>
-                                                    <p className={`${isClassicNeon ? 'text-[#A6FF00]/50' : 'text-amber-500/50'} font-black uppercase tracking-widest`}>No additional info required</p>
+                                                <div className={`p-12 text-center border-2 border-dashed rounded-[3rem] ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'}`}>
+                                                    <p className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-500/50'} font-black uppercase tracking-widest`}>No additional info required</p>
                                                 </div>
                                             )}
                                         </div>
@@ -1689,8 +1757,8 @@ const PlayerRegistration: React.FC = () => {
                             {currentStepId === 'jersey' && (
                                 <div className="max-w-xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon ? 'JERSEY CONFIG' : 'Jersey Details'}
+                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                            {isClassicNeon || isNavyGolden ? 'JERSEY CONFIG' : 'Jersey Details'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Customize your field uniform</p>
                                     </div>
@@ -1734,6 +1802,7 @@ const PlayerRegistration: React.FC = () => {
                                             number={formData.jerseyNumber} 
                                             auctionLogo={config?.logoUrl || auction?.logoUrl}
                                             theme={config?.theme}
+                                            season={auction?.season}
                                         />
                                     </div>
                                 </div>
@@ -1742,65 +1811,77 @@ const PlayerRegistration: React.FC = () => {
                             {currentStepId === 'payment' && (
                                 <div className="max-w-2xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon ? 'FEE SETTLEMENT' : isNavyGolden ? 'Payment Verification' : 'Tribute Verification'}
+                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                            {isClassicNeon || isNavyGolden ? 'FEE SETTLEMENT' : 'Tribute Verification'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                            {isNavyGolden ? 'Confirm registration fee payment' : 'Secure your spot in the arena with registration fee'}
+                                            {isClassicNeon || isNavyGolden ? 'Confirm registration fee payment' : 'Secure your spot in the arena with registration fee'}
                                         </p>
                                     </div>
                                     
                                     {config?.includePayment ? (
                                         <div className="space-y-8">
-                                            <div className={`bg-black/60 border-2 ${isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-500/20'} rounded-[3rem] p-10 text-center relative overflow-hidden`}>
-                                                {(isAdvaya || isNavyGolden) && (
+                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20 shadow-[0_0_40px_rgba(166,255,0,0.1)]' : 'border-amber-500/20 shadow-2xl'} rounded-[3rem] p-10 text-center relative overflow-hidden`}>
+                                                {(isAdvaya || isNavyGolden || isClassicNeon) && (
                                                     <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]">
                                                         <motion.div
                                                             animate={{ rotate: 360 }}
                                                             transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                                                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isNavyGolden ? '#ffd700' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
+                                                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
                                                         />
-                                                        <div className="absolute inset-[2px] bg-black/80 rounded-[inherit] z-0" />
+                                                        <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#070B0A]' : 'bg-black/80'} rounded-[inherit] z-0`} />
                                                     </div>
                                                 )}
                                                 <div className="relative z-10">
                                                     <div className="absolute top-0 right-0 p-6">
-                                                        <div className={`px-4 py-2 rounded-full ${isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/20 text-[#ffd700]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest`}>
+                                                        <div className={`px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest`}>
                                                             FEE: ₹{config.fee}
                                                         </div>
                                                     </div>
                                                     
                                                     <div className="space-y-6 mb-10">
-                                                        <div className={`w-20 h-20 ${isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-[2rem] flex items-center justify-center mx-auto border`}>
-                                                            <QrCode className={`w-10 h-10 ${isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}`} />
+                                                        <div className={`w-20 h-20 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-[2rem] flex items-center justify-center mx-auto border`}>
+                                                            <QrCode className={`w-10 h-10 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <h4 className={`text-xl font-black ${isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Scan to Pay via UPI</h4>
-                                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receiver: <span className={isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}>{config.upiName}</span> • UPI ID: <span className={isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}>{config.upiId}</span></p>
+                                                            <h4 className={`text-xl font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Scan to Pay via UPI</h4>
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receiver: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiName}</span> • UPI ID: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiId}</span></p>
                                                         </div>
                                                     </div>
-
-                                                    <div className={`bg-white p-6 rounded-[2.5rem] ${isNavyGolden ? 'shadow-[0_0_50px_rgba(255,215,0,0.3)] border-[#ffd700]' : 'shadow-[0_0_50px_rgba(251,191,36,0.3)] border-amber-500'} border-8 inline-block mb-10`}>
-                                                        <img src={config.qrCodeUrl} className="w-64 h-64 object-contain" />
+                                                    
+                                                    <div className={`bg-white p-6 rounded-[2.5rem] shadow-2xl ${isClassicNeon || isNavyGolden ? 'shadow-[0_0_50px_rgba(166,255,0,0.3)] border-[#A6FF00]' : 'shadow-[0_0_50px_rgba(251,191,36,0.3)] border-amber-500'} border-8 inline-block mb-10`}>
+                                                        {config.qrCodeUrl && <img src={config.qrCodeUrl} className="w-64 h-64 object-contain" />}
                                                     </div>
-
+                                                    
                                                     <div className="space-y-4">
-                                                        <label className={`text-[10px] font-black uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}/50`}>Upload Payment Proof</label>
-                                                        <div 
-                                                            onClick={() => paymentInputRef.current?.click()}
-                                                            className={`w-full max-w-sm mx-auto h-32 rounded-[2rem] ${isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 hover:border-[#ffd700]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'} border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden group`}
-                                                        >
-                                                            {paymentScreenshot ? (
-                                                                <div className={`flex items-center gap-3 ${isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'}`}>
-                                                                    <CheckCircle className="w-8 h-8" />
-                                                                    <span className="text-xs font-black uppercase tracking-widest">Screenshot Verified</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-center">
-                                                                    <Upload className={`w-8 h-8 mx-auto mb-2 ${isNavyGolden ? 'text-[#ffd700]/50' : 'text-amber-900'} group-hover:text-${isNavyGolden ? '[#ffd700]' : 'amber-500'} transition-colors`} />
-                                                                    <p className={`text-[10px] font-black uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/50' : 'text-amber-900'} group-hover:text-${isNavyGolden ? '[#ffd700]' : 'amber-500'} transition-colors`}>Upload Screenshot</p>
+                                                        <label className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}/50`}>Upload Payment Proof</label>
+                                        <div 
+                                            onClick={() => paymentInputRef.current?.click()}
+                                            className={`w-full max-w-sm mx-auto h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/30 hover:border-[#A6FF00]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'}`}
+                                        >
+                                                            {(isAdvaya || isNavyGolden || isClassicNeon) && (
+                                                                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
+                                                                    <motion.div
+                                                                        animate={{ rotate: 360 }}
+                                                                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                                                                        className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-20 blur-[8px]`}
+                                                                    />
+                                                                    <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413]' : 'bg-black/80'} rounded-[inherit] z-0`} />
                                                                 </div>
                                                             )}
+                                                            <div className="relative z-10">
+                                                                {paymentScreenshot ? (
+                                                                    <div className={`flex items-center gap-3 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`}>
+                                                                        <CheckCircle className="w-8 h-8" />
+                                                                        <span className="text-xs font-black uppercase tracking-widest">Screenshot Verified</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-center group">
+                                                                        <Upload className={`w-8 h-8 mx-auto mb-2 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`} />
+                                                                        <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`}>Upload Screenshot</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                             <input ref={paymentInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setPaymentScreenshot(await compressImage(e.target.files[0])); }} />
                                                         </div>
                                                     </div>
@@ -1819,31 +1900,31 @@ const PlayerRegistration: React.FC = () => {
                                 </div>
                             )}
 
-                            {currentStepId === 'rules' && (
-                                <div className="max-w-xl mx-auto space-y-8">
+                            {currentStepId === 'oath' && (
+                                <div className="max-w-2xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
-                                        <h3 className={`text-3xl font-black ${isNavyGolden ? 'text-[#ffd700]' : isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-100'} uppercase tracking-tight text-center`}>
-                                            {isNavyGolden ? 'Terms & Rules' : isClassicNeon ? 'PARTICIPATION OATH' : 'Battle Oath'}
+                                        <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
+                                            {isClassicNeon || isNavyGolden ? 'PARTICIPATION OATH' : 'Battle Oath'}
                                         </h3>
-                                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                                            {isNavyGolden ? 'Finalize your tournament participation' : 'Finalize your commitment to the tournament protocols'}
+                                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest text-center">
+                                            {isClassicNeon || isNavyGolden ? 'Finalize your commitment to the tournament protocols' : 'Review and accept the terms to continue'}
                                         </p>
                                     </div>
                                     
                                     <div className="space-y-6">
-                                        <div className={`bg-black/60 border-2 ${isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8 max-h-[300px] overflow-y-auto custom-scrollbar relative overflow-hidden`}>
-                                            {(isAdvaya || isNavyGolden) && (
+                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8 max-h-[300px] overflow-y-auto custom-scrollbar relative overflow-hidden`}>
+                                            {(isAdvaya || isNavyGolden || isClassicNeon) && (
                                                 <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]">
                                                     <motion.div
                                                         animate={{ rotate: 360 }}
                                                         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                                                        className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isNavyGolden ? '#ffd700' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
+                                                        className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
                                                     />
-                                                    <div className="absolute inset-[2px] bg-black/80 rounded-[inherit] z-0" />
+                                                    <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#070B0A]' : 'bg-black/80'} rounded-[inherit] z-0`} />
                                                 </div>
                                             )}
                                             <div className="relative z-10">
-                                                <h4 className={`${isNavyGolden ? 'text-[#ff851b]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
+                                                <h4 className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
                                                     <ShieldCheck className="w-4 h-4" /> Rules & Regulations
                                                 </h4>
                                                 <div className="text-xs font-bold text-slate-400 leading-relaxed uppercase tracking-wide whitespace-pre-wrap">
@@ -1852,15 +1933,15 @@ const PlayerRegistration: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className={`bg-black/60 border-2 ${isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8`}>
-                                            <h4 className={`${isNavyGolden ? 'text-[#ff851b]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
+                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8`}>
+                                            <h4 className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2`}>
                                                 <Phone className="w-4 h-4" /> Organizer Contact
                                             </h4>
                                             <div className="space-y-2">
                                                 {(config?.organizerContacts || []).map((contact, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between">
+                                                    <div key={`contact-rules-view-${idx}-${contact.name}`} className="flex items-center justify-between">
                                                         <p className="text-sm font-black text-amber-100 uppercase tracking-tight">{contact.name}</p>
-                                                        <p className={`text-sm font-black ${isNavyGolden ? 'text-[#ffd700]/70' : 'text-amber-500/70'} tracking-widest`}>{contact.phone}</p>
+                                                        <p className={`text-sm font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'text-amber-500/70'} tracking-widest`}>{contact.phone}</p>
                                                     </div>
                                                 ))}
                                                 {(config?.organizerContacts || []).length === 0 && (
@@ -1869,7 +1950,7 @@ const PlayerRegistration: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className={`bg-black/60 border-2 ${isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8`}>
+                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8`}>
                                             <label className="flex items-start gap-4 cursor-pointer group">
                                                 <div className="mt-1">
                                                     <input 
@@ -1878,30 +1959,30 @@ const PlayerRegistration: React.FC = () => {
                                                         checked={formData.battleOath}
                                                         onChange={() => setFormData({...formData, battleOath: !formData.battleOath})}
                                                     />
-                                                    <div className={`w-6 h-6 border-2 ${isNavyGolden ? 'border-[#ffd700]/50 group-hover:border-[#ffd700]' : 'border-amber-900/50 group-hover:border-amber-500'} rounded-lg flex items-center justify-center transition-all peer-checked:${isNavyGolden ? 'bg-[#ff851b] border-[#ff851b]' : 'bg-amber-600 border-amber-600'}`}>
-                                                        <CheckCircle className={`w-4 h-4 ${isNavyGolden ? 'text-white' : 'text-black'} transition-opacity ${formData.battleOath ? 'opacity-100' : 'opacity-0'}`} />
-                                                    </div>
+                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/50 group-hover:border-[#A6FF00]' : 'border-amber-900/50 group-hover:border-amber-500'} rounded-lg flex items-center justify-center transition-all peer-checked:${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] border-[#A6FF00]' : 'bg-amber-600 border-amber-600'}`}>
+                                            <CheckCircle className={`w-4 h-4 ${isClassicNeon || isNavyGolden ? 'text-black' : 'text-black'} transition-opacity ${formData.battleOath ? 'opacity-100' : 'opacity-0'}`} />
+                                        </div>
                                                 </div>
                                 <div className="space-y-1">
-                                                    <p className={`text-xs font-black ${isClassicNeon ? 'text-white' : isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>
-                                                        {isClassicNeon ? 'I accept all tournament regulations' : isNavyGolden ? 'I accept the participation terms' : 'I accept the Battle Oath'}
+                                                    <p className={`text-xs font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>
+                                                        {isClassicNeon || isNavyGolden ? 'I accept all tournament guidelines' : 'I accept the Battle Oath'}
                                                     </p>
                                                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                                                        {isClassicNeon ? 'I confirm all provided data is accurate and valid.' : isNavyGolden ? 'I verify all provided info is accurate and I will uphold the tournament integrity.' : 'I verify all provided intel is accurate and I will uphold the tournament integrity.'}
+                                                        {isClassicNeon || isNavyGolden ? 'I confirm all provided data is accurate and valid.' : 'I verify all provided info is accurate and I will uphold the tournament integrity.'}
                                                     </p>
                                                 </div>
                                             </label>
                                         </div>
                                     </div>
-                                </div>
+             </div>
                             )}
                         </motion.div>
                             </AnimatePresence>
                         </div>
 
-                        {/* Right Side: Preview & Highlights (Only for Classic Neon) */}
-                        {isClassicNeon && (
-                            <div className="hidden lg:block space-y-8 sticky top-12">
+                        {/* Right Side: Preview & Highlights (For Neon Themes) */}
+                        {(isClassicNeon || isNavyGolden) && (
+                            <div className="hidden lg:block lg:w-[400px] space-y-8 sticky top-12">
                                 {/* Jersey Preview Card */}
                                 <div className="bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-[3rem] p-8 relative overflow-hidden group shadow-2xl">
                                     <div className="flex items-center justify-between mb-8">
@@ -1958,7 +2039,7 @@ const PlayerRegistration: React.FC = () => {
                                             { icon: Users, title: 'TOP TALENTS', desc: 'Best players in the region' },
                                             { icon: Trophy, title: 'GRAND CEREMONY', desc: 'IPL Style auction & finale' }
                                         ].map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-4 group/item">
+                                            <div key={`rule-item-${idx}`} className="flex items-center gap-4 group/item">
                                                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 group-hover/item:border-[#A6FF00]/30 group-hover/item:bg-[#A6FF00]/5 transition-all">
                                                     <item.icon className="w-5 h-5 text-[#A6FF00]/60 group-hover/item:text-[#A6FF00]" />
                                                 </div>
@@ -1992,29 +2073,29 @@ const PlayerRegistration: React.FC = () => {
                     {/* Navigation Buttons */}
                     <div className="mt-12 flex items-center justify-between gap-6">
                         {currentStep > 0 ? (
-                            <button 
-                                onClick={prevStep}
-                                className={`px-10 py-5 rounded-full border-2 transition-all active:scale-95 flex items-center gap-3 font-black uppercase tracking-widest ${
-                                    isClassicNeon 
-                                        ? 'border-[#A6FF00]/20 text-[#A6FF00] hover:bg-[#A6FF00]/5' 
-                                        : 'border-amber-900/30 text-amber-500 hover:bg-amber-500/10'
-                                }`}
-                            >
-                                <ChevronLeft className="w-5 h-5" /> BACK
-                            </button>
+                                <button 
+                                    onClick={prevStep}
+                                    className={`px-10 py-5 rounded-full border-2 transition-all active:scale-95 flex items-center gap-3 font-black uppercase tracking-widest ${
+                                        isClassicNeon || isNavyGolden 
+                                            ? 'border-[#A6FF00]/20 text-[#A6FF00] hover:bg-[#A6FF00]/5' 
+                                            : 'border-amber-900/30 text-amber-500 hover:bg-amber-500/10'
+                                    }`}
+                                >
+                                    <ChevronLeft className="w-5 h-5" /> BACK
+                                </button>
                         ) : <div />}
 
                         {currentStep < steps.length - 1 ? (
-                            <button 
-                                onClick={nextStep}
-                                className={`px-12 py-5 rounded-full transition-all shadow-2xl active:scale-95 flex items-center gap-3 font-black uppercase tracking-widest ${
-                                    isClassicNeon 
-                                        ? 'bg-[#A6FF00] text-black shadow-[#A6FF00]/20 hover:scale-[1.02]' 
-                                        : 'bg-amber-600 hover:bg-amber-500 text-black shadow-[0_10px_30px_-10px_rgba(251,191,36,0.5)]'
-                                }`}
-                            >
-                                NEXT <ChevronRight className="w-5 h-5" />
-                            </button>
+                                <button 
+                                    onClick={nextStep}
+                                    className={`px-12 py-5 rounded-full transition-all shadow-2xl active:scale-95 flex items-center gap-3 font-black uppercase tracking-widest ${
+                                        isClassicNeon || isNavyGolden 
+                                            ? 'bg-[#A6FF00] text-black shadow-[#A6FF00]/20 hover:scale-[1.02]' 
+                                            : 'bg-amber-600 hover:bg-amber-500 text-black shadow-[0_10px_30px_-10px_rgba(251,191,36,0.5)]'
+                                    }`}
+                                >
+                                    NEXT <ChevronRight className="w-5 h-5" />
+                                </button>
                         ) : (
                             <button 
                                 disabled={!formData.battleOath || submitting}
@@ -2206,52 +2287,52 @@ const PlayerRegistration: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            <div className={`max-w-2xl mx-auto shadow-2xl rounded-[2.5rem] overflow-hidden border animate-fade-in relative ${isNavyGolden ? 'bg-[#001f3f] border-[#ffd700]/20' : isAdvaya ? 'bg-[#151515] border-amber-900/30' : 'bg-white border-gray-200'}`}>
+            <div className={`max-w-2xl mx-auto shadow-2xl rounded-[2.5rem] overflow-hidden border animate-fade-in relative ${isNavyGolden || isClassicNeon ? 'bg-[#070B0A] border-[#A6FF00]/20' : isAdvaya ? 'bg-[#151515] border-amber-900/30' : 'bg-white border-gray-200'}`}>
                 {/* Main Card Neon Border */}
                 {(isAdvaya || isNavyGolden || isClassicNeon) && (
                     <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
                         <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon ? '#A6FF00' : isNavyGolden ? '#ffd700' : '#f59e0b'}_360deg)] opacity-30 blur-[15px]`}
+                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-30 blur-[15px]`}
                         />
                     </div>
                 )}
                 <div className="relative z-10">
-                    <div className={`${isClassicNeon ? 'bg-[#0F1413]' : isNavyGolden ? 'bg-gradient-to-b from-[#ffd700]/10 to-transparent' : isAdvaya ? 'bg-gradient-to-b from-amber-900/40 to-transparent' : 'bg-blue-600'} p-10 text-center relative overflow-hidden`}>
+                    <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#0F1413]' : isAdvaya ? 'bg-gradient-to-b from-amber-900/40 to-transparent' : 'bg-blue-600'} p-10 text-center relative overflow-hidden`}>
                     {(isAdvaya || isNavyGolden || isClassicNeon) ? (
                         <>
-                            <div className={`absolute inset-0 opacity-10 ${isClassicNeon ? 'bg-transparent' : "bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"}`} />
+                            <div className={`absolute inset-0 opacity-10 ${isClassicNeon || isNavyGolden ? 'bg-transparent' : "bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"}`} />
                             <motion.div 
                                 initial={{ y: -50, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 className="relative z-10"
                             >
                                 {config?.bannerUrl && (
-                                    <img src={config.bannerUrl} className={`w-full h-32 object-cover rounded-2xl mb-6 border ${isClassicNeon ? 'border-[#A6FF00]/20' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-500/20'} shadow-2xl`} />
+                                    <img src={config.bannerUrl} className={`w-full h-32 object-cover rounded-2xl mb-6 border ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-500/20'} shadow-2xl`} />
                                 )}
                                 <div className="flex items-center justify-center gap-4 mb-4">
-                                    {isClassicNeon ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Sword className="w-8 h-8 text-amber-500" /> : <ShieldCheck className="w-8 h-8 text-[#ffd700]" />}
-                                    <h1 className={`text-4xl font-black uppercase tracking-tighter ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : 'text-amber-500'} drop-shadow-md italic`}>{auction?.title}</h1>
-                                    {isClassicNeon ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Shield className="w-8 h-8 text-amber-500" /> : <Trophy className="w-8 h-8 text-[#ffd700]" />}
+                                    {isClassicNeon || isNavyGolden ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Sword className="w-8 h-8 text-amber-500" /> : <ShieldCheck className="w-8 h-8 text-amber-500" />}
+                                    <h1 className={`text-4xl font-black uppercase tracking-tighter ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} drop-shadow-md italic`}>{auction?.title}</h1>
+                                    {isClassicNeon || isNavyGolden ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Shield className="w-8 h-8 text-amber-500" /> : <Trophy className="w-8 h-8 text-amber-500" />}
                                 </div>
-                                    <div className="flex flex-col items-center gap-2">
-                                        <p className={`text-[10px] font-black tracking-[0.5em] ${isClassicNeon ? 'text-[#A6FF00]/60' : isNavyGolden ? 'text-[#ffd700]/60' : 'text-amber-200/60'} uppercase`}>
-                                            {isClassicNeon ? 'SEASON REGISTRATION' : isNavyGolden ? 'Tournament Registration' : 'Warrior Registration'}
-                                        </p>
-                                        <div className="flex items-center gap-3">
-                                            {config?.maxRegistrations > 0 && (
-                                                <div className={`mt-4 px-4 py-2 rounded-full ${isClassicNeon ? 'bg-[#A6FF00]/10 border border-[#A6FF00]/30 text-[#A6FF00]' : isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/30 text-[#ffd700]' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'} text-[10px] font-black uppercase tracking-widest`}>
-                                                    <Users className="inline w-3 h-3 mr-2" /> {approvedCount} {config.maxRegistrations ? `/ ${config.maxRegistrations} ${isClassicNeon || isNavyGolden ? 'PLAYERS' : 'WARRIORS'} REGISTERED` : `${isClassicNeon || isNavyGolden ? 'PLAYERS' : 'WARRIORS'} REGISTERED`}
-                                                </div>
-                                            )}
-                                            {auction?.season && (
-                                                <div className={`mt-4 px-4 py-2 rounded-full ${isClassicNeon ? 'bg-[#A6FF00]/10 border border-[#A6FF00]/30 text-[#A6FF00]' : isNavyGolden ? 'bg-[#ffd700]/10 border-[#ffd700]/30 text-[#ffd700]' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'} text-[10px] font-black uppercase tracking-widest italic`}>
-                                                    {auction.season}
-                                                </div>
-                                            )}
-                                        </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <p className={`text-[10px] font-black tracking-[0.5em] ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/60' : 'text-amber-200/60'} uppercase`}>
+                                        {isClassicNeon || isNavyGolden ? 'OFFICIAL REGISTRATION' : 'Player Registration'}
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        {config?.maxRegistrations > 0 && (
+                                            <div className={`mt-4 px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border border-[#A6FF00]/30 text-[#A6FF00]' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'} text-[10px] font-black uppercase tracking-widest`}>
+                                                <Users className="inline w-3 h-3 mr-2" /> {approvedCount} {config.maxRegistrations ? `/ ${config.maxRegistrations} PLAYERS REGISTERED` : 'PLAYERS REGISTERED'}
+                                            </div>
+                                        )}
+                                        {auction?.season && (
+                                            <div className={`mt-4 px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border border-[#A6FF00]/30 text-[#A6FF00]' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'} text-[11px] font-black uppercase tracking-[0.2em] italic shadow-[0_0_15px_rgba(166,255,0,0.1)]`}>
+                                                {auction?.season && `SEASON ${auction.season.toString().replace(/[^0-9]/g, '') || auction.season}`}
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
                             </motion.div>
                         </>
                     ) : (
@@ -2277,10 +2358,10 @@ const PlayerRegistration: React.FC = () => {
                                     animate={(isAdvaya || isNavyGolden) ? { x: 0, opacity: 1 } : {}}
                                     transition={{ delay: 0.1 }}
                                 >
-                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isNavyGolden ? 'text-[#ffd700]/70' : 'text-amber-500/70'}`}>
-                                    {isAdvaya ? 'Warrior Name' : 'Full Name'} {(!config?.basicFields || config.basicFields.name?.required !== false) && <span className="text-red-500">*</span>}
+                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'text-amber-500/70'}`}>
+                                    {isClassicNeon || isAdvaya || isNavyGolden ? 'Full Name' : 'Full Name'} {(!config?.basicFields || config.basicFields.name?.required !== false) && <span className="text-red-500">*</span>}
                                 </label>
-                                <input required={!config?.basicFields || config.basicFields.name?.required !== false} className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isNavyGolden ? 'bg-[#001f3f]/60 border-2 border-[#ffd700]/30 text-white focus:border-[#ffd700]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder={isAdvaya ? "ENTER WARRIOR NAME" : "ENTER FULL NAME"} />
+                                <input required={!config?.basicFields || config.basicFields.name?.required !== false} className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-2 border-[#A6FF00]/20 text-white focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.1)]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder={isClassicNeon || isAdvaya || isNavyGolden ? "ENTER PLAYER NAME" : "ENTER FULL NAME"} />
                             </motion.div>
                         )}
                         
@@ -2291,10 +2372,10 @@ const PlayerRegistration: React.FC = () => {
                                     animate={isAdvaya ? { x: 0, opacity: 1 } : {}}
                                     transition={{ delay: 0.2 }}
                                 >
-                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isNavyGolden ? 'text-[#ffd700]/70' : 'text-amber-500/70'}`}>
-                                        {isAdvaya ? 'Mobile Primary' : 'Mobile Number'} {(!config?.basicFields || config.basicFields.mobile?.required !== false) && <span className="text-red-500">*</span>}
+                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'text-amber-500/70'}`}>
+                                        {isClassicNeon || isAdvaya || isNavyGolden ? 'Mobile Number' : 'Mobile Number'} {(!config?.basicFields || config.basicFields.mobile?.required !== false) && <span className="text-red-500">*</span>}
                                     </label>
-                                    <input required={!config?.basicFields || config.basicFields.mobile?.required !== false} type="tel" className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isNavyGolden ? 'bg-[#001f3f]/60 border-2 border-[#ffd700]/30 text-white focus:border-[#ffd700]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} placeholder="Enter 10 digit mobile number" />
+                                    <input required={!config?.basicFields || config.basicFields.mobile?.required !== false} type="tel" className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-2 border-[#A6FF00]/20 text-white focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.1)]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} placeholder="Enter 10 digit mobile number" />
                                 </motion.div>
                             )}
                             {(!config?.basicFields || config.basicFields.dob?.show !== false) && (
@@ -2303,10 +2384,10 @@ const PlayerRegistration: React.FC = () => {
                                     animate={isAdvaya ? { x: 0, opacity: 1 } : {}}
                                     transition={{ delay: 0.2 }}
                                 >
-                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isNavyGolden ? 'text-[#ffd700]/70' : 'text-amber-500/70'}`}>
+                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'text-amber-500/70'}`}>
                                         Date of Birth {(!config?.basicFields || config.basicFields.dob?.required !== false) && <span className="text-red-500">*</span>}
                                     </label>
-                                    <input required={!config?.basicFields || config.basicFields.dob?.required !== false} type="date" className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isNavyGolden ? 'bg-[#001f3f]/60 border-2 border-[#ffd700]/30 text-white focus:border-[#ffd700]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} />
+                                    <input required={!config?.basicFields || config.basicFields.dob?.required !== false} type="date" className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-2 border-[#A6FF00]/20 text-white focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.1)]' : 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500'}`} value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} />
                                 </motion.div>
                             )}
                         </div>
@@ -2317,16 +2398,16 @@ const PlayerRegistration: React.FC = () => {
                                 animate={isAdvaya ? { y: 0, opacity: 1 } : {}}
                                 transition={{ delay: 0.3 }}
                             >
-                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isNavyGolden ? 'text-[#ffd700]/70' : 'text-amber-500/70'}`}>
+                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/70' : 'text-amber-500/70'}`}>
                                     Gender {(!config?.basicFields || config.basicFields.gender?.required !== false) && <span className="text-red-500">*</span>}
                                 </label>
                                 <div className="flex flex-wrap gap-2.5">
                                     {['Male', 'Female', 'Other'].map(g => (
                                         <button 
-                                            key={g} 
+                                            key={`gender-btn-${g}`} 
                                             type="button" 
                                             onClick={() => setFormData({...formData, gender: g})} 
-                                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData.gender === g ? (isNavyGolden ? 'bg-[#ffd700] border-[#ffd700] text-[#001f3f] shadow-[0_0_15px_rgba(255,215,0,0.3)]' : isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 text-[#ffd700]/50 hover:border-[#ffd700]/50' : isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}
+                                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData.gender === g ? (isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_15px_rgba(166,255,0,0.3)]' : isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/50 hover:border-[#A6FF00]/50' : isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}
                                         >
                                             {g}
                                         </button>
@@ -2341,19 +2422,19 @@ const PlayerRegistration: React.FC = () => {
                                 animate={isAdvaya ? { y: 0, opacity: 1 } : {}}
                                 transition={{ delay: 0.35 }}
                             >
-                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>
+                                <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isClassicNeon ? 'text-[#A6FF00]/70' : isAdvaya ? 'text-blue-500' : 'text-gray-400'}`}>
                                     Select Your Role {(!config?.basicFields || config.basicFields.role?.required !== false) && <span className="text-red-500">*</span>}
                                 </label>
                                 <div className="flex flex-wrap gap-2.5">
                                     {roles.length > 0 ? (
-                                        roles.map(r => (
-                                            <button key={r.id} type="button" onClick={() => setFormData({...formData, playerType: r.name})} className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData.playerType === r.name ? (isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}>
+                                        roles.map((r, idx) => (
+                                            <button key={`role-btn-${r.id}-${idx}`} type="button" onClick={() => setFormData({...formData, playerType: r.name})} className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData.playerType === r.name ? (isClassicNeon ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_15px_rgba(166,255,0,0.3)]' : isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/50 hover:border-[#A6FF00]/50' : isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}>
                                                 {r.name}
                                             </button>
                                         ))
                                     ) : (
-                                        <div className={`text-[10px] font-bold uppercase tracking-widest p-4 border border-dashed rounded-xl w-full text-center ${isAdvaya ? 'border-amber-900/30 text-amber-500/40' : 'border-gray-200 text-gray-400'}`}>
-                                            No roles defined for this auction. Please add roles in the auction settings.
+                                        <div className={`text-[10px] font-bold uppercase tracking-widest p-4 border border-dashed rounded-xl w-full text-center ${isClassicNeon ? 'border-[#A6FF00]/20 text-[#A6FF00]/40' : isAdvaya ? 'border-amber-900/30 text-amber-500/40' : 'border-gray-200 text-gray-400'}`}>
+                                            No roles defined.
                                         </div>
                                     )}
                                 </div>
@@ -2362,31 +2443,31 @@ const PlayerRegistration: React.FC = () => {
 
                         {/* CUSTOM FIELDS DYNAMIC RENDERING */}
                         {(config?.customFields || []).length > 0 && (
-                            <div className={`pt-4 border-t space-y-6 ${isNavyGolden ? 'border-[#ffd700]/20' : isAdvaya ? 'border-amber-900/30' : 'border-gray-100'}`}>
-                                <h3 className={`text-[11px] font-black uppercase tracking-[0.25em] flex items-center gap-2 ${isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-500' : 'text-indigo-500'}`}>
-                                    {isNavyGolden ? <Trophy className="w-4 h-4"/> : isAdvaya ? <Zap className="w-4 h-4"/> : <AlignLeft className="w-4 h-4"/>} {isAdvaya ? 'WARRIOR ATTRIBUTES' : 'ADDITIONAL DETAILS'}
+                            <div className={`pt-4 border-t space-y-6 ${isClassicNeon ? 'border-[#A6FF00]/20' : isNavyGolden ? 'border-[#ffd700]/20' : isAdvaya ? 'border-amber-900/30' : 'border-gray-100'}`}>
+                                <h3 className={`text-[11px] font-black uppercase tracking-[0.25em] flex items-center gap-2 ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-500' : 'text-indigo-500'}`}>
+                                    {isClassicNeon ? <Zap className="w-4 h-4"/> : isNavyGolden ? <Trophy className="w-4 h-4"/> : isAdvaya ? <Zap className="w-4 h-4"/> : <AlignLeft className="w-4 h-4"/>} {isAdvaya || isClassicNeon ? 'ADDITIONAL ATTRIBUTES' : 'ADDITIONAL DETAILS'}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {(config?.customFields || []).map((field, idx) => (
+                                    {(config?.customFields || []).map((field: any, idx: number) => (
                                         <motion.div 
-                                            key={field.id} 
+                                            key={`custom-field-${field.id}-${idx}`} 
                                             initial={isAdvaya ? { opacity: 0, y: 10 } : {}}
                                             animate={isAdvaya ? { opacity: 1, y: 0 } : {}}
                                             transition={{ delay: 0.4 + (idx * 0.05) }}
                                             className={field.type === 'textarea' ? 'md:col-span-2' : ''}
                                         >
-                                            <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>
+                                            <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ml-1 ${isClassicNeon ? 'text-[#A6FF00]/70' : isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>
                                                 {field.label} {field.required && <span className="text-red-500">*</span>}
                                             </label>
                                             
                                             {field.type === 'select' ? (
                                                 <div className="flex flex-wrap gap-2.5">
-                                                    {field.options?.map(opt => (
+                                                    {field.options?.map((opt: string, optIdx: number) => (
                                                         <button 
-                                                            key={opt} 
+                                                            key={`custom-opt-${field.id}-${optIdx}`} 
                                                             type="button" 
                                                             onClick={() => setFormData({...formData, [field.id]: opt})} 
-                                                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData[field.id] === opt ? (isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}
+                                                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${formData[field.id] === opt ? (isClassicNeon ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' : isAdvaya ? 'bg-amber-600 border-amber-600 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-blue-600 border-blue-600 text-white shadow-lg') : (isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/50 hover:border-[#A6FF00]/50' : isAdvaya ? 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200')}`}
                                                         >
                                                             {opt}
                                                         </button>
@@ -2395,7 +2476,7 @@ const PlayerRegistration: React.FC = () => {
                                             ) : field.type === 'textarea' ? (
                                                 <textarea 
                                                     required={field.required}
-                                                    className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all min-h-[100px] ${isAdvaya ? 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500' : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`}
+                                                    className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all min-h-[100px] ${isClassicNeon ? 'bg-[#0F1413] border-2 border-[#A6FF00]/20 text-white focus:border-[#A6FF00]' : isAdvaya ? 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500' : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`}
                                                     value={formData[field.id]}
                                                     onChange={e => setFormData({...formData, [field.id]: e.target.value})}
                                                 />
@@ -2403,7 +2484,7 @@ const PlayerRegistration: React.FC = () => {
                                                 <input 
                                                     required={field.required}
                                                     type={field.type}
-                                                    className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isAdvaya ? 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500' : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`}
+                                                    className={`w-full rounded-2xl px-6 py-4 font-bold outline-none transition-all ${isClassicNeon ? 'bg-[#0F1413] border-2 border-[#A6FF00]/20 text-white focus:border-[#A6FF00]' : isAdvaya ? 'bg-black/40 border-2 border-amber-900/30 text-amber-100 focus:border-amber-500' : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'}`}
                                                     value={formData[field.id]}
                                                     onChange={e => setFormData({...formData, [field.id]: e.target.value})}
                                                 />
@@ -2421,8 +2502,8 @@ const PlayerRegistration: React.FC = () => {
                                     animate={(isAdvaya || isNavyGolden) ? { opacity: 1, scale: 1 } : {}}
                                     transition={{ delay: 0.5 }}
                                 >
-                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isClassicNeon ? 'text-[#A6FF00]/70' : isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>
-                                        {isClassicNeon || !isAdvaya ? 'PLAYER PHOTO' : 'WARRIOR PORTRAIT'} {(!config?.basicFields || config.basicFields.photo?.required !== false) && <span className="text-red-500">*</span>}
+                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-3 ml-1 ${isClassicNeon ? 'text-[#A6FF00]/70' : isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-blue-500' : 'text-gray-400'}`}>
+                                        {isClassicNeon || !isAdvaya ? 'PLAYER PHOTO' : 'PLAYER PORTRAIT'} {(!config?.basicFields || config.basicFields.photo?.required !== false) && <span className="text-red-500">*</span>}
                                     </label>
                                     <div onClick={() => profileInputRef.current?.click()} className={`w-full h-48 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group border-2 border-dashed ${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/30 hover:border-[#A6FF00]' : isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 hover:border-[#ffd700]' : isAdvaya ? 'bg-black/40 border-amber-900/30 hover:border-amber-500' : 'bg-gray-50 border-gray-200 hover:bg-white hover:border-blue-400'}`}>
                                         {(isAdvaya || isNavyGolden || isClassicNeon) && (
@@ -2522,11 +2603,11 @@ const PlayerRegistration: React.FC = () => {
                                 </h4>
                                 <div className="space-y-3">
                                     {(config?.organizerContacts || []).map((contact, idx) => (
-                                        <div key={idx} className="flex items-center justify-between">
-                                            <div className="text-sm font-black tracking-widest uppercase">
+                                        <div key={`contact-item-classic-final-${idx}-${contact.name}`} className="flex items-center justify-between">
+                                            <div className={`text-sm font-black tracking-widest uppercase ${isClassicNeon ? 'text-white' : ''}`}>
                                                 {contact.name}
                                             </div>
-                                            <a href={`tel:${contact.phone}`} className="text-blue-500 hover:text-blue-400 font-bold text-xs">
+                                            <a href={`tel:${contact.phone}`} className={`${isClassicNeon ? 'text-[#A6FF00]' : 'text-blue-500'} hover:opacity-80 font-bold text-xs uppercase tracking-tighter`}>
                                                 {contact.phone}
                                             </a>
                                         </div>
@@ -2553,8 +2634,8 @@ const PlayerRegistration: React.FC = () => {
                                     />
                                 </div>
                                 <label htmlFor="battle-oath-checkbox" className="cursor-pointer">
-                                    <h4 className={`text-sm font-black uppercase tracking-widest mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-amber-500' : 'text-amber-700'}`}>
-                                        {isClassicNeon ? 'ACCEPT TOURNAMENT POLICIES' : isAdvaya ? 'BATTLE OATH ACCEPTANCE' : 'I Accept the Terms & Conditions'}
+                                    <h4 className={`text-sm font-black uppercase tracking-widest mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-blue-500' : 'text-amber-700'}`}>
+                                        {isClassicNeon ? 'ACCEPT TOURNAMENT POLICIES' : isAdvaya ? 'TOURNAMENT OATH ACCEPTANCE' : 'I Accept the Terms & Conditions'}
                                     </h4>
                                     <p className={`text-[10px] font-bold leading-relaxed uppercase tracking-widest ${isClassicNeon ? 'text-white/60' : isAdvaya ? 'text-amber-200/60' : 'text-amber-800/60'}`}>
                                         I hereby declare that all information provided is accurate and authentic. I agree to abide by the tournament protocols and maintain sportsmanship.

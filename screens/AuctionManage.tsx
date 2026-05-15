@@ -90,6 +90,9 @@ const DEFAULT_REG_CONFIG: RegistrationConfig = {
     upiName: '',
     qrCodeUrl: '',
     terms: '1. Registration fee is non-refundable.\n2. Players must reporting 30 mins before match.',
+    welcomePopup: { isEnabled: false, message: '', autoCloseTimer: 0 },
+    welcomePosterUrl: '',
+    maxRegistrations: 36,
     customFields: [],
     organizerContacts: [],
     basicFields: {
@@ -148,6 +151,7 @@ const AuctionManage: React.FC = () => {
     const qrInputRef = useRef<HTMLInputElement>(null);
     const regLogoInputRef = useRef<HTMLInputElement>(null);
     const regBannerInputRef = useRef<HTMLInputElement>(null);
+    const welcomePosterInputRef = useRef<HTMLInputElement>(null);
 
     // Custom Field State
     const [newField, setNewField] = useState<Partial<FormField>>({ label: '', type: 'text', required: true, options: [] });
@@ -499,9 +503,9 @@ const AuctionManage: React.FC = () => {
         } catch (e: any) { showNotification("Update failed: " + e.message); }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'MODAL' | 'LOGO' | 'QR' | 'REG_LOGO' | 'REG_BANNER' | 'OVERLAY') => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'MODAL' | 'LOGO' | 'QR' | 'REG_LOGO' | 'REG_BANNER' | 'OVERLAY' | 'REG_WELCOME_POSTER') => {
         if (e.target.files && e.target.files[0]) {
-            const base64 = await compressImage(e.target.files[0], type === 'REG_BANNER');
+            const base64 = await compressImage(e.target.files[0], type === 'REG_BANNER' || type === 'REG_WELCOME_POSTER');
             
             if (type === 'OVERLAY' && overlayImage) {
                 try {
@@ -526,6 +530,7 @@ const AuctionManage: React.FC = () => {
             if (type === 'QR') setRegConfig({ ...regConfig, qrCodeUrl: base64 });
             if (type === 'REG_LOGO') setRegConfig({ ...regConfig, logoUrl: base64 });
             if (type === 'REG_BANNER') setRegConfig({ ...regConfig, bannerUrl: base64 });
+            if (type === 'REG_WELCOME_POSTER') setRegConfig({ ...regConfig, welcomePosterUrl: base64 });
         }
     };
 
@@ -1961,6 +1966,32 @@ const AuctionManage: React.FC = () => {
                                                     {regConfig.hideLandingPage ? <ToggleRight className="w-8 h-8"/> : <ToggleLeft className="w-8 h-8"/>}
                                                 </button>
                                             </div>
+
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[11px] font-black text-gray-700 block uppercase tracking-wide">Welcome Poster</span>
+                                                        <span className="text-[9px] text-gray-400 font-bold uppercase mt-1 block">Show a custom poster instead of text briefing</span>
+                                                    </div>
+                                                    {regConfig.welcomePosterUrl && (
+                                                        <button onClick={() => setRegConfig({...regConfig, welcomePosterUrl: ''})} className="text-red-500 hover:text-red-600">
+                                                            <Trash2 className="w-4 h-4"/>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div onClick={() => welcomePosterInputRef.current?.click()} className="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-all overflow-hidden relative group">
+                                                    {regConfig.welcomePosterUrl ? (
+                                                        <img src={regConfig.welcomePosterUrl} className="h-full w-full object-contain" referrerPolicy="no-referrer" />
+                                                    ) : (
+                                                        <div className="text-center">
+                                                            <ImageIcon className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase">Upload Poster</p>
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold">CHANGE</div>
+                                                    <input ref={welcomePosterInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'REG_WELCOME_POSTER')} />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -2453,6 +2484,33 @@ const AuctionManage: React.FC = () => {
                                     <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.25em] flex items-center gap-2">
+                                                <ImageIcon className="w-4 h-4"/> Registration Poster (Welcome)
+                                            </h3>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-amber-400 transition-all cursor-pointer relative group overflow-hidden" onClick={() => document.getElementById('regPosterInput')?.click()}>
+                                                {regConfig.welcomePosterUrl ? (
+                                                    <img src={regConfig.welcomePosterUrl} className="max-h-48 rounded-xl object-contain" />
+                                                ) : (
+                                                    <div className="text-center">
+                                                        <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Click to upload poster</p>
+                                                    </div>
+                                                )}
+                                                <input id="regPosterInput" type="file" className="hidden" accept="image/*" onChange={async e => {
+                                                    if (e.target.files?.[0]) {
+                                                        const url = await compressImage(e.target.files[0], true);
+                                                        setRegConfig({...regConfig, welcomePosterUrl: url});
+                                                    }
+                                                }} />
+                                            </div>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 ml-2 tracking-widest">This poster will show as a welcome screen before the registration form.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.25em] flex items-center gap-2">
                                                 <Megaphone className="w-4 h-4"/> Welcome Popup
                                             </h3>
                                             <label className="relative inline-flex items-center cursor-pointer">
@@ -2518,17 +2576,18 @@ const AuctionManage: React.FC = () => {
                                         
                                         <div>
                                             <label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Form Theme Style</label>
-                                            <div className="flex gap-3">
+                                            <div className="flex flex-wrap gap-3">
                                                 {[
                                                     { id: 'DEFAULT', label: 'Standard (Clean)' },
                                                     { id: 'ADVAYA', label: 'ADVAYA (Kingdom Battle)' },
-                                                    { id: 'NAVY_GOLDEN', label: 'Navy & Golden (Classic)' }
+                                                    { id: 'NAVY_GOLDEN', label: 'Green & White (Classic)' },
+                                                    { id: 'CLASSIC_NEON', label: 'Neon Green & Black' }
                                                 ].map(t => (
                                                     <button 
                                                         key={t.id}
                                                         type="button"
                                                         onClick={() => setRegConfig({...regConfig, theme: t.id as any})}
-                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${regConfig.theme === t.id ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/20' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                                                        className={`flex-1 min-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${regConfig.theme === t.id ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/20' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
                                                     >
                                                         {t.label}
                                                     </button>
@@ -2567,6 +2626,90 @@ const AuctionManage: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Image Showcase Section */}
+                                    <div className="bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.25em] flex items-center gap-2">
+                                                <ImageIcon className="w-4 h-4"/> Image Showcase Gallery
+                                            </h3>
+                                            <button 
+                                                onClick={() => {
+                                                    const currentShowcase = regConfig.showcaseImages || [];
+                                                    setRegConfig({
+                                                        ...regConfig,
+                                                        showcaseImages: [...currentShowcase, { imageUrl: '', caption: '' }]
+                                                    });
+                                                }}
+                                                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center gap-2"
+                                            >
+                                                <Plus className="w-3 h-3" /> Add Image
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {(regConfig.showcaseImages || []).map((img, idx) => (
+                                                <div key={`showcase-img-${idx}`} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex gap-4 items-start relative group">
+                                                    <div className="w-24 h-24 flex-shrink-0 bg-white border-2 border-dashed border-gray-200 rounded-xl overflow-hidden relative hover:bg-blue-50 transition-all cursor-pointer">
+                                                        {img.imageUrl ? (
+                                                            <img src={img.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                                        ) : (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                                <Upload className="w-4 h-4 text-gray-300 mb-1" />
+                                                                <span className="text-[8px] font-black text-gray-400 uppercase">Upload</span>
+                                                            </div>
+                                                        )}
+                                                        <input 
+                                                            type="file" 
+                                                            className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                            accept="image/*"
+                                                            onChange={async e => {
+                                                                if (e.target.files?.[0]) {
+                                                                    const url = await compressImage(e.target.files[0], true);
+                                                                    const updated = [...(regConfig.showcaseImages || [])];
+                                                                    updated[idx].imageUrl = url;
+                                                                    setRegConfig({ ...regConfig, showcaseImages: updated });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 space-y-3 pt-1">
+                                                        <div>
+                                                            <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Image Caption</label>
+                                                            <input 
+                                                                className="w-full border-2 border-gray-100 rounded-lg px-3 py-2 text-[11px] font-bold text-gray-600 focus:border-blue-400 outline-none transition-all"
+                                                                placeholder="Enter caption for this image..."
+                                                                value={img.caption}
+                                                                onChange={e => {
+                                                                    const updated = [...(regConfig.showcaseImages || [])];
+                                                                    updated[idx].caption = e.target.value;
+                                                                    setRegConfig({ ...regConfig, showcaseImages: updated });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => {
+                                                            const updated = (regConfig.showcaseImages || []).filter((_, i) => i !== idx);
+                                                            setRegConfig({ ...regConfig, showcaseImages: updated });
+                                                        }}
+                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-200"
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(regConfig.showcaseImages || []).length === 0 && (
+                                                <div className="text-center py-8 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[1.5rem]">
+                                                    <ImageIcon className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                                                        No showcase images added yet.<br/>Add images to display a gallery on the registration page.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div className="bg-slate-900 p-6 rounded-[2rem] text-white">
                                         <div className="flex items-center gap-3 mb-4">
                                             <Info className="w-5 h-5 text-blue-400"/>

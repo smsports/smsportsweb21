@@ -336,6 +336,11 @@ export interface BasicFieldConfig {
     required: boolean;
 }
 
+export interface ShowcaseImage {
+    imageUrl: string;
+    caption: string;
+}
+
 export interface RegistrationConfig {
     isEnabled: boolean;
     includePayment: boolean; 
@@ -351,8 +356,10 @@ export interface RegistrationConfig {
     bannerUrl?: string; 
     logoUrl?: string;
     theme?: 'DEFAULT' | 'ADVAYA' | 'NAVY_GOLDEN' | 'CLASSIC_NEON';
+    showcaseImages?: ShowcaseImage[];
     customSuccessMessage?: string;
     welcomePopup?: WelcomePopupConfig;
+    welcomePosterUrl?: string;
     maxRegistrations?: number;
     rules?: string;
     closedMessage?: string;
