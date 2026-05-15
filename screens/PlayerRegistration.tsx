@@ -1900,7 +1900,7 @@ const PlayerRegistration: React.FC = () => {
                                 </div>
                             )}
 
-                            {currentStepId === 'oath' && (
+                            {currentStepId === 'rules' && (
                                 <div className="max-w-2xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
                                         <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
