@@ -18,7 +18,7 @@ const compressImage = async (file: File): Promise<string> => {
             const converted = await heic2any({
                 blob: file,
                 toType: 'image/jpeg',
-                quality: 0.8
+                quality: 0.9
             });
             processedFile = Array.isArray(converted) ? converted[0] : converted;
         } catch (e) {
@@ -34,36 +34,30 @@ const compressImage = async (file: File): Promise<string> => {
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
+                // Support up to 4K resolution
+                const MAX_DIM = 3840; 
                 let width = img.width;
                 let height = img.height;
-                
-                // Target smaller dimensions to stay under 1MB
-                const MAX_DIM = 2000;
-                if (width > height) {
-                    if (width > MAX_DIM) {
-                        height *= MAX_DIM / width;
-                        width = MAX_DIM;
-                    }
-                } else {
-                    if (height > MAX_DIM) {
-                        width *= MAX_DIM / height;
-                        height = MAX_DIM;
-                    }
-                }
+                if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
+                else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
                 
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
-                
-                // Start with 0.7 quality and reduce if needed
-                let quality = 0.7;
+                if (ctx) {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                }
+
+                // Iteratively reduce quality to stay under 1MB limit (leaving buffer for metadata)
+                let quality = 0.95;
                 let dataUrl = canvas.toDataURL('image/jpeg', quality);
                 
-                // Firestore limit is 1MB. Base64 adds ~33% overhead.
-                // 100,000 chars is ~75KB, safe for registration photos.
-                while (dataUrl.length > 100000 && quality > 0.1) {
-                    quality -= 0.1;
+                // Firestore limit is 1MB. Base64 is ~33% overhead.
+                // Using ~900,000 as limit for safety
+                while (dataUrl.length > 900000 && quality > 0.1) {
+                    quality -= 0.05;
                     dataUrl = canvas.toDataURL('image/jpeg', quality);
                 }
                 
@@ -206,14 +200,14 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                     {/* Jersey Image Background */}
                     {jerseyUrl && (
                         <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
-                            <img src={jerseyUrl} className="w-full h-full object-contain" alt="Jersey Base" />
+                            <img src={jerseyUrl} referrerPolicy="no-referrer" className="w-full h-full object-contain" alt="Jersey Base" />
                         </div>
                     )}
 
                     {/* Jersey Overlay Image - Put it above Name/Number for texture */}
                     {jerseyOverlayUrl && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                            <img src={jerseyOverlayUrl} className="w-full h-full object-contain pointer-events-none" alt="Jersey Overlay" />
+                            <img src={jerseyOverlayUrl} referrerPolicy="no-referrer" className="w-full h-full object-contain pointer-events-none" alt="Jersey Overlay" />
                         </div>
                     )}
 
@@ -263,6 +257,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                                     initial={{ scale: 0.8, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     src={auctionLogo} 
+                                    referrerPolicy="no-referrer"
                                     className="w-28 h-28 object-contain drop-shadow-[0_0_20px_rgba(166,255,0,0.3)] mb-8 relative z-10" 
                                 />
                             )}
@@ -1144,7 +1139,7 @@ const PlayerRegistration: React.FC = () => {
                                     <div className="w-full flex-1 flex flex-col items-center justify-center space-y-12">
                                         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6">
                                            {config?.logoUrl && (
-                                                <img src={config.logoUrl} className="w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-[0_0_20px_rgba(166,255,0,0.4)]" />
+                                                <img src={config.logoUrl} referrerPolicy="no-referrer" className="w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-[0_0_20px_rgba(166,255,0,0.4)]" />
                                            )}
                                            <div className="text-center md:text-right">
                                                <p className="text-[#A6FF00] font-black text-xs md:text-base tracking-[0.4em] mb-1">MAN OF THE SERIES</p>
@@ -1156,6 +1151,7 @@ const PlayerRegistration: React.FC = () => {
                                             <div className="absolute inset-0 bg-[#A6FF00]/10 blur-[120px] rounded-full animate-pulse" />
                                             <img 
                                                 src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200" 
+                                                referrerPolicy="no-referrer"
                                                 className="w-full max-w-2xl mx-auto rounded-[3rem] border-4 border-[#A6FF00]/20 shadow-[0_0_80px_rgba(166,255,0,0.2)] object-cover h-[300px] md:h-[450px]"
                                             />
                                             <div className="absolute inset-0 flex flex-col justify-center pointer-events-none">
@@ -1747,7 +1743,7 @@ const PlayerRegistration: React.FC = () => {
                                 >
                                                     {profilePic ? (
                                                         <div className="w-full h-full bg-white">
-                                                            <img src={profilePic} className="w-full h-full object-cover" />
+                                                            <img src={profilePic} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                         </div>
                                                     ) : (
                                                         <div className="text-center">
@@ -1903,7 +1899,8 @@ const PlayerRegistration: React.FC = () => {
                                             auctionLogo={config?.logoUrl || auction?.logoUrl}
                                             theme={config?.theme}
                                             season={auction?.season}
-                                            jerseyUrl={state.globalJerseyUrl}
+                                            jerseyUrl={config?.jerseyUrl || state.globalJerseyUrl}
+                                            jerseyOverlayUrl={state.globalJerseyOverlayUrl}
                                         />
                                     </div>
                                 </div>
@@ -1951,7 +1948,7 @@ const PlayerRegistration: React.FC = () => {
                                                     </div>
                                                     
                                                     <div className={`bg-white p-6 rounded-[2.5rem] shadow-2xl ${isClassicNeon || isNavyGolden ? 'shadow-[0_0_50px_rgba(166,255,0,0.3)] border-[#A6FF00]' : 'shadow-[0_0_50px_rgba(251,191,36,0.3)] border-amber-500'} border-8 inline-block mb-10`}>
-                                                        {config.qrCodeUrl && <img src={config.qrCodeUrl} className="w-64 h-64 object-contain" />}
+                                                        {config.qrCodeUrl && <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />}
                                                     </div>
                                                     
                                                     <div className="space-y-4">
@@ -2115,7 +2112,7 @@ const PlayerRegistration: React.FC = () => {
                                         auctionLogo={config?.logoUrl || auction?.logoUrl}
                                         theme={config?.theme}
                                         viewMode={jerseyViewMode}
-                                        jerseyUrl={state.globalJerseyUrl}
+                                        jerseyUrl={config?.jerseyUrl || state.globalJerseyUrl}
                                         jerseyOverlayUrl={state.globalJerseyOverlayUrl}
                                     />
 
@@ -2263,7 +2260,7 @@ const PlayerRegistration: React.FC = () => {
                                 className="relative z-20 max-w-2xl w-full bg-black border-4 border-amber-500/30 rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(251,191,36,0.2)]"
                             >
                                 <div className="w-full overflow-y-auto max-h-[90vh] custom-scrollbar">
-                                    <img src={config?.bannerUrl} className="w-full h-auto block" />
+                                    <img src={config?.bannerUrl} referrerPolicy="no-referrer" className="w-full h-auto block" />
                                     <div className="p-8 bg-black/95 border-t border-amber-500/20 text-center">
                                         <button 
                                             onClick={() => setShowPoster(false)}
@@ -2287,6 +2284,7 @@ const PlayerRegistration: React.FC = () => {
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: 0.5, duration: 0.8 }}
                                         src={config.logoUrl} 
+                                        referrerPolicy="no-referrer"
                                         className="w-40 h-40 mx-auto mb-8 object-contain drop-shadow-[0_0_25px_rgba(251,191,36,0.5)]" 
                                     />
                                 )}
@@ -2413,7 +2411,7 @@ const PlayerRegistration: React.FC = () => {
                                 className="relative z-10"
                             >
                                 {config?.bannerUrl && (
-                                    <img src={config.bannerUrl} className={`w-full h-32 object-cover rounded-2xl mb-6 border ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-500/20'} shadow-2xl`} />
+                                    <img src={config.bannerUrl} referrerPolicy="no-referrer" className={`w-full h-32 object-cover rounded-2xl mb-6 border ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-500/20'} shadow-2xl`} />
                                 )}
                                 <div className="flex items-center justify-center gap-4 mb-4">
                                     {isClassicNeon || isNavyGolden ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Sword className="w-8 h-8 text-amber-500" /> : <ShieldCheck className="w-8 h-8 text-amber-500" />}
@@ -2653,7 +2651,7 @@ const PlayerRegistration: React.FC = () => {
                                         </div>
                                         
                                         <div className={`p-6 bg-white rounded-[2.5rem] shadow-2xl border-4 ${isNavyGolden ? 'border-[#ffd700]' : isAdvaya ? 'border-amber-500' : 'border-blue-600'}`}>
-                                            <img src={config.qrCodeUrl} className="w-64 h-64 object-contain" />
+                                            <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />
                                         </div>
 
                                         <div className="flex items-center gap-4 w-full max-w-xs">

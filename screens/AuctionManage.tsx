@@ -1310,6 +1310,25 @@ const AuctionManage: React.FC = () => {
         setOptionInput('');
     };
 
+    const copyRegLink = () => {
+        let baseUrl = window.location.origin;
+        if (baseUrl.includes('-dev-')) {
+            baseUrl = baseUrl.replace('-dev-', '-pre-');
+        }
+        const url = `${baseUrl}/#/auction/${id}/register`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: `${auction?.title} - Player Registration`,
+                text: 'Register now for the upcoming auction!',
+                url: url
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(url);
+            showNotification("✅ Link copied! Share this with players.", "success");
+        }
+    };
+
     const handleSaveCode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
@@ -1938,9 +1957,31 @@ const AuctionManage: React.FC = () => {
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Configure player signup protocols</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-6 py-3 shadow-sm">
-                                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Registration Open</label>
-                                    <button onClick={() => setRegConfig({...regConfig, isEnabled: !regConfig.isEnabled})} className={`transition-all active:scale-90 ${regConfig.isEnabled ? 'text-blue-600' : 'text-gray-300'}`}>{regConfig.isEnabled ? <ToggleRight className="w-10 h-10"/> : <ToggleLeft className="w-10 h-10"/>}</button>
+                                <div className="flex flex-col md:flex-row items-center gap-4">
+                                    <div className="flex flex-col items-end">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Public Registration Link</p>
+                                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+                                            <p className="text-[10px] font-mono text-gray-500 truncate max-w-[200px]">{`${window.location.origin.replace('-dev-', '-pre-')}/register/${id}`}</p>
+                                            <button 
+                                                onClick={copyRegLink}
+                                                className={`p-1.5 rounded-lg transition-all ${copySuccess ? 'text-green-500' : 'text-gray-400 hover:text-blue-600'}`}
+                                            >
+                                                {copySuccess ? <CheckIcon className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={copyRegLink}
+                                        className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
+                                            copySuccess ? 'bg-green-600 shadow-green-600/20 text-white' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20 text-white'
+                                        }`}
+                                    >
+                                        <Share2 className="w-4 h-4" /> {copySuccess ? 'Link Copied!' : 'Share Form Link'}
+                                    </button>
+                                    <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-6 py-3 shadow-sm">
+                                        <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Registration Open</label>
+                                        <button onClick={() => setRegConfig({...regConfig, isEnabled: !regConfig.isEnabled})} className={`transition-all active:scale-90 ${regConfig.isEnabled ? 'text-blue-600' : 'text-gray-300'}`}>{regConfig.isEnabled ? <ToggleRight className="w-10 h-10"/> : <ToggleLeft className="w-10 h-10"/>}</button>
+                                    </div>
                                 </div>
                             </div>
 

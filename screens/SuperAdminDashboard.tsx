@@ -55,7 +55,7 @@ const compressImage = async (file: File): Promise<string> => {
                 let dataUrl = canvas.toDataURL('image/jpeg', quality);
                 
                 // Firestore limit is 1MB (1,048,576 bytes)
-                // DataURL overhead is roughly 33%, so 800,000 bytes is a safe target
+                // Using ~900,000 as limit for safety
                 while (dataUrl.length > 900000 && quality > 0.1) {
                     quality -= 0.05;
                     dataUrl = canvas.toDataURL('image/jpeg', quality);
@@ -636,7 +636,7 @@ const SuperAdminDashboard: React.FC = () => {
                                 <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
                                     {state.successAdPosterUrl ? (
                                         <>
-                                            <img src={state.successAdPosterUrl} className="w-full h-full object-contain" alt="Poster" />
+                                            <img src={state.successAdPosterUrl} referrerPolicy="no-referrer" className="w-full h-full object-contain" alt="Poster" />
                                             <button 
                                                 onClick={async () => { if(window.confirm("Remove Poster?")) await db.collection('appConfig').doc('globalSettings').update({ successAdPosterUrl: '' }); }}
                                                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
@@ -658,7 +658,7 @@ const SuperAdminDashboard: React.FC = () => {
                                 <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
                                     {state.globalJerseyUrl ? (
                                         <>
-                                            <img src={state.globalJerseyUrl} className="w-full h-full object-contain" alt="Jersey" />
+                                            <img src={state.globalJerseyUrl} referrerPolicy="no-referrer" className="w-full h-full object-contain" alt="Jersey" />
                                             <button 
                                                 onClick={async () => { if(window.confirm("Remove Jersey?")) await db.collection('appConfig').doc('globalSettings').update({ globalJerseyUrl: '' }); }}
                                                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
@@ -680,7 +680,7 @@ const SuperAdminDashboard: React.FC = () => {
                                 <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
                                     {state.globalJerseyOverlayUrl ? (
                                         <>
-                                            <img src={state.globalJerseyOverlayUrl} className="w-full h-full object-contain" alt="Overlay" />
+                                            <img src={state.globalJerseyOverlayUrl} referrerPolicy="no-referrer" className="w-full h-full object-contain" alt="Overlay" />
                                             <button 
                                                 onClick={async () => { if(window.confirm("Remove Overlay?")) await db.collection('appConfig').doc('globalSettings').update({ globalJerseyOverlayUrl: '' }); }}
                                                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
@@ -703,7 +703,7 @@ const SuperAdminDashboard: React.FC = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 {globalAssets.map(asset => (
                                 <div key={asset.id} className="aspect-video bg-zinc-900 rounded-2xl border border-white/5 overflow-hidden group relative shadow-2xl">
-                                    <img src={asset.url} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
+                                    <img src={asset.url} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <button onClick={async () => db.collection('globalAssets').doc(asset.id).delete()} className="bg-red-600 p-3 rounded-full shadow-xl hover:scale-110 transition-transform"><Trash2 className="w-5 h-5"/></button>
                                     </div>

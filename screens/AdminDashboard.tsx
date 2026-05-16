@@ -259,10 +259,23 @@ const AdminDashboard: React.FC = () => {
   };
 
   const copyRegLink = (auctionId: string) => {
-      const baseUrl = window.location.href.split('#')[0];
-      const url = `${baseUrl}#/auction/${auctionId}/register`;
-      navigator.clipboard.writeText(url);
-      showNotification("✅ Registration link copied!", "success");
+      let baseUrl = window.location.origin;
+      // If we're in the dev/builder environment, try to use the public preview environment
+      if (baseUrl.includes('-dev-')) {
+        baseUrl = baseUrl.replace('-dev-', '-pre-');
+      }
+      const url = `${baseUrl}/#/auction/${auctionId}/register`;
+      
+      if (navigator.share) {
+          navigator.share({
+              title: 'Tournament Player Registration',
+              text: 'Please register for our tournament here!',
+              url: url
+          }).catch(console.error);
+      } else {
+          navigator.clipboard.writeText(url);
+          showNotification("✅ Registration link copied!", "success");
+      }
   };
 
   const handleDeleteAuction = async (auctionId: string, title: string) => {
@@ -515,13 +528,24 @@ const AdminDashboard: React.FC = () => {
                             <Layout className="w-6 h-6" />
                             <span className="text-[9px] font-black uppercase tracking-widest">Category Board</span>
                         </button>
-                        <button 
-                            onClick={() => navigate(`/auction/${auction.id}/register`)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white flex-col gap-2 p-5 rounded-3xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center justify-center border border-indigo-500/50 sm:col-span-1"
-                        >
-                            <UserPlus className="w-6 h-6" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Player Signup</span>
-                        </button>
+                        <div className="flex flex-col gap-2 p-0.5 sm:col-span-1">
+                            <button 
+                                onClick={() => navigate(`/auction/${auction.id}/register`)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-col gap-2 p-5 rounded-3xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center justify-center border border-indigo-500/50 w-full"
+                            >
+                                <UserPlus className="w-6 h-6" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">Player Signup</span>
+                            </button>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyRegLink(auction.id);
+                                }}
+                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'}`}
+                            >
+                                <LinkIcon className="w-3 h-3" /> Share Link
+                            </button>
+                        </div>
                     </div>
 
                     {/* Card Footer */}
@@ -638,7 +662,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="p-10 space-y-8">
                       {currentPopup.showImage && currentPopup.imageUrl && (
-                          <div className={`rounded-3xl overflow-hidden border shadow-lg ${isDark ? 'border-amber-500/20' : 'border-gray-100'}`}><img src={currentPopup.imageUrl} className="w-full h-auto" /></div>
+                          <div className={`rounded-3xl overflow-hidden border shadow-lg ${isDark ? 'border-amber-500/20' : 'border-gray-100'}`}><img src={currentPopup.imageUrl} referrerPolicy="no-referrer" className="w-full h-auto" /></div>
                       )}
                       {currentPopup.showText && (
                           <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'} font-medium leading-relaxed`}>{currentPopup.message}</p>
@@ -656,7 +680,7 @@ const AdminDashboard: React.FC = () => {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl border-2 p-1.5 shadow flex items-center justify-center overflow-hidden ${isDark ? 'bg-black border-amber-500' : 'bg-black border-blue-500'}`}>
-                    {state.systemLogoUrl ? <img src={state.systemLogoUrl} className="max-w-full max-h-full object-contain" alt="SM Sports" /> : <Trophy className={`w-full h-full ${isDark ? 'text-amber-500' : 'text-blue-500'}`} />}
+                    {state.systemLogoUrl ? <img src={state.systemLogoUrl} referrerPolicy="no-referrer" className="max-w-full max-h-full object-contain" alt="SM Sports" /> : <Trophy className={`w-full h-full ${isDark ? 'text-amber-500' : 'text-blue-500'}`} />}
                 </div>
                 <div>
                     <h1 className={`text-lg font-black tracking-tighter uppercase leading-none ${isDark ? 'advaya-text' : 'text-gray-800'}`}>Control Center</h1>
