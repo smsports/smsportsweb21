@@ -192,6 +192,10 @@ export interface AuctionState {
   unlimitedPurse?: boolean; // Toggle for purse validation
   autoReserveFunds?: boolean; // Toggle for smart purse reservation
   createdBy?: string; // UID of the user who created this auction
+  successAdPosterUrl?: string; // Global ad poster shown after successful registration
+  isAdPosterEnabled?: boolean; // Toggle for global ad poster
+  globalJerseyUrl?: string; // Global plain jersey image
+  globalJerseyOverlayUrl?: string; // Global transparent overlay image
 }
 
 export enum UserRole {
@@ -369,6 +373,7 @@ export interface RegistrationConfig {
     enableCaptainCodes?: boolean;
     enablePlayerCodes?: boolean;
     jerseyDetailsEnabled?: boolean;
+    jerseyUrl?: string;
     jerseyFields?: {
         name: BasicFieldConfig;
         number: BasicFieldConfig;

@@ -6,6 +6,7 @@ import { db, auth } from '../firebase';
 import { AuctionSetup, RegistrationConfig, FormField, PlayerRole } from '../types';
 import { Upload, Calendar, CheckCircle, AlertTriangle, ArrowUpCircle, FileText, Home, ArrowLeft, Loader2, CreditCard, QrCode, ShieldCheck, AlignLeft, Sword, Shield, Trophy as TrophyIcon, Zap, Megaphone, Users, XCircle, Phone, MapPin, Clock, Trophy, Share2, ChevronRight, ChevronLeft, User, Info, ChevronDown, Award, Bike, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuction } from '../hooks/useAuction';
 import heic2any from 'heic2any';
 
 const compressImage = async (file: File): Promise<string> => {
@@ -37,7 +38,7 @@ const compressImage = async (file: File): Promise<string> => {
                 let height = img.height;
                 
                 // Target smaller dimensions to stay under 1MB
-                const MAX_DIM = 800;
+                const MAX_DIM = 2000;
                 if (width > height) {
                     if (width > MAX_DIM) {
                         height *= MAX_DIM / width;
@@ -79,17 +80,23 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
     const isClassicNeon = theme?.toUpperCase() === 'CLASSIC_NEON';
     
     const baseClasses = isClassicNeon
-        ? "w-full bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.15)] peer"
+        ? "w-full bg-[#050807] border-2 border-white/10 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.3)] peer"
         : isNavyGolden 
         ? "w-full bg-[#070B0A] border-2 border-[#A6FF00]/20 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_15px_rgba(166,255,0,0.2)] peer"
         : "w-full bg-black/40 border-2 border-amber-900/30 rounded-2xl px-6 py-4 pt-10 font-bold text-amber-100 outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_15px_rgba(251,191,36,0.2)] peer";
 
-    const labelClasses = isClassicNeon || isNavyGolden
+    const labelClasses = isClassicNeon
+        ? "absolute left-6 top-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
+        : isNavyGolden
         ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#A6FF00]/50 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
         : "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-amber-500/50 transition-all peer-focus:text-amber-500 pointer-events-none select-none max-w-[calc(100%-3rem)] truncate";
 
     return (
-        <div className="relative group">
+        <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative group"
+        >
             {type === 'textarea' ? (
                 <textarea 
                     required={required}
@@ -100,30 +107,36 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
                     className={`${baseClasses} min-h-[120px] resize-none`}
                 />
             ) : type === 'select' ? (
-                <div className="pt-10 pb-2">
-                    <div className="flex flex-wrap gap-2">
-                        {options.map((opt: string, idx: number) => (
-                            <button
-                                key={`input-opt-${opt}-${idx}`}
-                                type="button"
-                                onClick={() => onChange({ target: { value: opt } })}
-                                 className={isClassicNeon || isNavyGolden
-                                    ? `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                        value === opt 
-                                        ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
-                                        : 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
-                                    }`
-                                    : `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                        value === opt 
-                                        ? 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20' 
-                                        : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
-                                    }`
-                                }
-                            >
-                                {opt}
-                            </button>
-                        ))}
-                    </div>
+                <div className="pt-10 pb-2 flex flex-wrap gap-2">
+                    {options.map((opt: string, idx: number) => (
+                        <motion.button
+                            key={`input-opt-${opt}-${idx}`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => onChange({ target: { value: opt } })}
+                             className={isClassicNeon
+                                ? `px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border-2 transition-all ${
+                                    value === opt 
+                                    ? 'bg-gradient-to-br from-[#A6FF00] to-[#FFFFFF] border-[#A6FF00] text-black shadow-[0_0_20px_rgba(166,255,0,0.3)]' 
+                                    : 'bg-[#0F1413] border-white/10 text-white/50 hover:border-[#A6FF00]/50'
+                                }`
+                                : isNavyGolden
+                                ? `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                                    value === opt 
+                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
+                                    : 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
+                                }`
+                                : `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                                    value === opt 
+                                    ? 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20' 
+                                    : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
+                                }`
+                            }
+                        >
+                            {opt}
+                        </motion.button>
+                    ))}
                 </div>
             ) : (
                 <input 
@@ -138,7 +151,7 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
             <label className={labelClasses}>
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
-        </div>
+        </motion.div>
     );
 };
 
@@ -169,7 +182,7 @@ const WarriorCard = ({ children, title, icon: Icon, className = "", theme = "ADV
     );
 };
 
-const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'back' }: { name: string, number: string, auctionLogo?: string, theme?: string, season?: any, viewMode?: 'front' | 'back' }) => {
+const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'back', jerseyUrl, jerseyOverlayUrl }: { name: string, number: string, auctionLogo?: string, theme?: string, season?: any, viewMode?: 'front' | 'back', jerseyUrl?: string, jerseyOverlayUrl?: string }) => {
     const isNavyGolden = theme === 'NAVY_GOLDEN';
     const isClassicNeon = theme === 'CLASSIC_NEON';
     
@@ -190,48 +203,60 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                         : 'border-amber-500/30 shadow-amber-500/20 bg-amber-950'
                     }`}
                 >
+                    {/* Jersey Image Background */}
+                    {jerseyUrl && (
+                        <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
+                            <img src={jerseyUrl} className="w-full h-full object-contain" alt="Jersey Base" />
+                        </div>
+                    )}
+
+                    {/* Jersey Overlay Image */}
+                    {jerseyOverlayUrl && (
+                        <div className="absolute inset-0 z-[5] flex items-center justify-center p-4">
+                            <img src={jerseyOverlayUrl} className="w-full h-full object-contain" alt="Jersey Overlay" />
+                        </div>
+                    )}
+
                     {/* Texture Pattern */}
-                    <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] mix-blend-overlay" />
+                    {!jerseyUrl && <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] mix-blend-overlay" />}
                     
                     {/* Design Elements */}
-                    <div className={`absolute top-0 left-0 w-full h-full ${
+                    {!jerseyUrl && <div className={`absolute top-0 left-0 w-full h-full ${
                         isClassicNeon ? "bg-[radial-gradient(circle_at_top,#A6FF0005_0%,transparent_70%)]" : ""
-                    }`} />
+                    }`} />}
 
                     {viewMode === 'back' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16 font-sans">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16 font-sans z-10">
                             <motion.h4 
                                 key={name}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`text-3xl md:text-4xl font-black uppercase tracking-[0.2em] italic ${
-                                    isClassicNeon ? 'text-white drop-shadow-[0_0_15px_rgba(166,255,0,0.6)]' :
-                                    isNavyGolden ? 'text-white' : 'text-amber-50'
-                                } mb-0 px-6 text-center`}
+                                className="text-3xl md:text-4xl font-black uppercase tracking-[0.2em] italic text-[#00FF41] mb-0 px-6 text-center"
                             >
                                 {name || "PLAYER"}
                             </motion.h4>
-                            <div className={`w-24 h-1 mt-2 mb-8 ${isClassicNeon ? 'bg-[#A6FF00]' : 'bg-white/20 shadow-[0_0_10px_rgba(166,255,0,0.5)]'}`} />
+                            <div className="w-24 h-1 mt-2 mb-8 bg-[#00FF41]" />
                             <motion.div 
                                 key={number}
                                 initial={{ scale: 0.5, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className={`text-[9rem] md:text-[10rem] font-black leading-none tracking-tighter ${
-                                    isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_40px_rgba(166,255,0,0.5)]' :
-                                    isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_30px_rgba(166,255,0,0.3)]' : 'golden-text'
-                                } font-sans italic`}
+                                className="text-[9rem] md:text-[10rem] font-black leading-none tracking-tighter text-[#00FF41] font-sans italic"
                             >
                                 {number || "00"}
                             </motion.div>
                         </div>
                     ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 font-sans">
+                    <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 font-sans z-10">
                             {/* Collar & Shoulder Stripes */}
-                            <div className="absolute top-0 w-full h-24 bg-gradient-to-b from-[#A6FF00]/10 to-transparent" />
-                            <div className="w-full h-8 flex justify-between px-6 absolute top-0">
-                                <div className="w-12 h-1 bg-[#A6FF00]" />
-                                <div className="w-12 h-1 bg-[#A6FF00]" />
-                            </div>
+                            {!jerseyUrl && (
+                                <>
+                                    <div className="absolute top-0 w-full h-24 bg-gradient-to-b from-[#A6FF00]/10 to-transparent" />
+                                    <div className="w-full h-8 flex justify-between px-6 absolute top-0">
+                                        <div className="w-12 h-1 bg-[#A6FF00]" />
+                                        <div className="w-12 h-1 bg-[#A6FF00]" />
+                                    </div>
+                                </>
+                            )}
 
                             {auctionLogo && (
                                 <motion.img 
@@ -242,26 +267,26 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                                 />
                             )}
                             
-                            <div className={`text-xs font-black italic tracking-[0.4em] ${isClassicNeon ? 'text-[#A6FF00]' : 'text-white/60'} mb-6 uppercase relative z-10`}>
-                                OFFICIAL PRE-RELEASE
+                            <div className={`text-xs font-black italic tracking-[0.4em] ${jerseyUrl ? 'text-[#00FF41]' : isClassicNeon ? 'text-[#A6FF00]' : 'text-white/60'} mb-6 uppercase relative z-10`}>
+                                TOURNAMENT SELECTION
                             </div>
 
                             <div className="relative">
-                                <div className={`text-[8rem] font-black leading-none ${isClassicNeon ? 'text-white/5 blur-[2px]' : 'text-white/5'}`}>
+                                <div className={`text-[8rem] font-black leading-none ${jerseyUrl ? 'text-[#00FF41]/10' : isClassicNeon ? 'text-white/5 blur-[2px]' : 'text-white/5'}`}>
                                     {number || "00"}
                                 </div>
                                 <div className="absolute inset-0 flex items-center justify-center text-center">
-                                    <h4 className="text-4xl font-black text-white italic tracking-tighter drop-shadow-2xl uppercase">
+                                    <h4 className={`text-4xl font-black italic tracking-tighter drop-shadow-2xl uppercase ${jerseyUrl ? 'text-[#00FF41]' : 'text-white'}`}>
                                         {season ? `SEASON ${season.toString().replace(/[^0-9]/g, '') || season}` : ""}
                                     </h4>
                                 </div>
                             </div>
 
                             <div className="mt-auto mb-10 text-center px-8">
-                                <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1">
-                                    {isClassicNeon ? 'UNLEASH THE POWER' : 'REGISTRATION OPEN'}
+                                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${jerseyUrl ? 'text-[#00FF41]' : 'text-white'}`}>
+                                    {isClassicNeon ? 'PLAY SMART' : 'REGISTRATION OPEN'}
                                 </p>
-                                <div className="w-12 h-0.5 bg-[#A6FF00] mx-auto" />
+                                <div className={`w-12 h-0.5 mx-auto ${jerseyUrl ? 'bg-[#00FF41]' : 'bg-[#A6FF00]'}`} />
                             </div>
                         </div>
                     )}
@@ -272,9 +297,31 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
     );
 };
 
+const WarriorDetailCard = ({ icon: Icon, title, value, description, theme, isClassicNeon }: any) => {
+    const isNavyGolden = theme === 'NAVY_GOLDEN';
+    
+    return (
+        <motion.div 
+            whileHover={{ y: -5, scale: 1.02, boxShadow: isClassicNeon ? "0 20px 40px rgba(166,255,0,0.1)" : "" }}
+            className={`${isClassicNeon ? 'bg-gradient-to-b from-[#0F1413] to-[#050807] shadow-xl shadow-black/60' : isNavyGolden ? 'bg-[#001f3f]/60' : 'bg-black/60'} border-2 ${isClassicNeon ? 'border-white/5 hover:border-[#A6FF00]/50' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2.5rem] p-8 text-center relative overflow-hidden group transition-all duration-300`}
+        >
+            <div className="relative z-10">
+                <div className={`w-16 h-16 ${isClassicNeon ? 'bg-gradient-to-br from-[#A6FF00] to-[#FFFFFF] border-white/20' : isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-5 border transition-transform duration-500 group-hover:scale-110 shadow-lg`}>
+                    <Icon className={`w-8 h-8 ${isClassicNeon ? 'text-black' : (isClassicNeon || isNavyGolden) ? 'text-[#A6FF00] drop-shadow-[0_0_8px_rgba(166,255,0,0.5)]' : 'text-amber-50'}`} />
+                </div>
+                <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 ${isClassicNeon ? 'text-white' : (isClassicNeon || isNavyGolden) ? 'text-[#A6FF00]' : 'text-slate-500'}`}>{title}</h4>
+                <p className={`text-2xl font-black uppercase tracking-tight italic mb-2 ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.4)]' : 'text-amber-50'}`}>{value}</p>
+                <p className={`text-[9px] font-bold text-slate-500 uppercase tracking-widest ${isClassicNeon ? 'opacity-80' : ''}`}>{description}</p>
+            </div>
+            {isClassicNeon && <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#A6FF00] to-transparent opacity-40" />}
+        </motion.div>
+    );
+};
+
 const PlayerRegistration: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { state } = useAuction();
     const [auction, setAuction] = useState<AuctionSetup | null>(null);
     const [config, setConfig] = useState<RegistrationConfig | null>(null);
     const [roles, setRoles] = useState<PlayerRole[]>([]);
@@ -294,6 +341,7 @@ const PlayerRegistration: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [playerID, setPlayerID] = useState('');
     const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+    const [showAdLocal, setShowAdLocal] = useState(true);
 
     const handleWaitlistSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -848,23 +896,55 @@ const PlayerRegistration: React.FC = () => {
     if (success) {
         return (
             <div className={`min-h-screen flex items-center justify-center p-4 ${isClassicNeon ? 'bg-[#070B0A]' : isAdvaya ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
+                <AnimatePresence>
+                    {state.successAdPosterUrl && state.isAdPosterEnabled && showAdLocal && (
+                         <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 overflow-hidden"
+                         >
+                            <div className="relative max-w-lg w-full">
+                                <motion.button 
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    whileHover={{ scale: 1.1, rotate: 90 }}
+                                    onClick={() => setShowAdLocal(false)}
+                                    className="absolute -top-12 -right-2 md:-right-12 z-50 p-3 bg-red-600 text-white rounded-full shadow-2xl hover:bg-white hover:text-black transition-all"
+                                >
+                                    <XCircle className="w-8 h-8" />
+                                </motion.button>
+                                <motion.div
+                                    initial={{ y: 50, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className="rounded-[3rem] overflow-hidden border-4 border-white/20 shadow-[0_0_80px_rgba(255,255,255,0.1)]"
+                                >
+                                    <img src={state.successAdPosterUrl} className="w-full h-auto block" referrerPolicy="no-referrer" />
+                                </motion.div>
+                                <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.5em] text-center mt-6">SM SPORTS ADVERTISEMENT</p>
+                            </div>
+                         </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className={`max-w-md w-full rounded-[3rem] p-10 text-center relative overflow-hidden border-2 shadow-2xl ${isClassicNeon ? 'bg-[#0F1413] border-[#A6FF00]/30 text-white' : isAdvaya ? 'bg-[#151515] border-amber-500/30 text-amber-50' : 'bg-white border-blue-100 text-gray-900'}`}
+                    className={`max-w-md w-full rounded-[3rem] p-10 text-center relative overflow-hidden border-2 shadow-2xl ${isClassicNeon ? 'bg-[#0F1413] border-white/10 text-white shadow-[#A6FF00]/5' : isAdvaya ? 'bg-[#151515] border-amber-500/30 text-amber-50' : 'bg-white border-blue-100 text-gray-900'}`}
                 >
+                    {isClassicNeon && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#A6FF00] to-transparent pointer-events-none" />}
                     {isClassicNeon && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(166,255,0,0.1)_0%,transparent_70%)] pointer-events-none" />}
                     {isAdvaya && !isClassicNeon && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.15)_0%,transparent_70%)] pointer-events-none" />}
                     
-                    <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border-2 ${isClassicNeon ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 shadow-[0_0_30px_rgba(166,255,0,0.2)]' : isAdvaya ? 'bg-amber-500/10 border-amber-500/20' : 'bg-green-50 border-green-100'}`}>
-                        <CheckCircle className={`w-12 h-12 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-amber-500' : 'text-green-500'}`} />
+                    <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border-2 ${isClassicNeon ? 'bg-gradient-to-br from-[#A6FF00] to-[#FFFFFF] border-white/20 shadow-[0_0_30px_rgba(166,255,0,0.4)]' : isAdvaya ? 'bg-amber-500/10 border-amber-500/20' : 'bg-green-50 border-green-100'}`}>
+                        <CheckCircle className={`w-12 h-12 ${isClassicNeon ? 'text-black' : isAdvaya ? 'text-amber-500' : 'text-green-500'}`} />
                     </div>
                     
-                    <h2 className={`text-3xl font-black uppercase tracking-tight mb-2 ${isClassicNeon ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : ''}`}>
-                        {isClassicNeon ? 'VALIDATION COMPLETE!' : isAdvaya ? 'Battle Enrolled!' : 'Registration Successful!'}
+                    <h2 className={`text-3xl font-black uppercase tracking-tight mb-2 ${isClassicNeon ? 'text-white drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : ''}`}>
+                        {isClassicNeon ? 'VERIFICATION GRANTED!' : isAdvaya ? 'Battle Enrolled!' : 'Registration Successful!'}
                     </h2>
-                    <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-8 ${isClassicNeon ? 'text-[#A6FF00]/50' : isAdvaya ? 'text-amber-500/50' : 'text-gray-400'}`}>
-                        {isClassicNeon ? 'Elite Roster Access Confirmed' : 'Registration Confirmed'}
+                    <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-8 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-amber-500/50' : 'text-gray-400'}`}>
+                        {isClassicNeon ? 'PLAYER IDENTITY AUTHENTICATED' : 'Registration Confirmed'}
                     </p>
                     
                     <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -957,28 +1037,6 @@ const PlayerRegistration: React.FC = () => {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);
     };
 
-    const WarriorDetailCard = ({ icon: Icon, title, value, description, theme = config?.theme || "ADVAYA" }: any) => {
-        const isNavyGolden = theme === 'NAVY_GOLDEN';
-        const isClassicNeon = theme === 'CLASSIC_NEON';
-        
-        return (
-            <motion.div 
-                whileHover={{ y: -5, scale: 1.02 }}
-                className={`${isClassicNeon ? 'bg-[#0F1413] shadow-lg shadow-black/40' : isNavyGolden ? 'bg-[#001f3f]/60' : 'bg-black/60'} border-2 ${isClassicNeon ? 'border-[#A6FF00]/10 hover:border-[#A6FF00]/40' : isNavyGolden ? 'border-[#ffd700]/20' : 'border-amber-900/20'} rounded-[2rem] p-6 text-center relative overflow-hidden group transition-all duration-300`}
-            >
-                <div className="relative z-10">
-                    <div className={`w-14 h-14 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-4 border transition-transform duration-500 group-hover:scale-110`}>
-                        <Icon className={`w-7 h-7 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_8px_rgba(166,255,0,0.5)]' : 'text-amber-500'}`} />
-                    </div>
-                    <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-slate-500'}`}>{title}</h4>
-                    <p className={`text-xl font-bold uppercase tracking-tight italic mb-1 ${isClassicNeon ? 'text-white' : 'text-amber-50'}`}>{value}</p>
-                    <p className={`text-[8px] font-bold text-slate-500 uppercase tracking-widest ${isClassicNeon ? 'opacity-60' : ''}`}>{description}</p>
-                </div>
-                {isClassicNeon && <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#A6FF00]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />}
-            </motion.div>
-        );
-    };
-
     if (isAdvaya || isNavyGolden || isClassicNeon) {
         if (!battleStarted && !config?.hideLandingPage && !isClassicNeon) {
             return (
@@ -1029,26 +1087,30 @@ const PlayerRegistration: React.FC = () => {
                             >
                                 <div className={`relative z-20 max-w-2xl w-full bg-black border-4 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/40 shadow-[0_0_50px_rgba(166,255,0,0.2)]' : 'border-amber-500/30 shadow-[0_0_50px_rgba(251,191,36,0.2)]'} rounded-[3rem] overflow-hidden`}>
                                     <div className="w-full overflow-y-auto max-h-[90vh] custom-scrollbar">
-                                        <img src={config?.bannerUrl} className="w-full h-auto block" />
+                                        <img src={config?.bannerUrl} className="w-full h-auto block" referrerPolicy="no-referrer" />
                                         
                                         {/* Showcase Gallery after Banner/Poster */}
                                         {config?.showcaseImages && config.showcaseImages.length > 0 && (
-                                            <div className="p-8 space-y-8 bg-black/40">
-                                                <h3 className={`text-xl font-black italic uppercase tracking-tighter text-center ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`}>TOURNAMENT HIGHLIGHTS</h3>
-                                                <div className="grid grid-cols-1 gap-8">
+                                            <div className="p-8 space-y-12 bg-black/40">
+                                                <div className="flex flex-col items-center gap-4">
+                                                    <h3 className={`text-2xl font-black italic uppercase tracking-tighter text-center ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]' : 'text-amber-500'}`}>TOURNAMENT HALL OF FAME</h3>
+                                                    <div className={`w-24 h-1 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-amber-500'} rounded-full`} />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     {config.showcaseImages.map((showcase, sidx) => (
                                                         <motion.div 
                                                             key={`showcase-gallery-${sidx}`}
-                                                            initial={{ opacity: 0, y: 30 }}
-                                                            whileInView={{ opacity: 1, y: 0 }}
-                                                            className={`relative rounded-3xl overflow-hidden border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20' : 'border-amber-900/20'} bg-black/60 group`}
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            whileInView={{ opacity: 1, scale: 1 }}
+                                                            viewport={{ once: true }}
+                                                            className={`relative rounded-[2rem] overflow-hidden border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/30 shadow-[0_0_30px_rgba(166,255,0,0.15)]' : 'border-amber-900/30' } bg-black/60 group`}
                                                         >
-                                                            <div className="aspect-video w-full overflow-hidden">
+                                                            <div className="aspect-[4/3] w-full overflow-hidden">
                                                                 <img src={showcase.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                                                             </div>
                                                             {showcase.caption && (
-                                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
-                                                                    <p className="text-white text-sm font-black uppercase italic tracking-wider leading-tight">{showcase.caption}</p>
+                                                                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
+                                                                    <p className="text-white text-sm font-black uppercase italic tracking-wider leading-tight drop-shadow-lg">{showcase.caption}</p>
                                                                 </div>
                                                             )}
                                                         </motion.div>
@@ -1357,17 +1419,54 @@ const PlayerRegistration: React.FC = () => {
                                             {currentStepId === 'details' && (
                                                 <div className="space-y-8">
                                                     {config?.welcomePosterUrl ? (
-                                                        <div className="space-y-8 text-center">
-                                                            <div className={`relative rounded-[2.5rem] overflow-hidden border-2 ${isClassicNeon ? 'border-[#A6FF00]/20 shadown-[0_0_30px_rgba(166,255,0,0.1)]' : 'border-amber-500/20 shadow-2xl'}`}>
-                                                                <img src={config.welcomePosterUrl} className="w-full h-auto block" referrerPolicy="no-referrer" />
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            className="space-y-8 text-center"
+                                                        >
+                                                            <div className={`relative rounded-[3rem] overflow-hidden border-2 ${isClassicNeon ? 'border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.05)]' : 'border-amber-500/20 shadow-2xl'}`}>
+                                                                <img src={config.welcomePosterUrl} className="w-full h-auto block shadow-2xl" referrerPolicy="no-referrer" />
                                                             </div>
-                                                            <button 
+
+                                                            {/* Showcase Section with Captions */}
+                                                            {config?.showcaseImages && config.showcaseImages.length > 0 && (
+                                                                <div className="space-y-6 pt-8 text-left">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <h4 className={`text-xl md:text-2xl font-black italic uppercase tracking-tighter ${isClassicNeon ? 'text-white' : 'text-amber-500'}`}>Tournament Highlights</h4>
+                                                                        <div className={`h-px flex-1 ml-6 bg-gradient-to-r from-white/10 to-transparent`} />
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 gap-8">
+                                                                        {config.showcaseImages.map((showcase, sidx) => (
+                                                                            <motion.div 
+                                                                                key={`showcase-details-${sidx}`}
+                                                                                initial={{ opacity: 0, y: 30 }}
+                                                                                whileInView={{ opacity: 1, y: 0 }}
+                                                                                viewport={{ once: true }}
+                                                                                className={`relative rounded-[2.5rem] overflow-hidden border-2 ${isClassicNeon ? 'border-white/5' : 'border-amber-900/20'} bg-black/60 group shadow-2xl`}
+                                                                            >
+                                                                                <div className="aspect-video w-full overflow-hidden">
+                                                                                    <img src={showcase.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                                                                                </div>
+                                                                                {showcase.caption && (
+                                                                                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                                                                                        <p className="text-white text-sm font-black uppercase italic tracking-wider leading-tight drop-shadow-md">{showcase.caption}</p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </motion.div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <motion.button 
+                                                                whileHover={{ scale: 1.05, boxShadow: isClassicNeon ? "0 0 50px rgba(166,255,0,0.5)" : "" }}
+                                                                whileTap={{ scale: 0.95 }}
                                                                 onClick={() => setCurrentStep(1)}
-                                                                className={`w-full max-w-sm mx-auto md:mx-0 py-5 rounded-full text-xl font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-4 ${isClassicNeon ? 'bg-[#A6FF00] text-black shadow-[0_0_30px_rgba(166,255,0,0.4)]' : 'bg-amber-600 text-white'}`}
+                                                                className={`w-full max-w-sm mx-auto py-6 rounded-full text-xl font-black uppercase tracking-widest transition-all shadow-2xl flex items-center justify-center gap-4 ${isClassicNeon ? 'bg-gradient-to-br from-[#A6FF00] to-[#FFFFFF] text-black' : 'bg-amber-600 text-white'}`}
                                                             >
                                                                 REGISTER NOW <ChevronRight className="w-6 h-6" />
-                                                            </button>
-                                                        </div>
+                                                            </motion.button>
+                                                        </motion.div>
                                                     ) : (
                                                         <>
                                                             <div className="text-center md:text-left space-y-4 mb-12">
@@ -1379,40 +1478,41 @@ const PlayerRegistration: React.FC = () => {
                                                                 </p>
                                                             </div>
                                                             <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${isClassicNeon || isNavyGolden ? 'md:grid-cols-2' : 'lg:grid-cols-5'}`}>
-                                                                <WarriorDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} />
-                                                                <WarriorDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="League schedule" theme={config?.theme} />
-                                                                <WarriorDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} />
-                                                                <WarriorDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Tournament venue" theme={config?.theme} />
+                                                                <WarriorDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <WarriorDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="League schedule" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <WarriorDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <WarriorDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Tournament venue" theme={config?.theme} isClassicNeon={isClassicNeon} />
                                                             </div>
 
                                                             {isClassicNeon || isNavyGolden ? (
-                                                                <div className="bg-[#0F1413] border-2 border-[#A6FF00]/10 rounded-[2.5rem] p-8 mt-8 relative overflow-hidden group">
-                                                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                                                        <Bike className="w-32 h-32 text-[#A6FF00] -rotate-12 translate-x-12" />
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, y: 30 }}
+                                                                    whileInView={{ opacity: 1, y: 0 }}
+                                                                    viewport={{ once: true }}
+                                                                    className="bg-gradient-to-br from-[#0F1413] to-[#050807] border-2 border-white/5 rounded-[3rem] p-10 mt-12 relative overflow-hidden group shadow-2xl"
+                                                                >
+                                                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                                        <Bike className="w-48 h-48 text-white -rotate-12 translate-x-12" />
                                                                     </div>
-                                                                    <div className="flex items-center gap-4 mb-6 relative z-10">
-                                                                        <div className="w-12 h-12 rounded-xl bg-[#A6FF00]/10 flex items-center justify-center border border-[#A6FF00]/20">
-                                                                            <Trophy className="w-6 h-6 text-[#A6FF00]" />
+                                                                    <div className="flex items-center gap-6 mb-8 relative z-10">
+                                                                        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-xl">
+                                                                            <Trophy className="w-8 h-8 text-[#A6FF00]" />
                                                                         </div>
                                                                         <div>
-                                                                            <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">Grand Season Rewards</h4>
-                                                                            <p className="text-[10px] font-bold text-[#A6FF00]/60 uppercase tracking-widest">Available for Season Top Performers</p>
+                                                                            <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter">Grand Season Rewards</h4>
+                                                                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Available for Season Top Performers</p>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                                                                        <div className="bg-black/40 border border-[#A6FF00]/10 rounded-2xl p-4 flex items-center gap-3">
-                                                                            <Bike className="w-6 h-6 text-[#A6FF00]" />
-                                                                            <div>
-                                                                                <p className="text-[#A6FF00] font-black text-lg italic uppercase line-clamp-1">WIN A BIKE</p>
-                                                                                <p className="text-[9px] text-white/40 uppercase font-bold">MAN OF THE SERIES</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="bg-black/40 border border-white/5 rounded-2xl p-4">
-                                                                            <p className="text-white font-black text-lg italic uppercase">CASH PRIZES</p>
-                                                                            <p className="text-[9px] text-white/40 uppercase font-bold">FOR TOP RANKERS</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                                    <p className="text-base font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Participate in the draft to secure your place in the upcoming league and stand a chance to win the ultimate prize. Your journey to greatness starts here.</p>
+                                                                    <motion.button 
+                                                                        whileHover={{ scale: 1.05, boxShadow: "0 0 50px rgba(166,255,0,0.4)" }}
+                                                                        whileTap={{ scale: 0.95 }}
+                                                                        onClick={() => setCurrentStep(1)}
+                                                                        className="w-full py-5 bg-gradient-to-r from-[#A6FF00] to-[#FFFFFF] text-black font-black rounded-2xl text-sm uppercase tracking-widest transition-all relative z-10 shadow-[0_10px_30px_rgba(166,255,0,0.3)]"
+                                                                    >
+                                                                        START REGISTRATION
+                                                                    </motion.button>
+                                                                </motion.div>
                                                             ) : null}
                                                             
                                                             <div className={`${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/10' : 'bg-black/40 border-amber-500/10'} border-2 rounded-[2.5rem] p-8 mt-12`}>
@@ -1669,7 +1769,7 @@ const PlayerRegistration: React.FC = () => {
                                 <div className="space-y-8">
                                     <div className="text-center mb-12">
                                         <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon || isNavyGolden ? 'PICK YOUR ROLE' : isAdvaya ? 'Combat Role' : 'Playing Role'}
+                                            {isClassicNeon || isNavyGolden ? 'PICK YOUR ROLE' : isAdvaya ? 'Playing Role' : 'Playing Role'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                                             {isClassicNeon || isNavyGolden ? 'Choose your primary playing role' : 'Select your primary skill on the field'}
@@ -1719,7 +1819,7 @@ const PlayerRegistration: React.FC = () => {
                                 <div className="max-w-xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
                                         <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon || isNavyGolden ? 'ADDITIONAL INFO' : isAdvaya ? 'Player Attributes' : 'Additional Info'}
+                                            {isClassicNeon || isNavyGolden ? 'ADDITIONAL INFO' : isAdvaya ? 'Additional Info' : 'Additional Info'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                                             {isClassicNeon || isNavyGolden ? 'Fill in specific tournament requirements' : 'Provide your specific details'}
@@ -1803,6 +1903,7 @@ const PlayerRegistration: React.FC = () => {
                                             auctionLogo={config?.logoUrl || auction?.logoUrl}
                                             theme={config?.theme}
                                             season={auction?.season}
+                                            jerseyUrl={state.globalJerseyUrl}
                                         />
                                     </div>
                                 </div>
@@ -1812,7 +1913,7 @@ const PlayerRegistration: React.FC = () => {
                                 <div className="max-w-2xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
                                         <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon || isNavyGolden ? 'FEE SETTLEMENT' : 'Tribute Verification'}
+                                            {isClassicNeon || isNavyGolden ? 'FEE SETTLEMENT' : 'Payment Verification'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                                             {isClassicNeon || isNavyGolden ? 'Confirm registration fee payment' : 'Secure your spot in the arena with registration fee'}
@@ -1904,10 +2005,10 @@ const PlayerRegistration: React.FC = () => {
                                 <div className="max-w-2xl mx-auto space-y-8">
                                     <div className="text-center mb-12">
                                         <h3 className={`text-3xl font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]' : 'text-amber-100'} uppercase tracking-tight`}>
-                                            {isClassicNeon || isNavyGolden ? 'PARTICIPATION OATH' : 'Battle Oath'}
+                                            {isClassicNeon || isNavyGolden ? 'ACCEPT RULES' : 'Accept Rules'}
                                         </h3>
                                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest text-center">
-                                            {isClassicNeon || isNavyGolden ? 'Finalize your commitment to the tournament protocols' : 'Review and accept the terms to continue'}
+                                            {isClassicNeon || isNavyGolden ? 'Finalize your commitment to the tournament rules' : 'Review and accept the rules to continue'}
                                         </p>
                                     </div>
                                     
@@ -1965,15 +2066,16 @@ const PlayerRegistration: React.FC = () => {
                                                 </div>
                                 <div className="space-y-1">
                                                     <p className={`text-xs font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>
-                                                        {isClassicNeon || isNavyGolden ? 'I accept all tournament guidelines' : 'I accept the Battle Oath'}
+                                                        {isClassicNeon || isNavyGolden ? 'I accept all rules' : 'I accept the terms'}
                                                     </p>
                                                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                                                        {isClassicNeon || isNavyGolden ? 'I confirm all provided data is accurate and valid.' : 'I verify all provided info is accurate and I will uphold the tournament integrity.'}
+                                                        I confirm that all information provided is accurate.
                                                     </p>
                                                 </div>
                                             </label>
                                         </div>
                                     </div>
+
              </div>
                             )}
                         </motion.div>
@@ -2013,6 +2115,8 @@ const PlayerRegistration: React.FC = () => {
                                         auctionLogo={config?.logoUrl || auction?.logoUrl}
                                         theme={config?.theme}
                                         viewMode={jerseyViewMode}
+                                        jerseyUrl={state.globalJerseyUrl}
+                                        jerseyOverlayUrl={state.globalJerseyOverlayUrl}
                                     />
 
                                     <div className="mt-8 flex items-center justify-between gap-4 px-4">
@@ -2031,7 +2135,7 @@ const PlayerRegistration: React.FC = () => {
                                 {/* Highlights Section */}
                                 <div className="bg-[#0F1413] border-2 border-[#A6FF00]/5 rounded-[3rem] p-8 relative overflow-hidden group shadow-2xl">
                                     <h3 className="text-[11px] font-black text-[#A6FF00] uppercase tracking-[0.4em] mb-10 flex items-center gap-3 drop-shadow-[0_0_10px_rgba(166,255,0,0.3)]">
-                                        <Trophy className="w-4 h-4" /> BATTLE HIGHLIGHTS
+                                        TOURNAMENT HIGHLIGHTS
                                     </h3>
                                     <div className="space-y-6">
                                         {[
@@ -2111,7 +2215,7 @@ const PlayerRegistration: React.FC = () => {
                                 {submitting ? <Loader2 className="animate-spin w-6 h-6" /> : (
                                     <>
                                         {isClassicNeon ? <Zap className="w-6 h-6" /> : isAdvaya ? <Sword className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />} 
-                                        {isClassicNeon ? 'LEGACY STARTS HERE' : isAdvaya ? 'JOIN THE BATTLE' : 'COMPLETE REGISTRATION'}
+                                        {isClassicNeon ? 'REGISTER NOW' : isAdvaya ? 'REGISTER NOW' : 'FINISH REGISTRATION'}
                                     </>
                                 )}
                             </button>
@@ -2123,7 +2227,7 @@ const PlayerRegistration: React.FC = () => {
     }
 
     return (
-        <div className={`min-h-screen font-sans py-10 px-4 transition-colors duration-1000 ${isAdvaya ? 'bg-[#0a0a0a] text-amber-50' : 'bg-gray-50 text-gray-900'}`}>
+        <div className={`min-h-screen font-sans py-10 px-4 transition-colors duration-1000 ${isAdvaya || isClassicNeon ? 'bg-[#0a0a0a] text-amber-50' : 'bg-gray-50 text-gray-900'}`}>
             {/* Back Button */}
             <div className="max-w-2xl mx-auto mb-6 flex items-center justify-between relative z-[110]">
                 <button 
@@ -2193,7 +2297,7 @@ const PlayerRegistration: React.FC = () => {
                                     transition={{ delay: 1, duration: 1.2 }}
                                     className="text-4xl md:text-6xl font-black text-amber-500 uppercase mb-4 drop-shadow-lg"
                                 >
-                                    {auction?.title || 'ADVAYA'}
+                                    {auction?.title || 'JOIN TOURNAMENT'}
                                 </motion.h2>
 
                                 <motion.div
@@ -2216,7 +2320,7 @@ const PlayerRegistration: React.FC = () => {
                                     transition={{ delay: 2.2, duration: 0.8 }}
                                     className="text-xl md:text-2xl font-bold text-white uppercase tracking-[0.3em] mb-12 italic"
                                 >
-                                    Are you ready to join the battle?
+                                    Are you ready to join?
                                 </motion.p>
                                 
                                 <motion.button
@@ -2225,7 +2329,7 @@ const PlayerRegistration: React.FC = () => {
                                     onClick={() => setBattleStarted(true)}
                                     className="bg-amber-600 hover:bg-amber-500 text-black font-black px-12 py-5 rounded-full text-xl uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(251,191,36,0.2)] flex items-center gap-4 mx-auto"
                                 >
-                                    <Sword className="w-6 h-6" /> ENTER THE ARENA
+                                    REGISTER NOW
                                 </motion.button>
                             </motion.div>
                         )}
@@ -2313,7 +2417,7 @@ const PlayerRegistration: React.FC = () => {
                                 )}
                                 <div className="flex items-center justify-center gap-4 mb-4">
                                     {isClassicNeon || isNavyGolden ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Sword className="w-8 h-8 text-amber-500" /> : <ShieldCheck className="w-8 h-8 text-amber-500" />}
-                                    <h1 className={`text-4xl font-black uppercase tracking-tighter ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} drop-shadow-md italic`}>{auction?.title}</h1>
+                                    <h3 className={`text-4xl font-black uppercase tracking-tighter ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'} drop-shadow-md italic`}>{auction?.title || "JOIN TOURNAMENT"}</h3>
                                     {isClassicNeon || isNavyGolden ? <Zap className="w-8 h-8 text-[#A6FF00]" /> : isAdvaya ? <Shield className="w-8 h-8 text-amber-500" /> : <Trophy className="w-8 h-8 text-amber-500" />}
                                 </div>
                                 <div className="flex flex-col items-center gap-2">
@@ -2338,8 +2442,8 @@ const PlayerRegistration: React.FC = () => {
                     ) : (
                         <>
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                            <h1 className="text-3xl font-black uppercase tracking-tighter relative z-10">{auction?.title}</h1>
-                            <p className="text-[10px] font-bold tracking-[0.4em] mt-2 opacity-60 relative z-10 uppercase">Registry Enrollment Terminal</p>
+                            <h1 className="text-3xl font-black uppercase tracking-tighter relative z-10">{auction?.title || "REGISTRATION"}</h1>
+                            <p className="text-[10px] font-bold tracking-[0.4em] mt-2 opacity-60 relative z-10 uppercase">Official Form</p>
                             {config?.maxRegistrations > 0 && (
                                 <div className="mt-6 inline-flex items-center px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase tracking-widest relative z-10">
                                     <Users className="inline w-3 h-3 mr-2" /> {approvedCount} {config.maxRegistrations ? `/ ${config.maxRegistrations} REGISTERED` : 'REGISTERED'}
@@ -2635,7 +2739,7 @@ const PlayerRegistration: React.FC = () => {
                                 </div>
                                 <label htmlFor="battle-oath-checkbox" className="cursor-pointer">
                                     <h4 className={`text-sm font-black uppercase tracking-widest mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-blue-500' : 'text-amber-700'}`}>
-                                        {isClassicNeon ? 'ACCEPT TOURNAMENT POLICIES' : isAdvaya ? 'TOURNAMENT OATH ACCEPTANCE' : 'I Accept the Terms & Conditions'}
+                                        {isClassicNeon ? 'ACCEPT TOURNAMENT POLICIES' : isAdvaya ? 'ACCEPT TERMS' : 'I Accept the Terms & Conditions'}
                                     </h4>
                                     <p className={`text-[10px] font-bold leading-relaxed uppercase tracking-widest ${isClassicNeon ? 'text-white/60' : isAdvaya ? 'text-amber-200/60' : 'text-amber-800/60'}`}>
                                         I hereby declare that all information provided is accurate and authentic. I agree to abide by the tournament protocols and maintain sportsmanship.
@@ -2645,8 +2749,8 @@ const PlayerRegistration: React.FC = () => {
                         </motion.div>
                     </div>
 
-                    <button disabled={!formData.battleOath || submitting} type="submit" className={`w-full font-black py-5 rounded-[1.5rem] shadow-2xl transition-all flex items-center justify-center gap-4 group active:scale-95 uppercase text-sm tracking-widest ${isClassicNeon ? 'bg-[#A6FF00] hover:shadow-[0_0_20px_rgba(166,255,0,0.4)] text-black' : isAdvaya ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-900/20'} ${!formData.battleOath ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        {submitting ? <Loader2 className="animate-spin" /> : (config?.includePayment && config.paymentMethod === 'RAZORPAY' ? <><CreditCard className="w-6 h-6"/> {isClassicNeon || !isAdvaya ? 'Pay' : 'Authorize'} ₹{config.fee}</> : (isClassicNeon || !isAdvaya ? 'REGISTER NOW' : <><Sword className="w-5 h-5" /> JOIN THE BATTLE</>))}
+                                <button disabled={!formData.battleOath || submitting} type="submit" className={`w-full font-black py-5 rounded-[1.5rem] shadow-2xl transition-all flex items-center justify-center gap-4 group active:scale-95 uppercase text-sm tracking-widest ${isClassicNeon ? 'bg-[#A6FF00] hover:shadow-[0_0_20px_rgba(166,255,0,0.4)] text-black' : isAdvaya ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-900/20'} ${!formData.battleOath ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {submitting ? <Loader2 className="animate-spin" /> : (config?.includePayment && config.paymentMethod === 'RAZORPAY' ? <><CreditCard className="w-6 h-6"/> {isClassicNeon || !isAdvaya ? 'Pay' : 'Authorize'} ₹{config.fee}</> : 'REGISTER NOW')}
                     </button>
                     
                     <p className={`text-[9px] font-bold text-center uppercase tracking-widest leading-relaxed ${isClassicNeon ? 'text-white/40' : isAdvaya ? 'text-amber-900' : 'text-gray-400'}`}>

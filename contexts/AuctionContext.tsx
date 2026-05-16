@@ -35,8 +35,12 @@ const initialState: AuctionState = {
     maxPlayersPerTeam: 25,
     systemLogoUrl: '',
     systemTagline: 'Your streaming partner',
+    successAdPosterUrl: '',
+    isAdPosterEnabled: true,
     isPaid: false,
-    basePrice: 0
+    basePrice: 0,
+    globalJerseyUrl: '',
+    globalJerseyOverlayUrl: ''
 };
 
 export const AuctionContext = createContext<AuctionContextType | null>(null);
@@ -72,7 +76,11 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     ...prev, 
                     systemLogoUrl: data?.systemLogoUrl || '',
                     systemTagline: data?.systemTagline || 'Your streaming partner',
-                    hideScoringSection: data?.hideScoringSection || false
+                    successAdPosterUrl: data?.successAdPosterUrl || '',
+                    isAdPosterEnabled: data?.isAdPosterEnabled !== undefined ? data.isAdPosterEnabled : true,
+                    hideScoringSection: data?.hideScoringSection || false,
+                    globalJerseyUrl: data?.globalJerseyUrl || '',
+                    globalJerseyOverlayUrl: data?.globalJerseyOverlayUrl || ''
                 }));
             } else {
                 // If it doesn't exist, we fallback to defaults but don't error
@@ -833,7 +841,7 @@ const addLog = async (log: Omit<AuctionLog, 'id'>) => {
                 }
             });
 
-            // Handle legacy highestBidder object
+            // Handle previous highestBidder object
             if (cleanData.highestBidder) delete cleanData.highestBidder;
 
             await db.collection('auctions').doc(activeAuctionId).set(cleanData);

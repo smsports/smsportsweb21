@@ -904,12 +904,12 @@ const LiveAdminPanel: React.FC = () => {
             <ShieldAlert className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`} />
             <div>
                 <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Size Repair</p>
-                <p className="text-[8px] font-bold text-zinc-500 uppercase">Legacy Cleanup</p>
+                <p className="text-[8px] font-bold text-zinc-500 uppercase">Database Cleanup</p>
             </div>
         </div>
         <button
           onClick={async () => {
-            if (window.confirm("This will overwrite your auction document with a clean version, removing legacy bulky data (like old player/team lists) that exceeds 1MB limits. Your sub-collections are safe. Continue?")) {
+            if (window.confirm("This will overwrite your auction document with a clean version, removing large bulky data (like old player/team lists) that exceeds 1MB limits. Your sub-collections are safe. Continue?")) {
               try {
                 setIsProcessing(true);
                 await repairAuctionDocument();

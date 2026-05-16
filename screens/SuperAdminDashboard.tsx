@@ -9,7 +9,8 @@ import {
     Upload, Save, Eye, EyeOff, Layout, XCircle, Plus, CreditCard, CheckCircle, 
     Tag, Clock, Ban, Check, Zap, Server, Activity, AlertTriangle, HardDrive, 
     Calendar, ShieldCheck, Megaphone, Bell, Timer, Infinity as InfinityIcon, 
-    MessageSquare, Layers, Newspaper, Headset, UserMinus, UserPlus, Mail, ShieldAlert, Key, Filter, ChevronDown, UserX, Monitor, Fingerprint
+    MessageSquare, Layers, Newspaper, Headset, UserMinus, UserPlus, Mail, ShieldAlert, Key, Filter, ChevronDown, UserX, Monitor, Fingerprint,
+    Type as Shirt
 } from 'lucide-react';
 
 const compressImage = (file: File): Promise<string> => {
@@ -21,12 +22,11 @@ const compressImage = (file: File): Promise<string> => {
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800;
-                const MAX_HEIGHT = 800;
+                const MAX_DIM = 2000;
                 let width = img.width;
                 let height = img.height;
-                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
-                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
+                else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
@@ -54,6 +54,9 @@ const SuperAdminDashboard: React.FC = () => {
 
     const totalGB = (stats.totalDocsEstimate * 0.00002).toFixed(2);
     const logoInputRef = useRef<HTMLInputElement>(null);
+    const adPosterInputRef = useRef<HTMLInputElement>(null);
+    const jerseyInputRef = useRef<HTMLInputElement>(null);
+    const jerseyOverlayInputRef = useRef<HTMLInputElement>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Sub-Registry States
@@ -221,8 +224,8 @@ const SuperAdminDashboard: React.FC = () => {
                             <Shield className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Super Control</h1>
-                            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.4em] mt-1 opacity-60">System Root Access</p>
+                            <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Master Settings</h1>
+                            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.4em] mt-1 opacity-60">Admin Dashboard</p>
                         </div>
                     </div>
                     <div className="flex bg-zinc-900 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar">
@@ -242,7 +245,7 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'OVERVIEW' && (
                     <div className="space-y-12 animate-fade-in">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                            {[ { label: 'Storage Usage', val: totalGB, unit: 'GB', color: 'text-red-500' }, { label: 'Live Auctions', val: auctions.length, unit: 'Active', color: 'text-green-500' }, { label: 'Identity Pool', val: userRegistry.length, unit: 'IDs', color: 'text-blue-500' }, { label: 'Support Nodes', val: userRegistry.filter(u => u.role === UserRole.SUPPORT).length, unit: 'Online', color: 'text-white' } ].map(s => (
+                            {[ { label: 'Storage Usage', val: totalGB, unit: 'GB', color: 'text-red-500' }, { label: 'Live Auctions', val: auctions.length, unit: 'Active', color: 'text-green-500' }, { label: 'Total Users', val: userRegistry.length, unit: 'IDs', color: 'text-blue-500' }, { label: 'Support Staff', val: userRegistry.filter(u => u.role === UserRole.SUPPORT).length, unit: 'Online', color: 'text-white' } ].map(s => (
                                 <div key={s.label} className="bg-zinc-900/30 p-10 rounded-[2.5rem] border border-white/5 shadow-inner">
                                     <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">{s.label}</p>
                                     <div className="flex items-baseline gap-2">
@@ -257,8 +260,8 @@ const SuperAdminDashboard: React.FC = () => {
                                 {state.systemLogoUrl ? <img src={state.systemLogoUrl} className="max-w-full max-h-full object-contain" /> : <ImageIcon className="w-12 h-12 text-zinc-800" />}
                              </div>
                              <div className="flex-1 text-center md:text-left">
-                                <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">Master OS Identity</h2>
-                                <p className="text-zinc-400 text-sm max-w-xl mb-6 font-medium">Global system branding overrides tenant presets.</p>
+                                <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">System Branding</h2>
+                                <p className="text-zinc-400 text-sm max-w-xl mb-6 font-medium">Global system branding for the app.</p>
                                 
                                 <div className="space-y-4 mb-8">
                                     <div>
@@ -274,7 +277,7 @@ const SuperAdminDashboard: React.FC = () => {
                                         />
                                     </div>
                                     <button onClick={() => logoInputRef.current?.click()} className="bg-white text-black font-black px-10 py-4 rounded-2xl flex items-center gap-3 transition-all hover:bg-red-600 hover:text-white">
-                                        <Upload className="w-5 h-5" /> REFLASH BRANDING
+                                        <Upload className="w-5 h-5" /> UPDATE LOGO
                                     </button>
                                 </div>
                                 <input ref={logoInputRef} type="file" className="hidden" accept="image/*" onChange={async (e) => {
@@ -313,14 +316,14 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'REGISTRY' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">User Registry</h2>
-                            <button onClick={() => setIsAddingUser(true)} className="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><Plus className="w-4 h-4"/> ADD IDENTITY</button>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">Registered Users</h2>
+                            <button onClick={() => setIsAddingUser(true)} className="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><Plus className="w-4 h-4"/> ADD USER</button>
                         </div>
                         
                         <div className="flex flex-col lg:flex-row gap-4 mb-8">
                             <div className="relative flex-1 group">
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-600 group-focus-within:text-red-600 transition-colors" />
-                                <input placeholder="SEARCH IDENTITIES..." className="w-full bg-zinc-900/50 border border-zinc-800 rounded-[2rem] py-6 pl-16 pr-6 text-sm font-bold uppercase outline-none focus:border-red-600 transition-all shadow-xl" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                <input placeholder="SEARCH USERS..." className="w-full bg-zinc-900/50 border border-zinc-800 rounded-[2rem] py-6 pl-16 pr-6 text-sm font-bold uppercase outline-none focus:border-red-600 transition-all shadow-xl" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                             </div>
                             
                             <div className="p-1.5 bg-zinc-900/50 rounded-[2rem] border border-zinc-800 flex gap-1 overflow-x-auto no-scrollbar">
@@ -446,7 +449,7 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'PLANS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Monetization Tiers</h2>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">Pricing Plans</h2>
                             <button onClick={() => setIsAddingPlan(true)} className="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><Plus className="w-4 h-4"/> NEW PLAN</button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -465,7 +468,7 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'PROMOS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Authorized Promos</h2>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">Discount Codes</h2>
                             <button onClick={() => setIsAddingPromo(true)} className="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><Plus className="w-4 h-4"/> NEW PROMO</button>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
@@ -488,7 +491,7 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'ALERTS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Broadcaster Alerts</h2>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">System Popups</h2>
                             <button onClick={() => setIsAddingPopup(true)} className="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><Plus className="w-4 h-4"/> NEW ALERT</button>
                         </div>
                         <div className="grid grid-cols-1 gap-6">
@@ -509,7 +512,7 @@ const SuperAdminDashboard: React.FC = () => {
 
                 {activeTab === 'BROADCAST' && (
                     <div className="space-y-6 animate-fade-in">
-                        <h2 className="text-2xl font-black uppercase tracking-tighter">Ticker Registry</h2>
+                        <h2 className="text-2xl font-black uppercase tracking-tighter">News Ticker</h2>
                         <div className="bg-zinc-900/30 p-10 rounded-[3rem] border border-white/5">
                             <div className="space-y-4">
                                 {broadcasts.map(b => (
@@ -536,16 +539,16 @@ const SuperAdminDashboard: React.FC = () => {
                             <div className="flex items-center gap-6 mb-8">
                                 <HardDrive className="w-12 h-12 text-red-500" />
                                 <div>
-                                    <h2 className="text-3xl font-black uppercase tracking-tighter">Retention Protocol</h2>
-                                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1 opacity-60">Global purging logic</p>
+                                    <h2 className="text-3xl font-black uppercase tracking-tighter">Data Auto-Cleanup</h2>
+                                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1 opacity-60">Global cleanup settings</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                 <div className="space-y-6">
-                                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">Registry TTL (Days)</label>
+                                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">Auto Cleanup (Days)</label>
                                     <div className="flex items-center gap-4">
                                         <input type="number" value={retentionDays} onChange={e => setRetentionDays(Number(e.target.value))} className="w-24 bg-black border border-white/10 rounded-2xl py-4 text-center text-xl font-black text-red-500" />
-                                        <button onClick={async () => { await db.collection('appConfig').doc('globalSettings').set({ defaultRetentionDays: retentionDays }, { merge: true }); alert("TTL Policy Updated."); }} className="bg-white text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-2xl">SYNC PROTOCOL</button>
+                                        <button onClick={async () => { await db.collection('appConfig').doc('globalSettings').set({ defaultRetentionDays: retentionDays }, { merge: true }); alert("Cleanup Policy Updated."); }} className="bg-white text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-2xl">SAVE SETTINGS</button>
                                     </div>
                                 </div>
                             </div>
@@ -556,8 +559,73 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'GRAPHICS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Global Asset Vault</h2>
-                            <button onClick={() => document.getElementById('asset-up')?.click()} className="bg-white text-black px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-red-600 hover:text-white transition-all"><Upload className="w-4 h-4"/> PUSH ASSET</button>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">All Graphics</h2>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={async () => {
+                                        const newValue = !state.isAdPosterEnabled;
+                                        await db.collection('appConfig').doc('globalSettings').set({ isAdPosterEnabled: newValue }, { merge: true });
+                                    }}
+                                    className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl transition-all ${state.isAdPosterEnabled ? 'bg-green-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}
+                                >
+                                    {state.isAdPosterEnabled ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
+                                    {state.isAdPosterEnabled ? 'AD POSTER ON' : 'AD POSTER OFF'}
+                                </button>
+                                <button onClick={() => adPosterInputRef.current?.click()} className="bg-red-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
+                                    <ImageIcon className="w-4 h-4"/> UPLOAD SM AD
+                                </button>
+                                <button onClick={() => jerseyInputRef.current?.click()} className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
+                                    <Shirt className="w-4 h-4"/> UPLOAD PLAIN JERSEY
+                                </button>
+                                <button onClick={() => jerseyOverlayInputRef.current?.click()} className="bg-indigo-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
+                                    <ImageIcon className="w-4 h-4"/> UPLOAD JERSEY OVERLAY
+                                </button>
+                                <button onClick={() => document.getElementById('asset-up')?.click()} className="bg-white text-black px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-red-600 hover:text-white transition-all">
+                                    <Upload className="w-4 h-4"/> UPLOAD PHOTO
+                                </button>
+                            </div>
+                            <input type="file" ref={adPosterInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                                if(e.target.files?.[0]) {
+                                    setIsProcessing(true);
+                                    try {
+                                        const img = await compressImage(e.target.files[0]);
+                                        await db.collection('appConfig').doc('globalSettings').set({ successAdPosterUrl: img }, { merge: true });
+                                        alert("Add Poster Updated!");
+                                    } catch (err) {
+                                        console.error(err);
+                                    } finally {
+                                        setIsProcessing(false);
+                                    }
+                                }
+                            }} />
+                            <input type="file" ref={jerseyInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                                if(e.target.files?.[0]) {
+                                    setIsProcessing(true);
+                                    try {
+                                        const img = await compressImage(e.target.files[0]);
+                                        await db.collection('appConfig').doc('globalSettings').set({ globalJerseyUrl: img }, { merge: true });
+                                        alert("Plain Jersey Image Updated!");
+                                    } catch (err) {
+                                        console.error(err);
+                                    } finally {
+                                        setIsProcessing(false);
+                                    }
+                                }
+                            }} />
+                            <input type="file" ref={jerseyOverlayInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                                if(e.target.files?.[0]) {
+                                    setIsProcessing(true);
+                                    try {
+                                        const img = await compressImage(e.target.files[0]);
+                                        await db.collection('appConfig').doc('globalSettings').set({ globalJerseyOverlayUrl: img }, { merge: true });
+                                        alert("Jersey Overlay Image Updated!");
+                                    } catch (err) {
+                                        console.error(err);
+                                    } finally {
+                                        setIsProcessing(false);
+                                    }
+                                }
+                            }} />
                             <input type="file" id="asset-up" className="hidden" accept="image/*" onChange={async (e) => {
                                 if(e.target.files?.[0]) {
                                     const img = await compressImage(e.target.files[0]);
@@ -584,14 +652,14 @@ const SuperAdminDashboard: React.FC = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
                     <div className="bg-zinc-900 p-10 rounded-[3rem] border border-white/10 w-full max-w-md shadow-[0_0_100px_rgba(37,99,235,0.2)]">
                         <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Tier Protocol</h3>
+                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Create New Plan</h3>
                             <button onClick={() => setIsAddingPlan(false)}><XCircle className="w-8 h-8 text-zinc-700 hover:text-white transition-colors"/></button>
                         </div>
                         <form onSubmit={handleSavePlan} className="space-y-6">
-                            <input placeholder="PLAN LABEL" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold uppercase tracking-widest outline-none focus:border-blue-600" value={planForm.name} onChange={e => setPlanForm({...planForm, name: e.target.value})} required />
-                            <input type="number" placeholder="UNIT PRICE (₹)" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold outline-none focus:border-blue-600" value={planForm.price} onChange={e => setPlanForm({...planForm, price: Number(e.target.value)})} required />
-                            <input type="number" placeholder="MAX NODES (TEAMS)" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold outline-none focus:border-blue-600" value={planForm.teams} onChange={e => setPlanForm({...planForm, teams: Number(e.target.value)})} required />
-                            <button type="submit" disabled={isProcessing} className="w-full bg-blue-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl transition-all active:scale-95 disabled:opacity-50">AUTHORIZE SUBSCRIPTION</button>
+                            <input placeholder="PLAN NAME" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold uppercase tracking-widest outline-none focus:border-blue-600" value={planForm.name} onChange={e => setPlanForm({...planForm, name: e.target.value})} required />
+                            <input type="number" placeholder="PRICE (₹)" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold outline-none focus:border-blue-600" value={planForm.price} onChange={e => setPlanForm({...planForm, price: Number(e.target.value)})} required />
+                            <input type="number" placeholder="MAX TEAMS" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold outline-none focus:border-blue-600" value={planForm.teams} onChange={e => setPlanForm({...planForm, teams: Number(e.target.value)})} required />
+                            <button type="submit" disabled={isProcessing} className="w-full bg-blue-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl transition-all active:scale-95 disabled:opacity-50">SAVE PLAN</button>
                         </form>
                     </div>
                 </div>
@@ -632,14 +700,14 @@ const SuperAdminDashboard: React.FC = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
                     <div className="bg-zinc-900 p-10 rounded-[3rem] border border-white/10 w-full max-w-md shadow-[0_0_100px_rgba(239,68,68,0.2)]">
                         <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Identity Provisioning</h3>
+                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Add New User</h3>
                             <button onClick={() => setIsAddingUser(false)}><XCircle className="w-8 h-8 text-zinc-700 hover:text-white transition-colors"/></button>
                         </div>
                         <form onSubmit={handleSaveUser} className="space-y-6">
                             <input type="email" placeholder="USER EMAIL" className="w-full bg-black border border-white/10 rounded-2xl py-4 px-6 text-xs font-bold outline-none focus:border-red-600" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} required />
                             
                             <div className="space-y-3">
-                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Assign Identity Role</label>
+                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Assign Role</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
                                         { id: UserRole.SUPPORT, label: 'SUPPORT' },
@@ -684,7 +752,7 @@ const SuperAdminDashboard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <button type="submit" disabled={isProcessing} className="w-full bg-red-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl transition-all active:scale-95 disabled:opacity-50">PROVISION IDENTITY</button>
+                            <button type="submit" disabled={isProcessing} className="w-full bg-red-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl transition-all active:scale-95 disabled:opacity-50">FINISH ADDING USER</button>
                         </form>
                     </div>
                 </div>

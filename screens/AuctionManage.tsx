@@ -50,17 +50,21 @@ const compressImage = async (file: File, isBanner: boolean = false): Promise<str
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = isBanner ? 1600 : 800;
-                const MAX_HEIGHT = isBanner ? 900 : 800;
+                const MAX_WIDTH = isBanner ? 2400 : 1200;
+                const MAX_HEIGHT = isBanner ? 1600 : 1200;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
                 else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                 canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
+                if (ctx) {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                }
                 
-                let quality = isBanner ? 0.8 : 0.7;
+                let quality = isBanner ? 0.95 : 0.85;
                 let dataUrl = canvas.toDataURL('image/jpeg', quality);
                 
                 // Firestore limit is 1MB. Base64 adds ~33% overhead.
