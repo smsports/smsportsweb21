@@ -173,6 +173,8 @@ const AuctionManage: React.FC = () => {
     const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [isAuctionSelectorOpen, setIsAuctionSelectorOpen] = useState(false);
+    const [isTabSelectorOpen, setIsTabSelectorOpen] = useState(false);
 
     const showNotification = (message: string, type: 'error' | 'success' = 'error') => {
         setNotification({ message, type });
@@ -1404,33 +1406,105 @@ const AuctionManage: React.FC = () => {
                 <div className="container mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate('/admin')} className={`transition-colors p-2 rounded-lg ${isDark ? 'text-zinc-400 hover:text-white hover:bg-zinc-800' : 'text-gray-400 hover:text-gray-800 hover:bg-gray-50'}`}><ArrowLeft className="w-5 h-5"/></button>
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-md py-1">
-                            {allAuctions.map(a => (
-                                <button
-                                    key={a.id}
-                                    onClick={() => navigate(`/manage/${a.id}`)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
-                                        id === a.id 
+                        
+                        <div className="relative group">
+                            <button 
+                                onClick={() => setIsAuctionSelectorOpen(!isAuctionSelectorOpen)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? 'bg-zinc-900 border-zinc-800 text-accent' : 'bg-white border-gray-200 text-blue-600'}`}
+                            >
+                                <Trophy className="w-4 h-4" />
+                                {auction?.title?.toUpperCase() || 'SELECT AUCTION'}
+                                <ChevronDown className={`w-3 h-3 transition-transform ${isAuctionSelectorOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                                {isAuctionSelectorOpen && (
+                                    <motion.div 
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className={`absolute top-full left-0 mt-2 w-64 rounded-2xl border shadow-2xl z-[50] overflow-hidden ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}
+                                    >
+                                        <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto no-scrollbar">
+                                            {allAuctions.map(a => (
+                                                <button
+                                                    key={a.id}
+                                                    onClick={() => {
+                                                        navigate(`/manage/${a.id}`);
+                                                        setIsAuctionSelectorOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                        id === a.id 
+                                                        ? (isDark ? 'bg-accent/10 text-accent' : 'bg-blue-50 text-blue-600') 
+                                                        : (isDark ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900')
+                                                    }`}
+                                                >
+                                                    {a.title?.toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center gap-3">
+                        <div className="md:hidden w-full relative">
+                            <button 
+                                onClick={() => setIsTabSelectorOpen(!isTabSelectorOpen)}
+                                className={`w-full flex items-center justify-between px-6 py-3 rounded-2xl border-2 transition-all ${isDark ? 'bg-zinc-900 border-accent/20 text-accent' : 'bg-white border-blue-100 text-blue-600 font-black uppercase tracking-widest text-[10px]'}`}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <LayoutGrid className="w-4 h-4" />
+                                    {activeTab === 'REGISTRATION' ? 'REG CONFIG' : activeTab === 'REQUESTS' ? `Requests (${registrations.length})` : activeTab === 'WAITLIST' ? `Waitlist (${waitlist.length})` : activeTab.replace('_', ' ')}
+                                </span>
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isTabSelectorOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                                {isTabSelectorOpen && (
+                                    <motion.div 
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className={`mt-2 rounded-2xl border-2 overflow-hidden z-[40] ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-xl'}`}
+                                    >
+                                        <div className="p-2 grid grid-cols-2 gap-2">
+                                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
+                                                <button 
+                                                    key={`mob-tab-${tab}`} 
+                                                    onClick={() => {
+                                                        setActiveTab(tab as any);
+                                                        setIsTabSelectorOpen(false);
+                                                    }}
+                                                    className={`px-4 py-3 text-[9px] font-black uppercase transition-all rounded-xl text-left flex items-center justify-between ${
+                                                        activeTab === tab 
+                                                        ? (isDark ? 'bg-accent/10 text-accent' : 'bg-blue-50 text-blue-600') 
+                                                        : (isDark ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700')
+                                                    }`}
+                                                >
+                                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests` : tab === 'WAITLIST' ? `Waitlist` : tab.replace('_', ' ')}
+                                                    {activeTab === tab && <CheckCircle className="w-3 h-3" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className={`hidden md:flex p-0.5 rounded-xl border overflow-x-auto no-scrollbar ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-100 border-gray-200'}`}>
+                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
+                                <button key={tab} onClick={() => setActiveTab(tab as any)}
+                                    className={`px-4 py-2 text-[10px] font-black uppercase transition-all rounded-lg whitespace-nowrap ${
+                                        activeTab === tab 
                                         ? 'btn-golden' 
-                                        : (isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-accent/20' : 'bg-white border-gray-200 text-gray-400 hover:border-blue-200')
-                                    }`}
-                                >
-                                    {a.title?.toUpperCase()}
+                                        : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-400 hover:text-gray-600')
+                                    }`}>
+                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests (${registrations.length})` : tab === 'WAITLIST' ? `Waitlist (${waitlist.length})` : tab === 'CAPTAIN_CODES' ? 'CAPTAIN CODES' : tab}
                                 </button>
                             ))}
                         </div>
-                    </div>
-                    <div className={`flex p-0.5 rounded-xl border overflow-x-auto no-scrollbar ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-100 border-gray-200'}`}>
-                        {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
-                            <button key={tab} onClick={() => setActiveTab(tab as any)}
-                                className={`px-4 py-2 text-[10px] font-black uppercase transition-all rounded-lg whitespace-nowrap ${
-                                    activeTab === tab 
-                                    ? 'btn-golden' 
-                                    : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-400 hover:text-gray-600')
-                                }`}>
-                                {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests (${registrations.length})` : tab === 'WAITLIST' ? `Waitlist (${waitlist.length})` : tab === 'CAPTAIN_CODES' ? 'CAPTAIN CODES' : tab}
-                            </button>
-                        ))}
                     </div>
                 </div>
             </header>

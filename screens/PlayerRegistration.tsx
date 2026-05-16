@@ -70,20 +70,21 @@ const compressImage = async (file: File): Promise<string> => {
 };
 
 const TournamentInput = ({ label, value, onChange, type = "text", required = false, placeholder = "", options = [], theme = "ADVAYA" }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
     const isNavyGolden = theme?.toUpperCase() === 'NAVY_GOLDEN';
     const isClassicNeon = theme?.toUpperCase() === 'CLASSIC_NEON';
     
     const baseClasses = isClassicNeon
-        ? "w-full bg-[#050807] border-2 border-white/10 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.3)] peer"
+        ? "w-full bg-[#050807] border-2 border-white/10 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_20px_rgba(166,255,0,0.3)] peer cursor-pointer"
         : isNavyGolden 
-        ? "w-full bg-[#070B0A] border-2 border-[#A6FF00]/20 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_15px_rgba(166,255,0,0.2)] peer"
-        : "w-full bg-black/40 border-2 border-amber-900/30 rounded-2xl px-6 py-4 pt-10 font-bold text-amber-100 outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_15px_rgba(251,191,36,0.2)] peer";
+        ? "w-full bg-[#070B0A] border-2 border-[#A6FF00]/20 rounded-2xl px-6 py-4 pt-10 font-bold text-white outline-none transition-all focus:border-[#A6FF00] focus:shadow-[0_0_15px_rgba(166,255,0,0.2)] peer cursor-pointer"
+        : "w-full bg-black/40 border-2 border-amber-900/30 rounded-2xl px-6 py-4 pt-10 font-bold text-amber-100 outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_15px_rgba(251,191,36,0.2)] peer cursor-pointer";
 
     const labelClasses = isClassicNeon
-        ? "absolute left-6 top-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
+        ? "absolute left-6 top-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate z-10"
         : isNavyGolden
-        ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#A6FF00]/50 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate"
-        : "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-amber-500/50 transition-all peer-focus:text-amber-500 pointer-events-none select-none max-w-[calc(100%-3rem)] truncate";
+        ? "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-[#A6FF00]/50 transition-all peer-focus:text-[#A6FF00] pointer-events-none select-none max-w-[calc(100%-3rem)] truncate z-10"
+        : "absolute left-6 top-2 text-[10px] font-black uppercase tracking-widest text-amber-500/50 transition-all peer-focus:text-amber-500 pointer-events-none select-none max-w-[calc(100%-3rem)] truncate z-10";
 
     return (
         <motion.div 
@@ -101,36 +102,64 @@ const TournamentInput = ({ label, value, onChange, type = "text", required = fal
                     className={`${baseClasses} min-h-[120px] resize-none`}
                 />
             ) : type === 'select' ? (
-                <div className="pt-10 pb-2 flex flex-wrap gap-2">
-                    {options.map((opt: string, idx: number) => (
-                        <motion.button
-                            key={`input-opt-${label}-${opt}-${idx}`}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={() => onChange({ target: { value: opt } })}
-                             className={isClassicNeon
-                                ? `px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border-2 transition-all ${
-                                    value === opt 
-                                    ? 'bg-gradient-to-br from-[#A6FF00] to-[#FFFFFF] border-[#A6FF00] text-black shadow-[0_0_20px_rgba(166,255,0,0.3)]' 
-                                    : 'bg-[#0F1413] border-white/10 text-white/50 hover:border-[#A6FF00]/50'
-                                }`
-                                : isNavyGolden
-                                ? `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                    value === opt 
-                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
-                                    : 'bg-[#0F1413] border-[#A6FF00]/20 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
-                                }`
-                                : `px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                    value === opt 
-                                    ? 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20' 
-                                    : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
-                                }`
-                            }
-                        >
-                            {opt}
-                        </motion.button>
-                    ))}
+                <div className="relative">
+                    <div 
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={baseClasses}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className={value ? "opacity-100" : "opacity-40"}>
+                                {value || placeholder || `SELECT ${label.toUpperCase()}`}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
+                        </div>
+                    </div>
+                    
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden bg-black/60 rounded-2xl mt-2 border-2 border-white/5"
+                            >
+                                <div className="p-3 grid grid-cols-2 gap-2">
+                                    {options.map((opt: string, idx: number) => (
+                                        <motion.button
+                                            key={`input-opt-${label}-${opt}-${idx}`}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            type="button"
+                                            onClick={() => {
+                                                onChange({ target: { value: opt } });
+                                                setIsOpen(false);
+                                            }}
+                                            className={isClassicNeon
+                                                ? `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                                    value === opt 
+                                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
+                                                    : 'bg-[#0F1413] border-white/5 text-white/40 hover:border-[#A6FF00]/50'
+                                                }`
+                                                : isNavyGolden
+                                                ? `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                                    value === opt 
+                                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black' 
+                                                    : 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
+                                                }`
+                                                : `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                                    value === opt 
+                                                    ? 'bg-amber-600 border-amber-600 text-black' 
+                                                    : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
+                                                }`
+                                            }
+                                        >
+                                            {opt}
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             ) : (
                 <input 
@@ -329,6 +358,7 @@ const PlayerRegistration: React.FC = () => {
     const [battleStarted, setBattleStarted] = useState(false);
     const [showWelcomePopup, setShowWelcomePopup] = useState(false);
     const [welcomeTimer, setWelcomeTimer] = useState(0);
+    const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
     const [showPoster, setShowPoster] = useState(false);
     const [agreedToRules, setAgreedToRules] = useState(false);
     const [approvedCount, setApprovedCount] = useState(0);
@@ -990,9 +1020,14 @@ const PlayerRegistration: React.FC = () => {
                         <div className="flex items-center justify-center gap-4 pt-4">
                             <button 
                                 onClick={() => {
-                                    const text = `I just registered for ${auction?.title}! My Player ID is ${playerID}. Check it out here: ${window.location.href}`;
+                                    let baseUrl = window.location.origin;
+                                    if (baseUrl.includes('-dev-')) {
+                                        baseUrl = baseUrl.replace('-dev-', '-pre-');
+                                    }
+                                    const regUrl = `${baseUrl}/#/auction/${id}/register`;
+                                    const text = `I just registered for ${auction?.title}! My Player ID is ${playerID}. Check it out here: ${regUrl}`;
                                     if (navigator.share) {
-                                        navigator.share({ title: auction?.title, text, url: window.location.href });
+                                        navigator.share({ title: auction?.title, text, url: regUrl });
                                     } else {
                                         navigator.clipboard.writeText(text);
                                         alert("Registration details copied to clipboard!");
@@ -1405,7 +1440,6 @@ const PlayerRegistration: React.FC = () => {
                     <div className={isClassicNeon ? "grid grid-cols-1 lg:grid-cols-2 gap-12 items-start" : ""}>
                         {/* Left Side: Form Content */}
                         <div className={isClassicNeon ? "space-y-8" : ""}>
-                                    {/* Step Content wrapped in AnimatePresence */}
                                     <AnimatePresence mode="wait">
                                         <motion.div
                                             key={currentStep}
@@ -1415,6 +1449,29 @@ const PlayerRegistration: React.FC = () => {
                                             transition={{ duration: 0.4, ease: "easeOut" }}
                                             className={`min-h-[400px] ${(isFull && !isCaptain && !hasTeamCode) ? 'opacity-50 pointer-events-none' : ''}`}
                                         >
+                                            {/* Welcome Banner - Replaces the Popup */}
+                                            {config?.welcomePopup?.isEnabled && !hasSeenWelcome && currentStepId === 'details' && (
+                                                <motion.div 
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    className={`mb-8 p-6 rounded-[2rem] border-2 relative overflow-hidden ${
+                                                        isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="p-3 rounded-2xl bg-white/10">
+                                                            <Megaphone className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest">Organizer's Message</h4>
+                                                                <button onClick={() => setHasSeenWelcome(true)} className="p-1 hover:bg-white/10 rounded-lg"><XIcon className="w-4 h-4" /></button>
+                                                            </div>
+                                                            <p className="text-xs font-bold leading-relaxed opacity-80">{config.welcomePopup.message}</p>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
                                             {currentStepId === 'details' && (
                                                 <div className="space-y-8">
                                                     {config?.welcomePosterUrl ? (
@@ -2341,56 +2398,6 @@ const PlayerRegistration: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {showWelcomePopup && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4 backdrop-blur-sm"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className={`max-w-md w-full p-8 rounded-[2rem] shadow-2xl border-2 ${
-                                isAdvaya 
-                                ? 'bg-[#151515] border-amber-500/30 text-amber-50' 
-                                : 'bg-white border-blue-100 text-gray-900'
-                            }`}
-                        >
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                                isAdvaya ? 'bg-amber-500/10' : 'bg-blue-50'
-                            }`}>
-                                <Megaphone className={`w-8 h-8 ${isAdvaya ? 'text-amber-500' : 'text-blue-600'}`} />
-                            </div>
-                            
-                            <h2 className={`text-xl font-black text-center uppercase tracking-tight mb-4 ${
-                                isAdvaya ? 'text-amber-500' : 'text-blue-600'
-                            }`}>
-                                Welcome Message
-                            </h2>
-                            
-                            <p className={`text-sm font-bold text-center leading-relaxed mb-8 ${
-                                isAdvaya ? 'text-slate-400' : 'text-gray-500'
-                            }`}>
-                                {config?.welcomePopup?.message || `Welcome to ${auction?.title}! Please fill out the form to register.`}
-                            </p>
-                            
-                            <button 
-                                onClick={() => setShowWelcomePopup(false)}
-                                className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 ${
-                                    isAdvaya 
-                                    ? 'bg-amber-600 hover:bg-amber-500 text-black' 
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                }`}
-                            >
-                                OK ({welcomeTimer}s)
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <div className={`max-w-2xl mx-auto shadow-2xl rounded-[2.5rem] overflow-hidden border animate-fade-in relative ${isNavyGolden || isClassicNeon ? 'bg-[#070B0A] border-[#A6FF00]/20' : isAdvaya ? 'bg-[#151515] border-amber-900/30' : 'bg-white border-gray-200'}`}>
                 {/* Main Card Neon Border */}

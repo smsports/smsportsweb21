@@ -9,7 +9,8 @@ service cloud.firestore {
     }
 
     function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      // Allow if either signed in with email or anonymous (for public forms)
+      return isSignedIn();
     }
 
     function isValidId(id) {
@@ -24,13 +25,13 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Role Helpers
     function isHardcodedAdmin() {
       return isSignedIn() && (
         request.auth.token.email == "info.digitalmount@gmail.com" ||
         request.auth.token.email == "mezabiullakhan@gmail.com" ||
         request.auth.token.email == "zabiullakhanofficial@gmail.com" ||
-        request.auth.token.email == "admin@auction.com"
+        request.auth.token.email == "admin@auction.com" ||
+        request.auth.token.email == "send.smsports@gmail.com"
       );
     }
 
@@ -42,270 +43,128 @@ service cloud.firestore {
       );
     }
 
-    function isAuctionOwner(auctionId) {
-      return isSignedIn() && (
-        (exists(/databases/$(database)/documents/auctions/$(auctionId)) && 
-         get(/databases/$(database)/documents/auctions/$(auctionId)).data.createdBy == request.auth.uid) ||
-        // Admin fallbacks
-        request.auth.token.email == "info.digitalmount@gmail.com" ||
-        request.auth.token.email == "mezabiullakhan@gmail.com"
-      );
-    }
-
     function isAdmin(auctionId) {
       return isSignedIn() && (
         isSuperAdmin() || 
-        // Direct Ownership
-        get(/databases/$(database)/documents/auctions/$(auctionId)).data.createdBy == request.auth.uid ||
-        // Staff/Co-Admin role in the auction (optional but good)
-        (exists(/databases/$(database)/documents/auctions/$(auctionId)/staff/$(request.auth.uid))) ||
-        // Universal edit access if the user specifically requested it for their environment
-        // We'll trust the createdBy check mostly, but also include common admin emails as fallback
-        request.auth.token.email in ["mezabiullakhan@gmail.com", "zabiullakhanofficial@gmail.com", "info.digitalmount@gmail.com"]
+        (exists(/databases/$(database)/documents/auctions/$(auctionId)) && 
+         get(/databases/$(database)/documents/auctions/$(auctionId)).data.createdBy == request.auth.uid) ||
+        (exists(/databases/$(database)/documents/auctions/$(auctionId)/staff/$(request.auth.uid)))
       );
     }
 
-    function isSupport(auctionId) {
-      return isSignedIn() && (
-        isAdmin(auctionId) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "SUPPORT")
-      );
-    }
-
-    // Type Checkers
     function isValidString(val, minSize, maxSize) {
       return val is string && val.size() >= minSize && val.size() <= maxSize;
     }
 
     // ===============================================================
-    // Entity Validations (Phase 4)
+    // ENTITY VALIDATORS
     // ===============================================================
-
-    function isValidAuction(data) {
-      return isValidString(data.title, 1, 200) &&
-             data.createdAt is number;
-    }
-
-    function isValidTeam(data) {
-      return isValidString(data.name, 1, 100) &&
-             data.budget is number &&
-             data.budget >= 0;
-    }
-
-    function isValidPlayer(data) {
-      return isValidString(data.name, 1, 100) &&
-             isValidString(data.category, 1, 50) &&
-             isValidString(data.role, 1, 50);
-    }
-
-    function isValidUser(data) {
-      return isValidString(data.email, 3, 200) &&
-             isValidString(data.name, 1, 100);
-    }
-
     function isValidRegistration(data) {
-      return isValidString(data.fullName, 1, 100) &&
-             (data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 20) &&
+      return isValidString(data.fullName, 1, 200) &&
+             (data.mobile is string) &&
              data.submittedAt is number;
     }
 
-    function isValidCaptainCode(data) {
-      return isValidString(data.code, 1, 50) &&
-             data.usageLimit is number &&
-             data.currentUsage is number;
+    // ===============================================================
+    // RULES
+    // ===============================================================
+
+    // Global Catch-all (Phase 0)
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    // ===============================================================
-    // PUBLIC ACCESS (Global Configs & Public Views)
-    // ===============================================================
+    // Public Collections
     match /appConfig/{configId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /globalAssets/{assetId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /systemBroadcasts/{broadcastId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /systemPopups/{popupId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /subscriptionPlans/{planId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /promoCodes/{codeId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /system/{docId} {
       allow read: if true;
-      allow list: if isSignedIn();
-      allow write: if isSuperAdmin() || (docId == 'metadata' && isSignedIn());
+      allow write: if isSuperAdmin();
     }
-
-    // ===============================================================
-    // Collection Rules
-    // ===============================================================
 
     match /users/{userId} {
-      allow read, list: if isSignedIn() && (
-        request.auth.uid == userId || 
-        isSuperAdmin()
-      );
-
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
-      allow update: if isSignedIn() && (
-        (request.auth.uid == userId && isValidUser(incoming()) && (
-          // Immortal Field (Pillar 9): prevent them from changing their own role or UID
-          incoming().role == existing().role || isSuperAdmin()
-        )) || 
-        isSuperAdmin()
-      );
-      allow delete: if isSuperAdmin();
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
     }
 
     match /auctions/{auctionId} {
+      // Auction is Public for browsing and registration
       allow read: if true;
-      // Secure List Queries (Pillar 8): Allow public list queries for auctions
-      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isAdmin(auctionId);
+      allow delete: if isSuperAdmin();
 
-      allow create: if isSignedIn() && isValidAuction(incoming()); // Any user can create an auction
-      allow update: if isSuperAdmin() || (
-        isAdmin(auctionId) && isValidAuction(incoming()) && (
-          // Ensure they don't transfer ownership unless super admin
-          incoming().createdBy == existing().createdBy || isSuperAdmin()
-        )
-      ) || (
-        // Action: Bid (Team Owners)
-        // Ensure the bidder is signed in and has the role of TEAM_OWNER in the users registry or via session validation
-        isSignedIn() && 
-        (
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "TEAM_OWNER") ||
-          // Allow anonymous team owners if the bid logic is validated correctly
-          (request.auth.token.provider_id == "anonymous")
-        ) &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['currentBid', 'highestBidder', 'timer', 'auctionLog']) &&
-        incoming().currentBid > existing().currentBid &&
-        // Ensure the auction is actually LIVE or IN_PROGRESS
-        existing().status == "IN_PROGRESS" &&
-        existing().biddingStatus == "ON"
-      );
-
+      // Sub-collections
       match /players/{playerId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
       }
 
       match /teams/{teamId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
       }
 
       match /categories/{categoryId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
-      }
-
-      match /arrangementDrafts/{draftId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
-      }
-
-      match /settings/{settingId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
-      }
-
-      match /registrations/{regId} {
-        allow read, list: if (resource.data.status == 'APPROVED') || isAdmin(auctionId) || isSuperAdmin();
-        allow create: if isValidRegistration(incoming());
-        allow update, delete: if isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
       }
 
       match /roles/{roleId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
+      }
+
+      match /registrations/{regId} {
+        // Public can count approved registrations for progress bar
+        allow list: if (resource.data.status == 'APPROVED') || isAdmin(auctionId);
+        // Individual registration is private to admins and potentially the player if mobile match (not implemented here)
+        allow get: if isAdmin(auctionId);
+        allow create: if isValidRegistration(incoming());
+        allow update, delete: if isAdmin(auctionId);
       }
 
       match /captainCodes/{codeId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
-        allow update: if (
-          incoming().diff(existing()).affectedKeys().hasOnly(['currentUsage', 'teamCodes']) &&
-          incoming().currentUsage == existing().currentUsage + 1
-        ) || isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow create: if isAdmin(auctionId);
+        allow update: if isAdmin(auctionId) || (
+          // Allow public to update usage count when registering
+          incoming().diff(existing()).affectedKeys().hasOnly(['currentUsage', 'teamCodes', 'teamUsedCount'])
+        );
       }
 
       match /sponsors/{sponsorId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
       }
 
       match /auctionLogs/{logId} {
-        allow read, list: if true;
+        allow read: if true;
         allow create: if isSignedIn();
-        allow update, delete: if isAdmin(auctionId) || isSuperAdmin();
+        allow write: if isAdmin(auctionId);
+      }
+
+      match /arrangementDrafts/{draftId} {
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
+      }
+
+      match /staff/{staffId} {
+        allow read: if isAdmin(auctionId);
+        allow write: if isAdmin(auctionId);
       }
 
       match /waitlist/{listId} {
-        allow create, list: if true;
-        allow read, update, delete: if isAdmin(auctionId) || isSuperAdmin();
-      }
-
-      match /recollectionForms/{formId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
-      }
-
-      match /trades/{tradeId} {
-        allow read, list: if true;
-        allow write: if isAdmin(auctionId) || isSuperAdmin();
+        allow create: if true;
+        allow read, list, update: if isAdmin(auctionId);
       }
     }
 
-    match /recollectionResponses/{responseId} {
-      allow create: if true;
-      allow read, list, update, delete: if isSignedIn() && (
-        isSuperAdmin() || 
-        request.auth.token.email == "send.smsports@gmail.com" ||
-        (exists(/databases/$(database)/documents/auctions/$(resource.data.auctionId)) && 
-         get(/databases/$(database)/documents/auctions/$(resource.data.auctionId)).data.createdBy == request.auth.uid)
-      );
-    }
-
-    match /matches/{matchId} {
-      allow read, list: if true;
-      allow write: if isSuperAdmin();
-    }
-
+    // Support System
     match /supportTickets/{ticketId} {
-      // Secure List Queries (Pillar 8): Explicitly evaluate resource.data to prevent unauthorized list scraping
-      allow read, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
-
+      allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
       match /messages/{msgId} {
-        // Relational Sync (Pillar 1): Verify access via parent ticket
-        allow read, list: if isSignedIn() && (get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid || isSuperAdmin());
-        allow create: if isSignedIn() && (incoming().senderId == request.auth.uid);
+        allow read, write: if isSignedIn();
       }
-    }
-
-    // Default deny for anything not matched above
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
