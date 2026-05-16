@@ -13,25 +13,55 @@ import {
     Type as Shirt
 } from 'lucide-react';
 
-const compressImage = (file: File): Promise<string> => {
+import heic2any from 'heic2any';
+
+const compressImage = async (file: File): Promise<string> => {
+    let processedFile: File | Blob = file;
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        try {
+            const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+            processedFile = Array.isArray(converted) ? converted[0] : converted;
+        } catch (e) {
+            console.error("HEIC conversion failed:", e);
+        }
+    }
+
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(processedFile);
         reader.onload = (event) => {
             const img = new Image();
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_DIM = 2000;
+                // Support up to 4K resolution
+                const MAX_DIM = 3840; 
                 let width = img.width;
                 let height = img.height;
                 if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
                 else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
+                
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/png', 0.8));
+                if (ctx) {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                }
+
+                // Iteratively reduce quality to stay under 1MB limit (leaving buffer for metadata)
+                let quality = 0.95;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                
+                // Firestore limit is 1MB (1,048,576 bytes)
+                // DataURL overhead is roughly 33%, so 800,000 bytes is a safe target
+                while (dataUrl.length > 900000 && quality > 0.1) {
+                    quality -= 0.05;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
+                
+                resolve(dataUrl);
             };
             img.onerror = (err) => reject(err);
         };
@@ -42,7 +72,7 @@ const compressImage = (file: File): Promise<string> => {
 const SuperAdminDashboard: React.FC = () => {
     const { state, logout, joinAuction } = useAuction();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'REGISTRY' | 'AUCTIONS' | 'PLANS' | 'PROMOS' | 'ALERTS' | 'BROADCAST' | 'DATABASE' | 'GRAPHICS'>('OVERVIEW');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'AUCTIONS' | 'PLANS' | 'COUPONS' | 'POPUP' | 'BROADCAST' | 'SYSTEM' | 'IMAGES'>('DASHBOARD');
     const [auctions, setAuctions] = useState<AuctionSetup[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -219,17 +249,27 @@ const SuperAdminDashboard: React.FC = () => {
         <div className="min-h-screen bg-black font-sans text-white selection:bg-red-500">
             <nav className="bg-zinc-950 border-b border-zinc-800/50 sticky top-0 z-50 backdrop-blur-xl">
                 <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setActiveTab('OVERVIEW')}>
+                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setActiveTab('DASHBOARD')}>
                         <div className="bg-red-600 p-2.5 rounded-2xl shadow-xl group-hover:rotate-12 transition-all">
                             <Shield className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Master Settings</h1>
-                            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.4em] mt-1 opacity-60">Admin Dashboard</p>
+                            <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Admin Settings</h1>
+                            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.4em] mt-1 opacity-60">Control Center</p>
                         </div>
                     </div>
                     <div className="flex bg-zinc-900 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar">
-                        {[{id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4"/>}, {id: 'REGISTRY', label: 'Users', icon: <Users className="w-4 h-4"/>}, {id: 'AUCTIONS', label: 'Auctions', icon: <Gavel className="w-4 h-4"/>}, {id: 'PLANS', label: 'Plans', icon: <Server className="w-4 h-4"/>}, {id: 'PROMOS', label: 'Promos', icon: <Tag className="w-4 h-4"/>}, {id: 'ALERTS', label: 'Alerts', icon: <Megaphone className="w-4 h-4"/>}, {id: 'BROADCAST', label: 'Ticker', icon: <Newspaper className="w-4 h-4"/>}, {id: 'DATABASE', label: 'Database', icon: <HardDrive className="w-4 h-4"/>}, {id: 'GRAPHICS', label: 'Graphics', icon: <ImageIcon className="w-4 h-4"/>}].map(t => (
+                        {[
+                            {id: 'DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4"/>}, 
+                            {id: 'USERS', label: 'Users', icon: <Users className="w-4 h-4"/>}, 
+                            {id: 'AUCTIONS', label: 'Events', icon: <Gavel className="w-4 h-4"/>}, 
+                            {id: 'PLANS', label: 'Plans', icon: <Server className="w-4 h-4"/>}, 
+                            {id: 'COUPONS', label: 'Coupons', icon: <Tag className="w-4 h-4"/>}, 
+                            {id: 'POPUP', label: 'Alerts', icon: <Megaphone className="w-4 h-4"/>}, 
+                            {id: 'BROADCAST', label: 'Ticker', icon: <Newspaper className="w-4 h-4"/>}, 
+                            {id: 'SYSTEM', label: 'System', icon: <HardDrive className="w-4 h-4"/>}, 
+                            {id: 'IMAGES', label: 'Images', icon: <ImageIcon className="w-4 h-4"/>}
+                        ].map(t => (
                             <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-red-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}>
                                 {t.icon} <span className="hidden lg:inline">{t.label}</span>
                             </button>
@@ -242,7 +282,7 @@ const SuperAdminDashboard: React.FC = () => {
             </nav>
 
             <main className="container mx-auto px-6 py-10 max-w-7xl">
-                {activeTab === 'OVERVIEW' && (
+                {activeTab === 'DASHBOARD' && (
                     <div className="space-y-12 animate-fade-in">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                             {[ { label: 'Storage Usage', val: totalGB, unit: 'GB', color: 'text-red-500' }, { label: 'Live Auctions', val: auctions.length, unit: 'Active', color: 'text-green-500' }, { label: 'Total Users', val: userRegistry.length, unit: 'IDs', color: 'text-blue-500' }, { label: 'Support Staff', val: userRegistry.filter(u => u.role === UserRole.SUPPORT).length, unit: 'Online', color: 'text-white' } ].map(s => (
@@ -313,7 +353,7 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'REGISTRY' && (
+                {activeTab === 'USERS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-black uppercase tracking-tighter">Registered Users</h2>
@@ -465,7 +505,7 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'PROMOS' && (
+                {activeTab === 'COUPONS' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-black uppercase tracking-tighter">Discount Codes</h2>
@@ -488,7 +528,7 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'ALERTS' && (
+                {activeTab === 'POPUP' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-black uppercase tracking-tighter">System Popups</h2>
@@ -533,7 +573,7 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'DATABASE' && (
+                {activeTab === 'SYSTEM' && (
                     <div className="space-y-8 animate-fade-in">
                         <div className="bg-zinc-900/30 p-10 rounded-[3rem] border border-white/5">
                             <div className="flex items-center gap-6 mb-8">
@@ -556,11 +596,14 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'GRAPHICS' && (
+                {activeTab === 'IMAGES' && (
                     <div className="space-y-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">All Graphics</h2>
-                            <div className="flex gap-4">
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+                            <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">Global Media Assets</h2>
+                                <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">Manage platform-wide images and designs</p>
+                            </div>
+                            <div className="flex flex-wrap gap-4">
                                 <button
                                     onClick={async () => {
                                         const newValue = !state.isAdPosterEnabled;
@@ -569,72 +612,96 @@ const SuperAdminDashboard: React.FC = () => {
                                     className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl transition-all ${state.isAdPosterEnabled ? 'bg-green-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}
                                 >
                                     {state.isAdPosterEnabled ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
-                                    {state.isAdPosterEnabled ? 'AD POSTER ON' : 'AD POSTER OFF'}
+                                    {state.isAdPosterEnabled ? 'POSTER ON' : 'POSTER OFF'}
                                 </button>
                                 <button onClick={() => adPosterInputRef.current?.click()} className="bg-red-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
-                                    <ImageIcon className="w-4 h-4"/> UPLOAD SM AD
+                                    <ImageIcon className="w-4 h-4"/> UPLOAD POSTER
                                 </button>
                                 <button onClick={() => jerseyInputRef.current?.click()} className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
-                                    <Shirt className="w-4 h-4"/> UPLOAD PLAIN JERSEY
+                                    <Shirt className="w-4 h-4"/> PLAIN JERSEY
                                 </button>
                                 <button onClick={() => jerseyOverlayInputRef.current?.click()} className="bg-indigo-600 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-white hover:text-black transition-all">
-                                    <ImageIcon className="w-4 h-4"/> UPLOAD JERSEY OVERLAY
+                                    <ImageIcon className="w-4 h-4"/> JERSEY DESIGN
                                 </button>
                                 <button onClick={() => document.getElementById('asset-up')?.click()} className="bg-white text-black px-8 py-3 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-xl hover:bg-red-600 hover:text-white transition-all">
-                                    <Upload className="w-4 h-4"/> UPLOAD PHOTO
+                                    <Upload className="w-4 h-4"/> UPLOAD IMAGE
                                 </button>
                             </div>
-                            <input type="file" ref={adPosterInputRef} className="hidden" accept="image/*" onChange={async (e) => {
-                                if(e.target.files?.[0]) {
-                                    setIsProcessing(true);
-                                    try {
-                                        const img = await compressImage(e.target.files[0]);
-                                        await db.collection('appConfig').doc('globalSettings').set({ successAdPosterUrl: img }, { merge: true });
-                                        alert("Add Poster Updated!");
-                                    } catch (err) {
-                                        console.error(err);
-                                    } finally {
-                                        setIsProcessing(false);
-                                    }
-                                }
-                            }} />
-                            <input type="file" ref={jerseyInputRef} className="hidden" accept="image/*" onChange={async (e) => {
-                                if(e.target.files?.[0]) {
-                                    setIsProcessing(true);
-                                    try {
-                                        const img = await compressImage(e.target.files[0]);
-                                        await db.collection('appConfig').doc('globalSettings').set({ globalJerseyUrl: img }, { merge: true });
-                                        alert("Plain Jersey Image Updated!");
-                                    } catch (err) {
-                                        console.error(err);
-                                    } finally {
-                                        setIsProcessing(false);
-                                    }
-                                }
-                            }} />
-                            <input type="file" ref={jerseyOverlayInputRef} className="hidden" accept="image/*" onChange={async (e) => {
-                                if(e.target.files?.[0]) {
-                                    setIsProcessing(true);
-                                    try {
-                                        const img = await compressImage(e.target.files[0]);
-                                        await db.collection('appConfig').doc('globalSettings').set({ globalJerseyOverlayUrl: img }, { merge: true });
-                                        alert("Jersey Overlay Image Updated!");
-                                    } catch (err) {
-                                        console.error(err);
-                                    } finally {
-                                        setIsProcessing(false);
-                                    }
-                                }
-                            }} />
-                            <input type="file" id="asset-up" className="hidden" accept="image/*" onChange={async (e) => {
-                                if(e.target.files?.[0]) {
-                                    const img = await compressImage(e.target.files[0]);
-                                    await db.collection('globalAssets').add({ url: img, name: 'Master Graphic ' + Date.now(), createdAt: Date.now(), type: 'BACKGROUND' });
-                                }
-                            }} />
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {globalAssets.map(asset => (
+
+                        {/* Previews for Global Images */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                            <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5 space-y-4">
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Global Ad Poster</p>
+                                <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
+                                    {state.successAdPosterUrl ? (
+                                        <>
+                                            <img src={state.successAdPosterUrl} className="w-full h-full object-contain" alt="Poster" />
+                                            <button 
+                                                onClick={async () => { if(window.confirm("Remove Poster?")) await db.collection('appConfig').doc('globalSettings').update({ successAdPosterUrl: '' }); }}
+                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
+                                            >
+                                                <Trash2 className="w-8 h-8" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="text-zinc-800 flex flex-col items-center">
+                                            <ImageIcon className="w-12 h-12 mb-2" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">No Poster</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5 space-y-4">
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Universal Plain Jersey</p>
+                                <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
+                                    {state.globalJerseyUrl ? (
+                                        <>
+                                            <img src={state.globalJerseyUrl} className="w-full h-full object-contain" alt="Jersey" />
+                                            <button 
+                                                onClick={async () => { if(window.confirm("Remove Jersey?")) await db.collection('appConfig').doc('globalSettings').update({ globalJerseyUrl: '' }); }}
+                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
+                                            >
+                                                <Trash2 className="w-8 h-8" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="text-zinc-800 flex flex-col items-center">
+                                            <Shirt className="w-12 h-12 mb-2" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">No Base Jersey</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5 space-y-4">
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Global Jersey Design (Overlay)</p>
+                                <div className="aspect-[4/5] bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
+                                    {state.globalJerseyOverlayUrl ? (
+                                        <>
+                                            <img src={state.globalJerseyOverlayUrl} className="w-full h-full object-contain" alt="Overlay" />
+                                            <button 
+                                                onClick={async () => { if(window.confirm("Remove Overlay?")) await db.collection('appConfig').doc('globalSettings').update({ globalJerseyOverlayUrl: '' }); }}
+                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"
+                                            >
+                                                <Trash2 className="w-8 h-8" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="text-zinc-800 flex flex-col items-center">
+                                            <Layers className="w-12 h-12 mb-2" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">No Overlay</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-white/5">
+                            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">General Assets Gallery</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                {globalAssets.map(asset => (
                                 <div key={asset.id} className="aspect-video bg-zinc-900 rounded-2xl border border-white/5 overflow-hidden group relative shadow-2xl">
                                     <img src={asset.url} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -643,7 +710,56 @@ const SuperAdminDashboard: React.FC = () => {
                                 </div>
                             ))}
                         </div>
+                        <input type="file" ref={adPosterInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                            if(e.target.files?.[0]) {
+                                setIsProcessing(true);
+                                try {
+                                    const img = await compressImage(e.target.files[0]);
+                                    await db.collection('appConfig').doc('globalSettings').set({ successAdPosterUrl: img }, { merge: true });
+                                    alert("Add Poster Updated!");
+                                } catch (err) {
+                                    console.error(err);
+                                } finally {
+                                    setIsProcessing(false);
+                                }
+                            }
+                        }} />
+                        <input type="file" ref={jerseyInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                            if(e.target.files?.[0]) {
+                                setIsProcessing(true);
+                                try {
+                                    const img = await compressImage(e.target.files[0]);
+                                    await db.collection('appConfig').doc('globalSettings').set({ globalJerseyUrl: img }, { merge: true });
+                                    alert("Plain Jersey Image Updated!");
+                                } catch (err) {
+                                    console.error(err);
+                                } finally {
+                                    setIsProcessing(false);
+                                }
+                            }
+                        }} />
+                        <input type="file" ref={jerseyOverlayInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                            if(e.target.files?.[0]) {
+                                setIsProcessing(true);
+                                try {
+                                    const img = await compressImage(e.target.files[0]);
+                                    await db.collection('appConfig').doc('globalSettings').set({ globalJerseyOverlayUrl: img }, { merge: true });
+                                    alert("Jersey Overlay Image Updated!");
+                                } catch (err) {
+                                    console.error(err);
+                                } finally {
+                                    setIsProcessing(false);
+                                }
+                            }
+                        }} />
+                        <input type="file" id="asset-up" className="hidden" accept="image/*" onChange={async (e) => {
+                            if(e.target.files?.[0]) {
+                                const img = await compressImage(e.target.files[0]);
+                                await db.collection('globalAssets').add({ url: img, name: 'Image ' + Date.now(), createdAt: Date.now(), type: 'BACKGROUND' });
+                            }
+                        }} />
                     </div>
+                </div>
                 )}
             </main>
 

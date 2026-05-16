@@ -75,7 +75,7 @@ const compressImage = async (file: File): Promise<string> => {
     });
 };
 
-const WarriorInput = ({ label, value, onChange, type = "text", required = false, placeholder = "", options = [], theme = "ADVAYA" }: any) => {
+const TournamentInput = ({ label, value, onChange, type = "text", required = false, placeholder = "", options = [], theme = "ADVAYA" }: any) => {
     const isNavyGolden = theme?.toUpperCase() === 'NAVY_GOLDEN';
     const isClassicNeon = theme?.toUpperCase() === 'CLASSIC_NEON';
     
@@ -110,7 +110,7 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
                 <div className="pt-10 pb-2 flex flex-wrap gap-2">
                     {options.map((opt: string, idx: number) => (
                         <motion.button
-                            key={`input-opt-${opt}-${idx}`}
+                            key={`input-opt-${label}-${opt}-${idx}`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             type="button"
@@ -155,7 +155,7 @@ const WarriorInput = ({ label, value, onChange, type = "text", required = false,
     );
 };
 
-const WarriorCard = ({ children, title, icon: Icon, className = "", theme = "ADVAYA" }: any) => {
+const TournamentCard = ({ children, title, icon: Icon, className = "", theme = "ADVAYA" }: any) => {
     const isNavyGolden = theme === 'NAVY_GOLDEN';
     const isClassicNeon = theme === 'CLASSIC_NEON';
     
@@ -190,7 +190,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
         <div className={`relative w-full aspect-[4/5] max-w-[350px] mx-auto perspective-1000 group`}>
             <AnimatePresence mode="wait">
                 <motion.div 
-                    key={viewMode}
+                    key={`${viewMode}-${name}-${number}`}
                     initial={{ rotateY: -90, opacity: 0 }}
                     animate={{ rotateY: 0, opacity: 1 }}
                     exit={{ rotateY: 90, opacity: 0 }}
@@ -210,30 +210,30 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                         </div>
                     )}
 
-                    {/* Jersey Overlay Image */}
+                    {/* Jersey Overlay Image - Put it above Name/Number for texture */}
                     {jerseyOverlayUrl && (
-                        <div className="absolute inset-0 z-[5] flex items-center justify-center p-4">
-                            <img src={jerseyOverlayUrl} className="w-full h-full object-contain" alt="Jersey Overlay" />
+                        <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                            <img src={jerseyOverlayUrl} className="w-full h-full object-contain pointer-events-none" alt="Jersey Overlay" />
                         </div>
                     )}
 
                     {/* Texture Pattern */}
-                    {!jerseyUrl && <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] mix-blend-overlay" />}
+                    {!jerseyUrl && <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] mix-blend-overlay z-[15]" />}
                     
                     {/* Design Elements */}
-                    {!jerseyUrl && <div className={`absolute top-0 left-0 w-full h-full ${
+                    {!jerseyUrl && <div className={`absolute top-0 left-0 w-full h-full z-[12] ${
                         isClassicNeon ? "bg-[radial-gradient(circle_at_top,#A6FF0005_0%,transparent_70%)]" : ""
                     }`} />}
 
                     {viewMode === 'back' ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16 font-sans z-10">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16 font-sans z-[18]">
                             <motion.h4 
                                 key={name}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-3xl md:text-4xl font-black uppercase tracking-[0.2em] italic text-[#00FF41] mb-0 px-6 text-center"
                             >
-                                {name || "PLAYER"}
+                                {name || "NAME"}
                             </motion.h4>
                             <div className="w-24 h-1 mt-2 mb-8 bg-[#00FF41]" />
                             <motion.div 
@@ -246,7 +246,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
                             </motion.div>
                         </div>
                     ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 font-sans z-10">
+                    <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 font-sans z-[18]">
                             {/* Collar & Shoulder Stripes */}
                             {!jerseyUrl && (
                                 <>
@@ -297,7 +297,7 @@ const JerseyPreview = ({ name, number, auctionLogo, theme, season, viewMode = 'b
     );
 };
 
-const WarriorDetailCard = ({ icon: Icon, title, value, description, theme, isClassicNeon }: any) => {
+const TournamentDetailCard = ({ icon: Icon, title, value, description, theme, isClassicNeon }: any) => {
     const isNavyGolden = theme === 'NAVY_GOLDEN';
     
     return (
@@ -1018,13 +1018,13 @@ const PlayerRegistration: React.FC = () => {
     }
 
     const steps = [
-        { id: 'details', label: isClassicNeon ? 'OVERVIEW' : isAdvaya ? 'Battle Intel' : 'Tournament Info' },
-        { id: 'personal', label: isClassicNeon ? 'PROFILE' : isAdvaya ? 'Personal Info' : 'Player Info' },
-        { id: 'role', label: isClassicNeon ? 'ROLE' : isAdvaya ? 'Role Selection' : 'Skill Selection' },
-        ...(config?.customFields && config.customFields.length > 0 ? [{ id: 'custom', label: isClassicNeon ? 'DETAILS' : isAdvaya ? 'Attributes' : 'Details' }] : []),
-        ...(config?.jerseyDetailsEnabled ? [{ id: 'jersey', label: isClassicNeon ? 'KIT' : 'Jersey Details' }] : []),
-        ...(config?.includePayment && config.paymentMethod === 'MANUAL' ? [{ id: 'payment', label: isClassicNeon ? 'PAYMENT' : isAdvaya ? 'Payment' : 'Verification' }] : []),
-        { id: 'rules', label: isClassicNeon ? 'TERMS' : isAdvaya ? 'Rules' : 'Terms' }
+        { id: 'details', label: isClassicNeon ? 'OVERVIEW' : isAdvaya ? 'Info' : 'Information' },
+        { id: 'personal', label: isClassicNeon ? 'PROFILE' : isAdvaya ? 'Contact' : 'Details' },
+        { id: 'role', label: isClassicNeon ? 'ROLE' : isAdvaya ? 'Role' : 'Position' },
+        ...(config?.customFields && config.customFields.length > 0 ? [{ id: 'custom', label: isClassicNeon ? 'DETAILS' : isAdvaya ? 'Profile' : 'Skills' }] : []),
+        ...(config?.jerseyDetailsEnabled ? [{ id: 'jersey', label: isClassicNeon ? 'KIT' : 'Jersey' }] : []),
+        ...(config?.includePayment && config.paymentMethod === 'MANUAL' ? [{ id: 'payment', label: isClassicNeon ? 'PAYMENT' : isAdvaya ? 'Fee' : 'Payment' }] : []),
+        { id: 'rules', label: isClassicNeon ? 'TERMS' : isAdvaya ? 'Rules' : 'Rules' }
     ];
 
     const currentStepId = steps[currentStep]?.id;
@@ -1093,7 +1093,7 @@ const PlayerRegistration: React.FC = () => {
                                         {config?.showcaseImages && config.showcaseImages.length > 0 && (
                                             <div className="p-8 space-y-12 bg-black/40">
                                                 <div className="flex flex-col items-center gap-4">
-                                                    <h3 className={`text-2xl font-black italic uppercase tracking-tighter text-center ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]' : 'text-amber-500'}`}>TOURNAMENT HALL OF FAME</h3>
+                                                    <h3 className={`text-2xl font-black italic uppercase tracking-tighter text-center ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00] drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]' : 'text-amber-500'}`}>TOURNAMENT HIGHLIGHTS</h3>
                                                     <div className={`w-24 h-1 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-amber-500'} rounded-full`} />
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1163,8 +1163,8 @@ const PlayerRegistration: React.FC = () => {
                                                     {auction?.season && `SEASON ${auction.season}`}
                                                 </h3>
                                                 <div className="text-right pr-4 md:pr-12 space-y-2 mt-4">
-                                                    <h1 className="text-5xl md:text-9xl font-black text-[#A6FF00] italic leading-none drop-shadow-[0_0_30px_rgba(166,255,0,0.5)] uppercase">PLAY FOR GLORY</h1>
-                                                    <h1 className="text-4xl md:text-8xl font-black text-white italic leading-none uppercase">RIDE FOR VICTORY!</h1>
+                                                    <h1 className="text-5xl md:text-9xl font-black text-[#A6FF00] italic leading-none drop-shadow-[0_0_30px_rgba(166,255,0,0.5)] uppercase">PLAY HARD</h1>
+                                                    <h1 className="text-4xl md:text-8xl font-black text-white italic leading-none uppercase">WIN BIG!</h1>
                                                 </div>
                                             </div>
                                         </div>
@@ -1179,7 +1179,7 @@ const PlayerRegistration: React.FC = () => {
                                                 onClick={() => setBattleStarted(true)}
                                                 className="bg-[#A6FF00] text-black font-black px-12 py-5 rounded-full text-xl uppercase tracking-widest flex items-center gap-4 transition-all border-4 border-[#A6FF00]/50"
                                             >
-                                                START JOURNEY <ChevronRight size={24} />
+                                                START <ChevronRight size={24} />
                                             </motion.button>
                                         </div>
                                     </div>
@@ -1209,7 +1209,7 @@ const PlayerRegistration: React.FC = () => {
                                             transition={{ delay: 0.5 }}
                                             className={`${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'golden-text'} font-cinzel font-black text-sm md:text-2xl uppercase tracking-[0.6em] mb-12 drop-shadow-[0_0_10px_rgba(166,255,0,0.5)]`}
                                         >
-                                            THE STAGE OF CRICKET DREAMS
+                                            THE STAGE FOR CRICKET
                                         </motion.p>
                                         {/* 3. Main Banner Section */}
                                         <motion.div
@@ -1278,7 +1278,7 @@ const PlayerRegistration: React.FC = () => {
                                             <div className="flex items-center justify-center gap-4 md:gap-8">
                                                 <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-r from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/50 to-[#A6FF00]' : 'via-amber-500/50 to-amber-500'}`} />
                                                 <p className={`text-[10px] md:text-2xl font-cinzel font-black ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-100'} uppercase tracking-[0.4em] whitespace-nowrap`}>
-                                                    JOIN THE BATTLE, CREATE YOUR LEGACY
+                                                    JOIN THE EVENT
                                                 </p>
                                                 <div className={`h-[2px] flex-1 max-w-[150px] bg-gradient-to-l from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/50 to-[#A6FF00]' : 'via-amber-500/50 to-amber-500'}`} />
                                             </div>
@@ -1292,7 +1292,7 @@ const PlayerRegistration: React.FC = () => {
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                             {(isClassicNeon || isNavyGolden) ? <Zap className="w-8 h-8 md:w-10 md:h-10" /> : <Sword className="w-8 h-8 md:w-10 md:h-10" />} 
-                                            {(isClassicNeon || isNavyGolden) ? 'START THE JOURNEY' : 'JOIN THE BATTLE'}
+                                            {(isClassicNeon || isNavyGolden) ? 'START' : 'JOIN'}
                                         </motion.button>
                                     </>
                                 )}
@@ -1478,10 +1478,10 @@ const PlayerRegistration: React.FC = () => {
                                                                 </p>
                                                             </div>
                                                             <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${isClassicNeon || isNavyGolden ? 'md:grid-cols-2' : 'lg:grid-cols-5'}`}>
-                                                                <WarriorDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} isClassicNeon={isClassicNeon} />
-                                                                <WarriorDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="League schedule" theme={config?.theme} isClassicNeon={isClassicNeon} />
-                                                                <WarriorDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} isClassicNeon={isClassicNeon} />
-                                                                <WarriorDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Tournament venue" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <TournamentDetailCard icon={Calendar} title="Auction Date" value={auction?.date || 'TBD'} description="Draft day" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <TournamentDetailCard icon={Clock} title="Matches Date" value={auction?.matchesDate || 'TBD'} description="League schedule" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <TournamentDetailCard icon={Users} title="Total Teams" value={auction?.totalTeams || '0'} description="Competing squads" theme={config?.theme} isClassicNeon={isClassicNeon} />
+                                                                <TournamentDetailCard icon={MapPin} title="Ground" value={auction?.venue || 'TBD'} description="Tournament venue" theme={config?.theme} isClassicNeon={isClassicNeon} />
                                                             </div>
 
                                                             {isClassicNeon || isNavyGolden ? (
@@ -1548,9 +1548,9 @@ const PlayerRegistration: React.FC = () => {
                                                         <h4 className={`text-sm font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Are you registering as Captain?</h4>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        {[true, false].map(val => (
+                                                        {[true, false].map((val, idx) => (
                                                             <button 
-                                                                key={val ? 'yes' : 'no'}
+                                                                key={`opt-captain-${val}-${idx}`}
                                                                 type="button"
                                                                 onClick={() => {
                                                                     setIsCaptain(val);
@@ -1624,9 +1624,9 @@ const PlayerRegistration: React.FC = () => {
                                                         <h4 className={`text-sm font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Do you have a Captain's Team Code?</h4>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        {[true, false].map(val => (
+                                                        {[true, false].map((val, idx) => (
                                                             <button 
-                                                                key={val ? 'yes' : 'no'}
+                                                                key={`opt-teamcode-${val}-${idx}`}
                                                                 type="button"
                                                                 onClick={() => {
                                                                     setHasTeamCode(val);
@@ -1692,8 +1692,8 @@ const PlayerRegistration: React.FC = () => {
                                         )}
 
                                         {(!config?.basicFields || config?.basicFields?.name?.show !== false) && (
-                                            <WarriorInput 
-                                                label={isClassicNeon ? "Player Name" : isAdvaya ? "Warrior Name" : "Full Name"} 
+                                            <TournamentInput 
+                                                label={isClassicNeon ? "Player Name" : isAdvaya ? "Player Name" : "Full Name"} 
                                                 value={formData.fullName} 
                                                 onChange={(e: any) => setFormData({...formData, fullName: e.target.value})} 
                                                 placeholder="ENTER FULL NAME" 
@@ -1702,7 +1702,7 @@ const PlayerRegistration: React.FC = () => {
                                             />
                                         )}
                                         {(!config?.basicFields || config?.basicFields?.mobile?.show !== false) && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Mobile Primary" 
                                                 type="tel" 
                                                 value={formData.mobile} 
@@ -1713,7 +1713,7 @@ const PlayerRegistration: React.FC = () => {
                                             />
                                         )}
                                         {(!config?.basicFields || config?.basicFields?.dob?.show !== false) && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Date of Birth" 
                                                 type="date" 
                                                 value={formData.dob} 
@@ -1724,7 +1724,7 @@ const PlayerRegistration: React.FC = () => {
                                         )}
                                         
                                         {(!config?.basicFields || config.basicFields.gender?.show !== false) && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Gender Identity" 
                                                 type="select"
                                                 value={formData.gender} 
@@ -1833,7 +1833,7 @@ const PlayerRegistration: React.FC = () => {
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.1 }}
                                                 >
-                                                    <WarriorInput 
+                                                    <TournamentInput 
                                                         label={field.label} 
                                                         type={field.type}
                                                         value={formData[field.id]} 
@@ -1864,7 +1864,7 @@ const PlayerRegistration: React.FC = () => {
                                     </div>
                                     <div className="space-y-6">
                                         {config?.jerseyFields?.name?.show && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Name on Jersey" 
                                                 value={formData.jerseyName} 
                                                 onChange={(e: any) => setFormData({...formData, jerseyName: e.target.value})} 
@@ -1874,7 +1874,7 @@ const PlayerRegistration: React.FC = () => {
                                             />
                                         )}
                                         {config?.jerseyFields?.number?.show && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Jersey Number" 
                                                 type="number"
                                                 value={formData.jerseyNumber} 
@@ -1885,7 +1885,7 @@ const PlayerRegistration: React.FC = () => {
                                             />
                                         )}
                                         {config?.jerseyFields?.size?.show && (
-                                            <WarriorInput 
+                                            <TournamentInput 
                                                 label="Select Size" 
                                                 type="select"
                                                 value={formData.jerseySize} 

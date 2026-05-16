@@ -50,8 +50,9 @@ const compressImage = async (file: File, isBanner: boolean = false): Promise<str
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = isBanner ? 2400 : 1200;
-                const MAX_HEIGHT = isBanner ? 1600 : 1200;
+                // Target higher dimensions for "Ultra HD" feel
+                const MAX_WIDTH = isBanner ? 3840 : 2000;
+                const MAX_HEIGHT = isBanner ? 3840 : 2000;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
@@ -64,14 +65,13 @@ const compressImage = async (file: File, isBanner: boolean = false): Promise<str
                     ctx.drawImage(img, 0, 0, width, height);
                 }
                 
-                let quality = isBanner ? 0.95 : 0.85;
+                let quality = 0.95;
                 let dataUrl = canvas.toDataURL('image/jpeg', quality);
                 
-                // Firestore limit is 1MB. Base64 adds ~33% overhead.
-                // Reducing drastically to prevent document size exceeded errors.
-                // 50,000 chars is ~37KB, which is plenty for a thumbnail.
-                while (dataUrl.length > 50000 && quality > 0.1) {
-                    quality -= 0.1;
+                // Firestore limit is 1MB. DataURL overhead is ~33%.
+                // Using 800,000 as limit to stay safe.
+                while (dataUrl.length > 800000 && quality > 0.1) {
+                    quality -= 0.05;
                     dataUrl = canvas.toDataURL('image/jpeg', quality);
                 }
                 
