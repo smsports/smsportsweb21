@@ -172,6 +172,7 @@ const AuctionManage: React.FC = () => {
     const [allAuctions, setAllAuctions] = useState<any[]>([]);
     const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+    const [copySuccess, setCopySuccess] = useState(false);
 
     const showNotification = (message: string, type: 'error' | 'success' = 'error') => {
         setNotification({ message, type });
@@ -1317,15 +1318,28 @@ const AuctionManage: React.FC = () => {
         }
         const url = `${baseUrl}/#/auction/${id}/register`;
         
+        const tryCopy = async () => {
+            try {
+                await navigator.clipboard.writeText(url);
+                setCopySuccess(true);
+                showNotification("✅ Link copied! Share this with players.", "success");
+                setTimeout(() => setCopySuccess(false), 2000);
+            } catch (err) {
+                console.error("Copy failed:", err);
+            }
+        };
+
         if (navigator.share) {
             navigator.share({
                 title: `${auction?.title} - Player Registration`,
                 text: 'Register now for the upcoming auction!',
                 url: url
-            }).catch(console.error);
+            }).catch(() => {
+                // if share fails or cancelled, try copy
+                tryCopy();
+            });
         } else {
-            navigator.clipboard.writeText(url);
-            showNotification("✅ Link copied! Share this with players.", "success");
+            tryCopy();
         }
     };
 
@@ -1961,7 +1975,7 @@ const AuctionManage: React.FC = () => {
                                     <div className="flex flex-col items-end">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Public Registration Link</p>
                                         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-                                            <p className="text-[10px] font-mono text-gray-500 truncate max-w-[200px]">{`${window.location.origin.replace('-dev-', '-pre-')}/register/${id}`}</p>
+                                            <p className="text-[10px] font-mono text-gray-500 truncate max-w-[200px]">{`${window.location.origin.replace('-dev-', '-pre-')}/#/auction/${id}/register`}</p>
                                             <button 
                                                 onClick={copyRegLink}
                                                 className={`p-1.5 rounded-lg transition-all ${copySuccess ? 'text-green-500' : 'text-gray-400 hover:text-blue-600'}`}

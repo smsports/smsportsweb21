@@ -362,6 +362,9 @@ const PlayerRegistration: React.FC = () => {
             .where('status', '==', 'APPROVED')
             .onSnapshot(snapshot => {
                 setApprovedCount(snapshot.size);
+            }, err => {
+                console.error("Error monitoring registration count:", err);
+                // Don't alert here to avoid spamming the user on page load if it's a minor sync issue
             });
         return () => unsubscribe();
     }, [id]);
@@ -2620,7 +2623,7 @@ const PlayerRegistration: React.FC = () => {
                                         )}
                                         <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
                                             {profilePic ? (
-                                                <img src={profilePic} className="w-full h-full object-cover" />
+                                                <img src={profilePic} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="text-center">
                                                     <Upload className={`w-8 h-8 mx-auto mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-900' : 'text-gray-300'}`} />

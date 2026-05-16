@@ -229,7 +229,7 @@ service cloud.firestore {
       }
 
       match /registrations/{regId} {
-        allow read, list: if isAdmin(auctionId) || isSuperAdmin();
+        allow read, list: if (resource.data.status == 'APPROVED') || isAdmin(auctionId) || isSuperAdmin();
         allow create: if isValidRegistration(incoming());
         allow update, delete: if isAdmin(auctionId) || isSuperAdmin();
       }
