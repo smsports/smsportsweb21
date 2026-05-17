@@ -114,10 +114,8 @@ service cloud.firestore {
       }
 
       match /registrations/{regId} {
-        // Public can count approved registrations for progress bar
-        allow list: if (resource.data.status == 'APPROVED') || isAdmin(auctionId);
-        // Individual registration is private to admins and potentially the player if mobile match (not implemented here)
-        allow get: if isAdmin(auctionId);
+        // Auction registrations are public for the progress bar and headcount
+        allow read: if true;
         allow create: if isValidRegistration(incoming());
         allow update, delete: if isAdmin(auctionId);
       }

@@ -13,6 +13,7 @@ import {
     ExternalLink, LayoutList, ToggleRight, ToggleLeft, RefreshCw, FileUp, 
     Star, UserPlus, Loader2, FileDown, ChevronRight, Zap, ListChecks, Type, Hash, ChevronDownCircle, Megaphone, Phone, Printer, LayoutGrid, Maximize2, AlertTriangle, Move
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import * as XLSX from 'xlsx';

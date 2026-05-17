@@ -102,64 +102,43 @@ const TournamentInput = ({ label, value, onChange, type = "text", required = fal
                     className={`${baseClasses} min-h-[120px] resize-none`}
                 />
             ) : type === 'select' ? (
-                <div className="relative">
-                    <div 
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={baseClasses}
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className={value ? "opacity-100" : "opacity-40"}>
-                                {value || placeholder || `SELECT ${label.toUpperCase()}`}
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
-                        </div>
-                    </div>
-                    
-                    <AnimatePresence>
-                        {isOpen && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden bg-black/60 rounded-2xl mt-2 border-2 border-white/5"
+                <div className="space-y-4">
+                    <div className={isClassicNeon 
+                        ? "p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#050807] border-2 border-white/5 rounded-3xl"
+                        : isNavyGolden
+                        ? "p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#070B0A] border-2 border-[#A6FF00]/5 rounded-3xl"
+                        : "p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 bg-black/20 border-2 border-amber-900/10 rounded-3xl"
+                    }>
+                        {options.map((opt: string, idx: number) => (
+                            <motion.button
+                                key={`input-opt-${label}-${opt}-${idx}`}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={() => onChange({ target: { value: opt } })}
+                                className={isClassicNeon
+                                    ? `px-4 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                        value === opt 
+                                        ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_20px_rgba(166,255,0,0.4)]' 
+                                        : 'bg-[#0F1413] border-white/5 text-white/40 hover:border-[#A6FF00]/50'
+                                    }`
+                                    : isNavyGolden
+                                    ? `px-4 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                        value === opt 
+                                        ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-[0_0_15px_rgba(166,255,0,0.3)]' 
+                                        : 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
+                                    }`
+                                    : `px-4 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
+                                        value === opt 
+                                        ? 'bg-amber-600 border-amber-600 text-black shadow-lg shadow-amber-600/20' 
+                                        : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
+                                    }`
+                                }
                             >
-                                <div className="p-3 grid grid-cols-2 gap-2">
-                                    {options.map((opt: string, idx: number) => (
-                                        <motion.button
-                                            key={`input-opt-${label}-${opt}-${idx}`}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            type="button"
-                                            onClick={() => {
-                                                onChange({ target: { value: opt } });
-                                                setIsOpen(false);
-                                            }}
-                                            className={isClassicNeon
-                                                ? `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
-                                                    value === opt 
-                                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black shadow-lg shadow-[#A6FF00]/20' 
-                                                    : 'bg-[#0F1413] border-white/5 text-white/40 hover:border-[#A6FF00]/50'
-                                                }`
-                                                : isNavyGolden
-                                                ? `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
-                                                    value === opt 
-                                                    ? 'bg-[#A6FF00] border-[#A6FF00] text-black' 
-                                                    : 'bg-[#0F1413] border-[#A6FF00]/10 text-[#A6FF00]/60 hover:border-[#A6FF00]/50'
-                                                }`
-                                                : `px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${
-                                                    value === opt 
-                                                    ? 'bg-amber-600 border-amber-600 text-black' 
-                                                    : 'bg-black/40 border-amber-900/30 text-amber-500/50 hover:border-amber-500/50'
-                                                }`
-                                            }
-                                        >
-                                            {opt}
-                                        </motion.button>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                {opt}
+                            </motion.button>
+                        ))}
+                    </div>
                 </div>
             ) : (
                 <input 
@@ -487,8 +466,25 @@ const PlayerRegistration: React.FC = () => {
         const fetchAuction = async () => {
             if (!id) return;
             try {
-                const docSnap = await db.collection('auctions').doc(id).get();
-                if (docSnap.exists) {
+                // Initial fetch attempt
+                let docSnap;
+                try {
+                    docSnap = await db.collection('auctions').doc(id).get();
+                } catch (snapErr: any) {
+                    if (snapErr.code === 'permission-denied' && !auth.currentUser) {
+                        console.log("Permission denied for public auction read, attempting anonymous sign-in...");
+                        try {
+                            await auth.signInAnonymously();
+                            docSnap = await db.collection('auctions').doc(id).get();
+                        } catch (authErr) {
+                            throw snapErr; // Re-throw original permission error if login fails
+                        }
+                    } else {
+                        throw snapErr;
+                    }
+                }
+
+                if (docSnap && docSnap.exists) {
                     const data = docSnap.data() as AuctionSetup;
                     setAuction(data);
                     const regConfig = data.registrationConfig;
@@ -503,6 +499,7 @@ const PlayerRegistration: React.FC = () => {
                                 setShowPoster(true);
                             }
                         }
+                        
                         // Initialize dynamic fields
                         const dynamicDefaults: any = {};
                         (regConfig.customFields || []).forEach(f => {
@@ -510,14 +507,17 @@ const PlayerRegistration: React.FC = () => {
                         });
                         setFormData((prev: any) => ({ ...prev, ...dynamicDefaults }));
 
-                        // Fetch approved count
-                        const regSnap = await db.collection('auctions').doc(id).collection('registrations')
-                            .where('status', '==', 'APPROVED')
-                            .get();
-                        setApprovedCount(regSnap.size);
-
-                        if (regConfig.maxRegistrations > 0 && regSnap.size >= regConfig.maxRegistrations) {
-                            setIsClosed(true);
+                        // Fetch approved count - be resilient to permission errors
+                        try {
+                            const regSnap = await db.collection('auctions').doc(id).collection('registrations')
+                                .where('status', '==', 'APPROVED')
+                                .get();
+                            setApprovedCount(regSnap.size);
+                            if (regConfig.maxRegistrations > 0 && regSnap.size >= regConfig.maxRegistrations) {
+                                setIsClosed(true);
+                            }
+                        } catch (regErr) {
+                            console.warn("Could not fetch registration count, assuming available slots:", regErr);
                         }
                     }
                     else {
@@ -525,7 +525,14 @@ const PlayerRegistration: React.FC = () => {
                         if (regConfig) setConfig(regConfig);
                     }
                 } else setError("Auction not found.");
-            } catch (e) { setError("Failed to load form."); }
+            } catch (e: any) { 
+                console.error("Fetch Auction Error:", e);
+                if (e.code === 'permission-denied') {
+                    setError("This auction registration form is private or restricted. Please contact the organizer if you believe this is an error.");
+                } else {
+                    setError(e.message || "Failed to load form. Please refresh the page.");
+                }
+            }
             finally { setLoading(false); }
         };
         fetchAuction();
