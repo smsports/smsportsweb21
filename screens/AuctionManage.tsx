@@ -1053,6 +1053,13 @@ const AuctionManage: React.FC = () => {
                                 const isSingle = playersPerPage === 1;
                                 const isList = playersPerPage === 'LIST';
 
+                                const extraFieldsToDisplay = [
+                                    ...(regConfig.customFields || []).map(f => ({ id: `cf_${f.id}`, label: f.label, value: (reg as any)[f.id] })),
+                                    { id: 'jerseyName', label: 'Jersey Name', value: (reg as any).jerseyName },
+                                    { id: 'jerseyNumber', label: 'Jersey Number', value: (reg as any).jerseyNumber },
+                                    { id: 'jerseySize', label: 'Jersey Size', value: (reg as any).jerseySize }
+                                ].filter(f => selectedFields.includes(f.id));
+
                                 let itemHtml = '';
 
                                 if (isList) {
@@ -1083,10 +1090,10 @@ const AuctionManage: React.FC = () => {
                                             </p>
                                         </div>
                                         <div style="display: flex; gap: 4mm;">
-                                            ${regConfig.customFields.filter(f => selectedFields.includes(f.id)).slice(0, 2).map(field => `
+                                            ${extraFieldsToDisplay.slice(0, 3).map(field => `
                                                 <div style="text-align: right;">
                                                     <p style="margin: 0; font-size: 5pt; font-weight: 900; opacity: 0.5; text-transform: uppercase;">${field.label}</p>
-                                                    <p style="margin: 0; font-size: 8pt; font-weight: 700;">${reg[field.id] || '-'}</p>
+                                                    <p style="margin: 0; font-size: 8pt; font-weight: 700;">${field.value || '-'}</p>
                                                 </div>
                                             `).join('')}
                                         </div>
@@ -1138,10 +1145,10 @@ const AuctionManage: React.FC = () => {
                                         </div>
 
                                         <div style="display: grid; grid-template-columns: ${isSingle ? '1fr 1fr 1fr' : '1fr 1fr'}; gap: ${isSingle ? '6mm' : '1.5mm'}; margin-top: auto;">
-                                            ${regConfig.customFields.filter(f => selectedFields.includes(f.id)).map(field => `
+                                            ${extraFieldsToDisplay.slice(0, 4).map(field => `
                                                 <div style="background: ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.06)' : '#ffffff'}; padding: ${isSingle ? '6mm' : '1.5mm'}; border-radius: ${isSingle ? '5mm' : '1.5mm'}; border: 1px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.1)' : '#e2e8f0'}; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
                                                     <p style="margin: 0; font-size: ${isSingle ? '10pt' : '4pt'}; font-weight: 900; opacity: 0.7; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${field.label}</p>
-                                                    <p style="margin: 0; font-size: ${isSingle ? '16pt' : isDense ? '6.5pt' : '8pt'}; font-weight: 700; word-break: break-all; line-height: 1.1; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#1e293b'};">${reg[field.id] || '-'}</p>
+                                                    <p style="margin: 0; font-size: ${isSingle ? '16pt' : isDense ? '6.5pt' : '8pt'}; font-weight: 700; word-break: break-all; line-height: 1.1; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#1e293b'};">${field.value || '-'}</p>
                                                 </div>
                                             `).join('')}
                                         </div>
@@ -1159,7 +1166,6 @@ const AuctionManage: React.FC = () => {
                                 `;
                             }).join('')}
                         </div>
->
 
                         <!-- Footer -->
                         <div style="margin-top: 4mm; padding-top: 3mm; border-top: 1px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.1)' : '#f1f5f9'}; display: flex; justify-content: space-between; align-items: center; opacity: 0.6; position: relative; z-index: 10;">
@@ -1206,10 +1212,24 @@ const AuctionManage: React.FC = () => {
             showNotification("No players to export.");
             return;
         }
-        const headers = ["ID", "Name", "Category", "Role", "Base Price", "Nationality", "Status", "Sold To", "Sold Price"];
-        const rows = players.map(p => [
-            p.id, p.name, p.category, p.role, p.basePrice, p.nationality, p.status || 'POOL', p.soldTo || '-', p.soldPrice || 0
-        ]);
+        const headers = ["ID", "Name", "Category", "Role", "Base Price", "Nationality", "Status", "Sold To", "Sold Price", "Jersey Name", "Jersey Number", "Jersey Size"];
+        const rows = players.map(p => {
+            const reg = registrations.find(r => r.fullName === p.name);
+            return [
+                p.id, 
+                p.name, 
+                p.category, 
+                p.role, 
+                p.basePrice, 
+                p.nationality, 
+                p.status || 'POOL', 
+                p.soldTo || '-', 
+                p.soldPrice || 0,
+                reg?.jerseyName || '-',
+                reg?.jerseyNumber || '-',
+                reg?.jerseySize || '-'
+            ];
+        });
 
         const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1253,7 +1273,10 @@ const AuctionManage: React.FC = () => {
             { id: 'gender', label: 'Gender' },
             { id: 'playerType', label: 'Role' },
             { id: 'category', label: 'Category' },
-            ...regConfig.customFields.map(f => ({ id: f.id, label: f.label })),
+            { id: 'jerseyName', label: 'Jersey Name' },
+            { id: 'jerseyNumber', label: 'Jersey Number' },
+            { id: 'jerseySize', label: 'Jersey Size' },
+            ...regConfig.customFields.map(f => ({ id: `cf_${f.id}`, label: f.label })),
             { id: 'status', label: 'Status' }
         ];
 
@@ -1265,6 +1288,10 @@ const AuctionManage: React.FC = () => {
             const dataRow = selectedFieldConfigs.map(config => {
                 let val = '-';
                 if (config.id === 'playerNumber') val = reg.playerNumber?.toString() || '-';
+                else if (config.id.startsWith('cf_')) {
+                    const fieldIdClean = config.id.replace('cf_', '');
+                    val = (reg as any)[fieldIdClean] || '-';
+                }
                 else val = (reg as any)[config.id] || '-';
                 return `"${val}"`;
             });
@@ -1870,7 +1897,10 @@ const AuctionManage: React.FC = () => {
                                             { id: 'playerType', label: 'Role' },
                                             { id: 'status', label: 'Status' },
                                             { id: 'profilePic', label: 'Photo' },
-                                            ...regConfig.customFields.map(f => ({ id: f.id, label: f.label }))
+                                            { id: 'jerseyName', label: 'Jersey Name' },
+                                            { id: 'jerseyNumber', label: 'Jersey Number' },
+                                            { id: 'jerseySize', label: 'Jersey Size' },
+                                            ...regConfig.customFields.map(f => ({ id: `cf_${f.id}`, label: f.label }))
                                         ].map(field => (
                                             <button 
                                                 key={field.id}
@@ -3537,11 +3567,9 @@ const AuctionManage: React.FC = () => {
                                                 { id: 'soldTo', label: 'Sold To (Team)' },
                                                 { id: 'isTraded', label: 'Trade Info' },
                                                 ...regConfig.customFields.map(f => ({ id: `cf_${f.id}`, label: f.label })),
-                                                ...(regConfig.jerseyDetailsEnabled ? [
-                                                    { id: 'jerseyName', label: 'Jersey Name' },
-                                                    { id: 'jerseyNumber', label: 'Jersey Number' },
-                                                    { id: 'jerseySize', label: 'Jersey Size' }
-                                                ] : [])
+                                                { id: 'jerseyName', label: 'Jersey Name' },
+                                                { id: 'jerseyNumber', label: 'Jersey Number' },
+                                                { id: 'jerseySize', label: 'Jersey Size' }
                                             ].map(field => (
                                                 <button
                                                     key={field.id}
@@ -3572,7 +3600,7 @@ const AuctionManage: React.FC = () => {
                                                 const allFields = [
                                                     'name', 'mobile', 'category', 'role', 'soldPrice', 'soldTo', 'isTraded',
                                                     ...regConfig.customFields.map(f => `cf_${f.id}`),
-                                                    ...(regConfig.jerseyDetailsEnabled ? ['jerseyName', 'jerseyNumber', 'jerseySize'] : [])
+                                                    'jerseyName', 'jerseyNumber', 'jerseySize'
                                                 ];
                                                 setSelectedFields(allFields);
                                             }}
