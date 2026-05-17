@@ -11,9 +11,7 @@ if (!firebase.apps.length) {
     app = firebase.app();
 }
 
-const db = firebaseConfig.firestoreDatabaseId 
-    ? app.firestore(firebaseConfig.firestoreDatabaseId) 
-    : app.firestore();
+const db = app.firestore();
 const auth = app.auth();
 
 /**
