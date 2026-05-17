@@ -30,8 +30,7 @@ service cloud.firestore {
         request.auth.token.email == "info.digitalmount@gmail.com" ||
         request.auth.token.email == "mezabiullakhan@gmail.com" ||
         request.auth.token.email == "zabiullakhanofficial@gmail.com" ||
-        request.auth.token.email == "admin@auction.com" ||
-        request.auth.token.email == "send.smsports@gmail.com"
+        request.auth.token.email == "admin@auction.com"
       );
     }
 

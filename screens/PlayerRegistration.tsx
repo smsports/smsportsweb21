@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { AuctionSetup, RegistrationConfig, FormField, PlayerRole } from '../types';
-import { Upload, Calendar, CheckCircle, AlertTriangle, ArrowUpCircle, FileText, Home, ArrowLeft, Loader2, CreditCard, QrCode, ShieldCheck, AlignLeft, Sword, Shield, Trophy as TrophyIcon, Zap, Megaphone, Users, XCircle, Phone, MapPin, Clock, Trophy, Share2, ChevronRight, ChevronLeft, User, Info, ChevronDown, Award, Bike, Star } from 'lucide-react';
+import { Upload, Calendar, CheckCircle, AlertTriangle, ArrowUpCircle, FileText, Home, ArrowLeft, Loader2, CreditCard, QrCode, ShieldCheck, AlignLeft, Sword, Shield, Trophy as TrophyIcon, Zap, Megaphone, Users, XCircle, X, Phone, MapPin, Clock, Trophy, Share2, ChevronRight, ChevronLeft, User, Info, ChevronDown, Award, Bike, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuction } from '../hooks/useAuction';
 import heic2any from 'heic2any';
@@ -1465,7 +1465,7 @@ const PlayerRegistration: React.FC = () => {
                                                         <div className="flex-1">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest">Organizer's Message</h4>
-                                                                <button onClick={() => setHasSeenWelcome(true)} className="p-1 hover:bg-white/10 rounded-lg"><XIcon className="w-4 h-4" /></button>
+                                                                <button onClick={() => setHasSeenWelcome(true)} className="p-1 hover:bg-white/10 rounded-lg"><X className="w-4 h-4" /></button>
                                                             </div>
                                                             <p className="text-xs font-bold leading-relaxed opacity-80">{config.welcomePopup.message}</p>
                                                         </div>

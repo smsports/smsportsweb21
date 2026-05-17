@@ -143,7 +143,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         setUserProfile({ uid: user.uid, email: 'viewer@smsports.com', role: UserRole.VIEWER });
                     }
                 } else {
-                    const SUPER_ADMIN_EMAILS = ['info.digitalmount@gmail.com', 'mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com', 'send.smsports@gmail.com'];
+                    const SUPER_ADMIN_EMAILS = ['info.digitalmount@gmail.com', 'mezabiullakhan@gmail.com', 'zabiullakhanofficial@gmail.com'];
                     const isSuperAdminAccount = user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
 
                     profileUnsub = db.collection('users').doc(user.uid).onSnapshot(doc => {
