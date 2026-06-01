@@ -347,6 +347,7 @@ export interface ShowcaseImage {
 
 export interface RegistrationConfig {
     isEnabled: boolean;
+    autoApprove?: boolean;
     includePayment: boolean; 
     paymentMethod?: 'MANUAL' | 'RAZORPAY';
     razorpayKey?: string;

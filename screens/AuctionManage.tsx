@@ -86,6 +86,7 @@ const compressImage = async (file: File, isBanner: boolean = false): Promise<str
 
 const DEFAULT_REG_CONFIG: RegistrationConfig = {
     isEnabled: false,
+    autoApprove: false,
     includePayment: false,
     paymentMethod: 'MANUAL',
     isPublic: true,
@@ -195,7 +196,7 @@ const AuctionManage: React.FC = () => {
     
     // PDF Export States
     const [pdfTheme, setPdfTheme] = useState<'NORMAL' | 'ADVAYA'>('NORMAL');
-    const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'mobile', 'category', 'role', 'soldPrice', 'soldTo']);
+    const [selectedFields, setSelectedFields] = useState<string[]>(['playerNumber', 'name', 'fullName', 'mobile', 'category', 'role', 'soldPrice', 'soldTo', 'jerseyName', 'jerseyNumber', 'jerseySize']);
     const [viewSummary, setViewSummary] = useState(false);
     const [playersPerPage, setPlayersPerPage] = useState<1 | 2 | 4 | 6 | 9 | 'LIST'>(1);
     const [exportCategorizedPDF, setExportCategorizedPDF] = useState(false);
@@ -461,6 +462,18 @@ const AuctionManage: React.FC = () => {
             await db.collection('auctions').doc(id).update({ registrationConfig: regConfig });
             showNotification("Registration Settings Saved!", "success");
         } catch (e: any) { showNotification("Failed: " + e.message); }
+    };
+
+    const handleToggleAutoApprove = async (checked: boolean) => {
+        if (!id) return;
+        try {
+            const updatedConfig = { ...regConfig, autoApprove: checked };
+            setRegConfig(updatedConfig);
+            await db.collection('auctions').doc(id).update({ registrationConfig: updatedConfig });
+            showNotification(checked ? "Auto Approval Enabled!" : "Auto Approval Disabled!", "success");
+        } catch (err: any) {
+            showNotification("Failed to update auto approval: " + err.message);
+        }
     };
 
     const handleRevertToPending = async (regId: string) => {
@@ -1053,11 +1066,11 @@ const AuctionManage: React.FC = () => {
                                 const isSingle = playersPerPage === 1;
                                 const isList = playersPerPage === 'LIST';
 
-                                const extraFieldsToDisplay = [
-                                    ...(regConfig.customFields || []).map(f => ({ id: `cf_${f.id}`, label: f.label, value: (reg as any)[f.id] })),
-                                    { id: 'jerseyName', label: 'Jersey Name', value: (reg as any).jerseyName },
-                                    { id: 'jerseyNumber', label: 'Jersey Number', value: (reg as any).jerseyNumber },
-                                    { id: 'jerseySize', label: 'Jersey Size', value: (reg as any).jerseySize }
+                                 const extraFieldsToDisplay = [
+                                    { id: 'jerseyName', label: 'Jersey Name', value: reg.jerseyName },
+                                    { id: 'jerseyNumber', label: 'Jersey Number', value: reg.jerseyNumber },
+                                    { id: 'jerseySize', label: 'Jersey Size', value: reg.jerseySize },
+                                    ...(regConfig.customFields || []).map(f => ({ id: `cf_${f.id}`, label: f.label, value: (reg as any)[f.id] }))
                                 ].filter(f => selectedFields.includes(f.id));
 
                                 let itemHtml = '';
@@ -1089,9 +1102,9 @@ const AuctionManage: React.FC = () => {
                                                 ].filter(Boolean).join(' • ')}
                                             </p>
                                         </div>
-                                        <div style="display: flex; gap: 4mm;">
-                                            ${extraFieldsToDisplay.slice(0, 3).map(field => `
-                                                <div style="text-align: right;">
+                                        <div style="display: flex; gap: 4mm; flex-wrap: wrap; justify-content: flex-end;">
+                                            ${extraFieldsToDisplay.slice(0, 8).map(field => `
+                                                <div style="text-align: right; min-width: 15mm;">
                                                     <p style="margin: 0; font-size: 5pt; font-weight: 900; opacity: 0.5; text-transform: uppercase;">${field.label}</p>
                                                     <p style="margin: 0; font-size: 8pt; font-weight: 700;">${field.value || '-'}</p>
                                                 </div>
@@ -1145,7 +1158,7 @@ const AuctionManage: React.FC = () => {
                                         </div>
 
                                         <div style="display: grid; grid-template-columns: ${isSingle ? '1fr 1fr 1fr' : '1fr 1fr'}; gap: ${isSingle ? '6mm' : '1.5mm'}; margin-top: auto;">
-                                            ${extraFieldsToDisplay.slice(0, 4).map(field => `
+                                            ${extraFieldsToDisplay.slice(0, 8).map(field => `
                                                 <div style="background: ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.06)' : '#ffffff'}; padding: ${isSingle ? '6mm' : '1.5mm'}; border-radius: ${isSingle ? '5mm' : '1.5mm'}; border: 1px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.1)' : '#e2e8f0'}; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
                                                     <p style="margin: 0; font-size: ${isSingle ? '10pt' : '4pt'}; font-weight: 900; opacity: 0.7; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${field.label}</p>
                                                     <p style="margin: 0; font-size: ${isSingle ? '16pt' : isDense ? '6.5pt' : '8pt'}; font-weight: 700; word-break: break-all; line-height: 1.1; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#1e293b'};">${field.value || '-'}</p>
@@ -2130,6 +2143,15 @@ const AuctionManage: React.FC = () => {
                                                     {regConfig.hideLandingPage ? <ToggleRight className="w-8 h-8"/> : <ToggleLeft className="w-8 h-8"/>}
                                                 </button>
                                             </div>
+                                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                <div>
+                                                    <span className="text-[11px] font-black text-gray-700 block uppercase tracking-wide">Auto Approve Players</span>
+                                                    <span className="text-[9px] text-gray-400 font-bold uppercase mt-1 block">Automatically approve and add registered players to pool</span>
+                                                </div>
+                                                <button onClick={() => setRegConfig({...regConfig, autoApprove: !regConfig.autoApprove})} className={`transition-all active:scale-90 ${regConfig.autoApprove ? 'text-indigo-600' : 'text-gray-300'}`}>
+                                                    {regConfig.autoApprove ? <ToggleRight className="w-8 h-8"/> : <ToggleLeft className="w-8 h-8"/>}
+                                                </button>
+                                            </div>
 
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
@@ -2922,6 +2944,30 @@ const AuctionManage: React.FC = () => {
                                      </button>
                                  ))}
                              </div>
+                        </div>
+
+                        {/* Auto Approval Control Card */}
+                        <div className="bg-white p-5 rounded-[2rem] border-2 border-gray-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 px-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                                    <Zap className="w-5 h-5 animate-pulse text-blue-600" />
+                                </div>
+                                <div className="text-center sm:text-left">
+                                    <h3 className="text-xs font-black uppercase text-gray-800 tracking-wider">Auto Approve New Registrations</h3>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 leading-normal">
+                                        If enabled, future players will automatically approve and immediately move to the player pool upon signing up.
+                                    </p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer"
+                                    checked={regConfig?.autoApprove || false}
+                                    onChange={e => handleToggleAutoApprove(e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
                         </div>
 
                         <div className="flex justify-between items-center mb-4 px-2">

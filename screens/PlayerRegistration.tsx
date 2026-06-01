@@ -649,6 +649,7 @@ const PlayerRegistration: React.FC = () => {
         try {
             const generatedID = `WAR-${Math.floor(1000 + Math.random() * 9000)}`;
             setPlayerID(generatedID);
+            const isAutoApprove = !!config?.autoApprove;
             const submissionData = {
                 ...formData, profilePic,
                 playerID: generatedID,
@@ -658,11 +659,29 @@ const PlayerRegistration: React.FC = () => {
                 registeredViaCode: (isCaptain && !!validatedCode) || (hasTeamCode && !!validatedTeamCode),
                 paymentScreenshot: config?.paymentMethod === 'MANUAL' ? paymentScreenshot : '',
                 razorpayPaymentId: razorpayId || '',
-                submittedAt: Date.now(), status: 'PENDING'
+                submittedAt: Date.now(), status: isAutoApprove ? 'APPROVED' : 'PENDING'
             };
             
             const regRef = db.collection('auctions').doc(id).collection('registrations');
             await regRef.add(submissionData);
+
+            if (isAutoApprove) {
+                try {
+                    const newPlayer = {
+                        name: formData.fullName,
+                        photoUrl: profilePic,
+                        category: 'Standard',
+                        role: formData.playerType,
+                        basePrice: auction?.basePrice || 0,
+                        nationality: 'India',
+                        speciality: formData.playerType,
+                        stats: { matches: 0, runs: 0, wickets: 0 }
+                    };
+                    await db.collection('auctions').doc(id).collection('players').add(newPlayer);
+                } catch (playerAddErr) {
+                    console.error("Error auto-adding approved player to pool:", playerAddErr);
+                }
+            }
             
             // 5. Update Code Usage if applicable
             if (isCaptain && validatedCode) {
@@ -1966,6 +1985,7 @@ const PlayerRegistration: React.FC = () => {
                                             auctionLogo={config?.logoUrl || auction?.logoUrl}
                                             theme={config?.theme}
                                             season={auction?.season}
+                                            viewMode={jerseyViewMode}
                                             jerseyUrl={config?.jerseyUrl || state.globalJerseyUrl}
                                             jerseyOverlayUrl={state.globalJerseyOverlayUrl}
                                         />
