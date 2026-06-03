@@ -366,6 +366,8 @@ export interface RegistrationConfig {
     welcomePopup?: WelcomePopupConfig;
     welcomePosterUrl?: string;
     maxRegistrations?: number;
+    reserveSlotsEnabled?: boolean;
+    reserveSlotsCount?: number;
     rules?: string;
     closedMessage?: string;
     organizerContacts?: OrganizerContact[];

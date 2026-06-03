@@ -99,6 +99,8 @@ const DEFAULT_REG_CONFIG: RegistrationConfig = {
     welcomePopup: { isEnabled: false, message: '', autoCloseTimer: 0 },
     welcomePosterUrl: '',
     maxRegistrations: 36,
+    reserveSlotsEnabled: false,
+    reserveSlotsCount: 0,
     customFields: [],
     organizerContacts: [],
     basicFields: {
@@ -2477,6 +2479,38 @@ const AuctionManage: React.FC = () => {
                                             />
                                             <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 ml-2 tracking-widest">Registration will auto-close once this limit of APPROVED players is reached.</p>
                                         </div>
+
+                                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-500 uppercase">Reserve Slots for Late Registration</label>
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Hold a portion of your total slots for specific friends.</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="sr-only peer"
+                                                    checked={regConfig.reserveSlotsEnabled || false}
+                                                    onChange={e => setRegConfig({...regConfig, reserveSlotsEnabled: e.target.checked})}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                            </label>
+                                        </div>
+
+                                        {regConfig.reserveSlotsEnabled && (
+                                            <div className="pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Slots to Hold (Reserve Count)</label>
+                                                <input 
+                                                    type="number"
+                                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-gray-700 focus:border-orange-400 outline-none transition-all"
+                                                    placeholder="e.g. 15"
+                                                    value={regConfig.reserveSlotsCount || ''}
+                                                    onChange={e => setRegConfig({...regConfig, reserveSlotsCount: parseInt(e.target.value) || 0})}
+                                                />
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 ml-2 tracking-widest">
+                                                    Registration form will close for public after reaching {Math.max(0, (regConfig.maxRegistrations || 0) - (regConfig.reserveSlotsCount || 0))} slots.
+                                                </p>
+                                            </div>
+                                        )}
                                         <div>
                                             <label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Closed Form Message</label>
                                             <textarea 

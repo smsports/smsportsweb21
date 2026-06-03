@@ -341,6 +341,7 @@ const PlayerRegistration: React.FC = () => {
     const [showPoster, setShowPoster] = useState(false);
     const [agreedToRules, setAgreedToRules] = useState(false);
     const [approvedCount, setApprovedCount] = useState(0);
+    const [poolPlayerCount, setPoolPlayerCount] = useState(0);
     const [isClosed, setIsClosed] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [playerID, setPlayerID] = useState('');
@@ -378,8 +379,16 @@ const PlayerRegistration: React.FC = () => {
         return () => unsubscribe();
     }, [id]);
 
-    const totalSlots = config?.maxRegistrations || 36;
-    const isFull = approvedCount >= totalSlots;
+    useEffect(() => {
+        if (!id) return;
+        const unsubscribe = db.collection('auctions').doc(id).collection('players')
+            .onSnapshot(snapshot => {
+                setPoolPlayerCount(snapshot.size);
+            }, err => {
+                console.error("Error monitoring player pool count:", err);
+            });
+        return () => unsubscribe();
+    }, [id]);
 
     // Captain Registration State
     const [isCaptain, setIsCaptain] = useState<boolean | null>(null);
@@ -390,6 +399,23 @@ const PlayerRegistration: React.FC = () => {
     const [teamCodeStatus, setTeamCodeStatus] = useState<{ type: 'success' | 'error' | 'loading' | null, message: string }>({ type: null, message: '' });
     const [validatedCode, setValidatedCode] = useState<any>(null);
     const [validatedTeamCode, setValidatedTeamCode] = useState<any>(null);
+
+    const totalSlots = config?.maxRegistrations || 36;
+    const reserveCount = config?.reserveSlotsEnabled && config?.reserveSlotsCount ? config.reserveSlotsCount : 0;
+    const effectiveLimit = Math.max(0, totalSlots - reserveCount);
+    const isFull = poolPlayerCount >= effectiveLimit;
+    const displayCount = poolPlayerCount;
+    const displayMax = totalSlots;
+
+    useEffect(() => {
+        if (config?.isEnabled) {
+            if (isFull && !isCaptain && !hasTeamCode) {
+                setIsClosed(true);
+            } else if (!isFull) {
+                setIsClosed(false);
+            }
+        }
+    }, [isFull, isCaptain, hasTeamCode, config?.isEnabled]);
 
     const [formData, setFormData] = useState<any>({
         fullName: '', playerType: '', gender: '', mobile: '', dob: '', battleOath: false,
@@ -507,17 +533,24 @@ const PlayerRegistration: React.FC = () => {
                         });
                         setFormData((prev: any) => ({ ...prev, ...dynamicDefaults }));
 
-                        // Fetch approved count - be resilient to permission errors
+                        // Fetch initial player pool and approved count - be resilient to permission errors
                         try {
-                            const regSnap = await db.collection('auctions').doc(id).collection('registrations')
-                                .where('status', '==', 'APPROVED')
-                                .get();
+                            const [playersSnap, regSnap] = await Promise.all([
+                                db.collection('auctions').doc(id).collection('players').get(),
+                                db.collection('auctions').doc(id).collection('registrations')
+                                    .where('status', '==', 'APPROVED')
+                                    .get()
+                            ]);
+                            setPoolPlayerCount(playersSnap.size);
                             setApprovedCount(regSnap.size);
-                            if (regConfig.maxRegistrations > 0 && regSnap.size >= regConfig.maxRegistrations) {
+                            
+                            const currentReserveCount = regConfig.reserveSlotsEnabled && regConfig.reserveSlotsCount ? regConfig.reserveSlotsCount : 0;
+                            const currentEffectiveLimit = Math.max(0, (regConfig.maxRegistrations || 36) - currentReserveCount);
+                            if (regConfig.maxRegistrations > 0 && playersSnap.size >= currentEffectiveLimit) {
                                 setIsClosed(true);
                             }
                         } catch (regErr) {
-                            console.warn("Could not fetch registration count, assuming available slots:", regErr);
+                            console.warn("Could not fetch player pool or registration count, assuming available slots:", regErr);
                         }
                     }
                     else {
@@ -1396,7 +1429,7 @@ const PlayerRegistration: React.FC = () => {
                             <div className={`flex-1 h-[1px] bg-gradient-to-l from-transparent ${isClassicNeon || isNavyGolden ? 'via-[#A6FF00]/20' : 'via-amber-500/20'} to-transparent`} />
                             <div className={`px-4 py-2 rounded-2xl ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest flex items-center gap-2`}>
                                 <div className={`w-1.5 h-1.5 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]' : 'bg-current'} animate-pulse`} />
-                                {approvedCount} {config?.maxRegistrations ? `of ${config.maxRegistrations}` : ''} ENROLLED
+                                {displayCount} {displayMax ? `of ${displayMax}` : ''} ENROLLED
                             </div>
                         </motion.div>
 
@@ -1406,18 +1439,18 @@ const PlayerRegistration: React.FC = () => {
                                 <div className="flex justify-between items-end mb-2">
                                     <div className="text-left">
                                         <p className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]/50' : 'text-amber-500/50'} uppercase tracking-[0.2em]`}>Registration Progress</p>
-                                        <h4 className={`text-lg md:text-xl font-black ${isClassicNeon ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Slots Filled: {approvedCount}/{config.maxRegistrations}</h4>
+                                        <h4 className={`text-lg md:text-xl font-black ${isClassicNeon ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Slots Filled: {displayCount}/{displayMax}</h4>
                                     </div>
                                     <div className="text-right">
-                                        {approvedCount >= config.maxRegistrations ? (
+                                        {displayCount >= displayMax ? (
                                             (isCaptain || hasTeamCode) ? (
                                                 <span className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00] bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'text-amber-500 bg-amber-500/10 border-amber-500/20'} uppercase tracking-widest px-3 py-1 rounded-lg border`}>Priority Access Active</span>
                                             ) : (
                                                 <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-lg border border-red-500/20">Registrations Closed</span>
                                             )
-                                        ) : approvedCount > 30 ? (
+                                        ) : displayCount > (displayMax - 5) ? (
                                             <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest animate-pulse">Only a few spots left!</span>
-                                        ) : approvedCount > 25 ? (
+                                        ) : displayCount > (displayMax - 10) ? (
                                             <span className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-widest animate-pulse`}>Hurry! Slots are filling fast.</span>
                                         ) : (
                                             <span className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]/80' : 'text-green-500'} uppercase tracking-widest`}>Secure your spot now</span>
@@ -1427,10 +1460,10 @@ const PlayerRegistration: React.FC = () => {
                                 <div className={`h-3 w-full ${isClassicNeon ? 'bg-[#0F1413]' : 'bg-white/5'} rounded-full overflow-hidden border ${isClassicNeon ? 'border-[#A6FF00]/10' : 'border-white/10'} p-0.5`}>
                                     <motion.div 
                                         initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min(100, (approvedCount / config.maxRegistrations) * 100)}%` }}
+                                        animate={{ width: `${Math.min(100, (displayCount / displayMax) * 100)}%` }}
                                         className={`h-full rounded-full ${
-                                            approvedCount >= config.maxRegistrations ? 'bg-red-500' :
-                                            approvedCount > 30 ? 'bg-orange-500' :
+                                            displayCount >= displayMax ? 'bg-red-500' :
+                                            displayCount > (displayMax - 5) ? 'bg-orange-500' :
                                             isClassicNeon || isNavyGolden ? 'bg-[#A6FF00] shadow-[0_0_15px_rgba(166,255,0,0.5)]' :
                                             'bg-gradient-to-r from-amber-600 to-amber-400'
                                         }`}
@@ -2462,7 +2495,7 @@ const PlayerRegistration: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         {config?.maxRegistrations > 0 && (
                                             <div className={`mt-4 px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border border-[#A6FF00]/30 text-[#A6FF00]' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'} text-[10px] font-black uppercase tracking-widest`}>
-                                                <Users className="inline w-3 h-3 mr-2" /> {approvedCount} {config.maxRegistrations ? `/ ${config.maxRegistrations} PLAYERS REGISTERED` : 'PLAYERS REGISTERED'}
+                                                <Users className="inline w-3 h-3 mr-2" /> {displayCount} {displayMax ? `/ ${displayMax} PLAYERS REGISTERED` : 'PLAYERS REGISTERED'}
                                             </div>
                                         )}
                                         {auction?.season && (
@@ -2481,7 +2514,7 @@ const PlayerRegistration: React.FC = () => {
                             <p className="text-[10px] font-bold tracking-[0.4em] mt-2 opacity-60 relative z-10 uppercase">Official Form</p>
                             {config?.maxRegistrations > 0 && (
                                 <div className="mt-6 inline-flex items-center px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase tracking-widest relative z-10">
-                                    <Users className="inline w-3 h-3 mr-2" /> {approvedCount} {config.maxRegistrations ? `/ ${config.maxRegistrations} REGISTERED` : 'REGISTERED'}
+                                    <Users className="inline w-3 h-3 mr-2" /> {displayCount} {displayMax ? `/ ${displayMax} REGISTERED` : 'REGISTERED'}
                                 </div>
                             )}
                         </>
