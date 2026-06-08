@@ -143,7 +143,7 @@ const AuctionManage: React.FC = () => {
     const [registrationCodes, setRegistrationCodes] = useState<RegistrationCode[]>([]);
     
     const [showRegCodeModal, setShowRegCodeModal] = useState(false);
-    const [editRegCode, setEditRegCode] = useState<any>(null); // { code: '', assignedTo: '', usageLimit: 1, isActive: true }
+    const [editRegCode, setEditRegCode] = useState<any>({ code: '', assignedTo: 'General Code', usageLimit: 1, isActive: true });
     
     const [regConfig, setRegConfig] = useState<RegistrationConfig>(DEFAULT_REG_CONFIG);
 
@@ -1475,7 +1475,7 @@ const AuctionManage: React.FC = () => {
                 showNotification("Registration Code created successfully!", "success");
             }
             setShowRegCodeModal(false);
-            setEditRegCode(null);
+            setEditRegCode({ code: '', assignedTo: 'General Code', usageLimit: 1, isActive: true });
         } catch (err: any) { showNotification("Save failed: " + err.message); }
     };
 
@@ -3616,20 +3616,83 @@ const AuctionManage: React.FC = () => {
                 )}
                 {activeTab === 'REG_CODES' && (
                     <div className="space-y-6 animate-fade-in">
-                        <div className={`flex justify-between items-center p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
-                            <div>
+                        <div className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                            <div className="mb-6">
                                 <h2 className={`text-xl font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Organizer Registration Codes</h2>
                                 <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Provide custom organizer codes to bypass slot limits or waitlist rules for friends.</p>
                             </div>
-                            <button 
-                                onClick={() => {
-                                    setEditRegCode({ code: '', assignedTo: '', usageLimit: 1, isActive: true });
-                                    setShowRegCodeModal(true);
-                                }} 
-                                className="btn-golden px-4 py-2 text-[10px] uppercase font-black tracking-widest rounded-xl flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" /> Create Code
-                            </button>
+
+                            <div className={`p-6 rounded-2xl border ${isDark ? 'bg-zinc-950/40 border-zinc-850' : 'bg-gray-50/50 border-gray-100'}`}>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 mb-4">
+                                    {editRegCode.id ? 'Edit Registration Code' : 'Create New Registration Code'}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Registration Code</label>
+                                        <input 
+                                            required 
+                                            type="text" 
+                                            className={`w-full rounded-xl px-4 py-3 font-black outline-none transition-all uppercase font-mono text-xs ${
+                                                isDark 
+                                                ? 'bg-zinc-855 border border-zinc-800 text-amber-400 focus:bg-zinc-900 focus:border-amber-500' 
+                                                : 'bg-white border-2 border-gray-100 text-amber-600 focus:bg-white focus:border-amber-400'
+                                            }`} 
+                                            value={editRegCode.code || ''} 
+                                            onChange={e => setEditRegCode({...editRegCode, code: e.target.value.toUpperCase()})} 
+                                            placeholder="e.g. FRIENDVIP15" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Usage Limit</label>
+                                        <input 
+                                            required 
+                                            type="number" 
+                                            min="1" 
+                                            className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all text-xs ${
+                                                isDark 
+                                                ? 'bg-zinc-855 border border-zinc-800 text-white focus:bg-zinc-900' 
+                                                : 'bg-white border-2 border-gray-100 text-gray-700 focus:bg-white'
+                                            }`} 
+                                            value={editRegCode.usageLimit || 1} 
+                                            onChange={e => setEditRegCode({...editRegCode, usageLimit: Number(e.target.value)})} 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
+                                        <select
+                                            className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all text-xs ${
+                                                isDark 
+                                                ? 'bg-zinc-855 border border-zinc-800 text-white focus:bg-zinc-900' 
+                                                : 'bg-white border-2 border-gray-100 text-gray-700/80 focus:bg-white'
+                                            }`}
+                                            value={editRegCode.isActive === false ? 'false' : 'true'}
+                                            onChange={e => setEditRegCode({...editRegCode, isActive: e.target.value === 'true'})}
+                                        >
+                                            <option value="true">Active</option>
+                                            <option value="false">Muted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex gap-2 justify-end">
+                                    {editRegCode.id && (
+                                        <button 
+                                            type="button"
+                                            onClick={() => setEditRegCode({ code: '', assignedTo: 'General Code', usageLimit: 1, isActive: true })}
+                                            className={`px-4 py-2 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all ${
+                                                isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            Cancel Edit
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={handleSaveRegCode}
+                                        className="btn-golden px-6 py-2.5 text-[10px] uppercase font-black tracking-widest rounded-xl flex items-center gap-2"
+                                    >
+                                        {editRegCode.id ? 'Save Changes' : 'Create Code'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
@@ -4165,91 +4228,7 @@ const AuctionManage: React.FC = () => {
                 </div>
             )}
 
-            {showRegCodeModal && editRegCode && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className={`${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white text-gray-800'} rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl border animate-scale-in`}>
-                        <div className={`p-8 border-b flex justify-between items-center ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-gray-100 bg-gray-50/50'}`}>
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-amber-500 rounded-2xl text-white shadow-lg shadow-amber-500/20">
-                                    <Key className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-black uppercase tracking-tighter">{editRegCode.id ? 'Edit Reg Code' : 'New Reg Code'}</h3>
-                            </div>
-                            <button onClick={() => setShowRegCodeModal(false)} className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-gray-400'}`}><X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="p-8 space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Registration Code</label>
-                                    <input 
-                                        required 
-                                        type="text" 
-                                        className={`w-full rounded-xl px-4 py-3 font-black outline-none transition-all uppercase font-mono ${
-                                            isDark 
-                                            ? 'bg-zinc-850 border-2 border-zinc-800 text-amber-400 focus:bg-zinc-900 focus:border-amber-500' 
-                                            : 'bg-gray-50 border-2 border-gray-100 text-amber-600 focus:bg-white focus:border-amber-400'
-                                        }`} 
-                                        value={editRegCode.code} 
-                                        onChange={e => setEditRegCode({...editRegCode, code: e.target.value.toUpperCase()})} 
-                                        placeholder="e.g. FRIENDVIP15" 
-                                    />
-                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1 ml-1">Will be entered by player in registration form.</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Usage Limit</label>
-                                        <input 
-                                            required 
-                                            type="number" 
-                                            min="1" 
-                                            className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all ${
-                                                isDark 
-                                                ? 'bg-zinc-850 border-2 border-zinc-800 text-white focus:bg-zinc-900' 
-                                                : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white'
-                                            }`} 
-                                            value={editRegCode.usageLimit} 
-                                            onChange={e => setEditRegCode({...editRegCode, usageLimit: Number(e.target.value)})} 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Active Status</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setEditRegCode({...editRegCode, isActive: true})} 
-                                                className={`py-3 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all border-2 ${
-                                                    editRegCode.isActive 
-                                                    ? 'bg-green-500/10 border-green-500 text-green-500 shadow-md' 
-                                                    : 'bg-gray-500/5 border-transparent text-gray-400 hover:border-zinc-700'
-                                                }`}
-                                            >
-                                                Active
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setEditRegCode({...editRegCode, isActive: false})} 
-                                                className={`py-3 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all border-2 ${
-                                                    !editRegCode.isActive 
-                                                    ? 'bg-red-500/10 border-red-500 text-red-500 shadow-md' 
-                                                    : 'bg-gray-500/5 border-transparent text-gray-400 hover:border-zinc-700'
-                                                }`}
-                                            >
-                                                Muted
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={handleSaveRegCode} 
-                                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-4 rounded-xl shadow-xl transition-all uppercase text-xs tracking-widest active:scale-95"
-                            >
-                                {editRegCode.id ? 'Update Code' : 'Create Code'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {showModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">

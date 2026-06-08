@@ -79,6 +79,41 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    match /subscriptionPlans/{planId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /systemPopups/{popupId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /globalAssets/{assetId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /systemBroadcasts/{broadcastId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /promoCodes/{codeId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /recollectionResponses/{responseId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -163,6 +198,11 @@ service cloud.firestore {
       match /waitlist/{listId} {
         allow create: if true;
         allow read, list, update: if isAdmin(auctionId);
+      }
+
+      match /recollectionForms/{formId} {
+        allow read: if true;
+        allow write: if isAdmin(auctionId);
       }
     }
 
