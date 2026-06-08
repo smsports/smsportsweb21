@@ -1452,7 +1452,7 @@ const AuctionManage: React.FC = () => {
         try {
             const codeData = {
                 code: editRegCode.code.toUpperCase().trim(),
-                assignedTo: editRegCode.assignedTo || 'General Player',
+                assignedTo: 'General Code',
                 usageLimit: Number(editRegCode.usageLimit) || 1,
                 isActive: editRegCode.isActive ?? true,
                 updatedAt: Date.now()
@@ -3638,7 +3638,6 @@ const AuctionManage: React.FC = () => {
                                     <thead>
                                         <tr className={`${isDark ? 'bg-zinc-800/50 border-b border-zinc-800' : 'bg-gray-50 border-b border-gray-100'}`}>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Code Key</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned To</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Usages (Used / Limit)</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
@@ -3655,9 +3654,6 @@ const AuctionManage: React.FC = () => {
                                                             {code.code}
                                                         </span>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`font-black text-sm uppercase ${isDark ? 'text-white' : 'text-gray-800'}`}>{code.assignedTo}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col gap-1">
@@ -3690,7 +3686,7 @@ const AuctionManage: React.FC = () => {
                                         ))}
                                         {registrationCodes.length === 0 && (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center">
+                                                <td colSpan={4} className="px-6 py-12 text-center">
                                                     <div className="max-w-xs mx-auto">
                                                         <Key className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                                                         <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No Organizer Codes Established</p>
@@ -4198,21 +4194,6 @@ const AuctionManage: React.FC = () => {
                                         placeholder="e.g. FRIENDVIP15" 
                                     />
                                     <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1 ml-1">Will be entered by player in registration form.</p>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Allocated For / Player Name</label>
-                                    <input 
-                                        required 
-                                        type="text" 
-                                        className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all ${
-                                            isDark 
-                                            ? 'bg-zinc-850 border-2 border-zinc-800 text-white focus:bg-zinc-900 focus:border-amber-400' 
-                                            : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'
-                                        }`} 
-                                        value={editRegCode.assignedTo} 
-                                        onChange={e => setEditRegCode({...editRegCode, assignedTo: e.target.value})} 
-                                        placeholder="e.g. Rahul Sharma" 
-                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>

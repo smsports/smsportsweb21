@@ -129,6 +129,16 @@ service cloud.firestore {
         );
       }
 
+      match /registrationCodes/{codeId} {
+        allow read: if true;
+        allow create: if isAdmin(auctionId);
+        allow update: if isAdmin(auctionId) || (
+          // Allow public to update usage and log redemptions when registering
+          incoming().diff(existing()).affectedKeys().hasOnly(['currentUsage', 'redemptions'])
+        );
+        allow delete: if isAdmin(auctionId);
+      }
+
       match /sponsors/{sponsorId} {
         allow read: if true;
         allow write: if isAdmin(auctionId);
