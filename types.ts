@@ -324,6 +324,21 @@ export interface CaptainCode {
     teamUsedCount?: number;
 }
 
+export interface RegistrationCode {
+    id?: string;
+    code: string;
+    assignedTo: string;
+    usageLimit: number;
+    currentUsage: number;
+    isActive: boolean;
+    createdAt: number;
+    redemptions?: {
+        playerName: string;
+        registeredAt: number;
+        registrationID?: string;
+    }[];
+}
+
 export interface WelcomePopupConfig {
     isEnabled: boolean;
     message: string;

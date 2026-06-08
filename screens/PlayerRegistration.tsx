@@ -400,6 +400,12 @@ const PlayerRegistration: React.FC = () => {
     const [validatedCode, setValidatedCode] = useState<any>(null);
     const [validatedTeamCode, setValidatedTeamCode] = useState<any>(null);
 
+    // Organizer Registration Codes State
+    const [organiserCode, setOrganiserCode] = useState('');
+    const [organiserCodeStatus, setOrganiserCodeStatus] = useState<{ type: 'success' | 'error' | 'loading' | null, message: string }>({ type: null, message: '' });
+    const [validatedOrganiserCode, setValidatedOrganiserCode] = useState<any>(null);
+    const [showOrganiserCodeEntry, setShowOrganiserCodeEntry] = useState(false);
+
     const totalSlots = config?.maxRegistrations || 36;
     const reserveCount = config?.reserveSlotsEnabled && config?.reserveSlotsCount ? config.reserveSlotsCount : 0;
     const effectiveLimit = Math.max(0, totalSlots - reserveCount);
@@ -410,13 +416,13 @@ const PlayerRegistration: React.FC = () => {
     useEffect(() => {
         if (config?.isEnabled) {
             const isManuallyClosed = config?.registrationStatus === 'CLOSED';
-            if ((isFull || isManuallyClosed) && !isCaptain && !hasTeamCode) {
+            if ((isFull || isManuallyClosed) && !isCaptain && !hasTeamCode && !validatedOrganiserCode) {
                 setIsClosed(true);
-            } else if (!isFull && !isManuallyClosed) {
+            } else {
                 setIsClosed(false);
             }
         }
-    }, [isFull, isCaptain, hasTeamCode, config?.isEnabled, config?.registrationStatus]);
+    }, [isFull, isCaptain, hasTeamCode, config?.isEnabled, config?.registrationStatus, validatedOrganiserCode]);
 
     const [formData, setFormData] = useState<any>({
         fullName: '', playerType: '', gender: '', mobile: '', dob: '', battleOath: false,
@@ -617,6 +623,43 @@ const PlayerRegistration: React.FC = () => {
         }
     };
 
+    const validateOrganiserCode = async (code: string) => {
+        if (!code || !id) return;
+        setOrganiserCodeStatus({ type: 'loading', message: 'Verifying Registration Code...' });
+        try {
+            const snap = await db.collection('auctions').doc(id).collection('registrationCodes')
+                .where('code', '==', code.toUpperCase())
+                .get();
+
+            if (snap.empty) {
+                setOrganiserCodeStatus({ type: 'error', message: 'Invalid Registration Code' });
+                setValidatedOrganiserCode(null);
+                return;
+            }
+
+            const codeData = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
+
+            if (!codeData.isActive) {
+                setOrganiserCodeStatus({ type: 'error', message: 'This code is inactive' });
+                setValidatedOrganiserCode(null);
+            } else if (codeData.currentUsage >= codeData.usageLimit) {
+                setOrganiserCodeStatus({ type: 'error', message: 'This code has reached its usage limit' });
+                setValidatedOrganiserCode(null);
+            } else {
+                setOrganiserCodeStatus({ type: 'success', message: 'Registration Code accepted! Loading form...' });
+                setValidatedOrganiserCode(codeData);
+                // Auto-fill name if assigned
+                if (codeData.assignedTo) {
+                    setFormData(prev => ({ ...prev, fullName: codeData.assignedTo }));
+                }
+                // Automatically open form
+                setIsClosed(false);
+            }
+        } catch (err) {
+            setOrganiserCodeStatus({ type: 'error', message: 'Verification failed' });
+        }
+    };
+
     const validateTeamCode = async (code: string) => {
         if (!code || !id) return;
         setTeamCodeStatus({ type: 'loading', message: 'Verifying Team Code...' });
@@ -691,7 +734,8 @@ const PlayerRegistration: React.FC = () => {
                 isCaptain: !!isCaptain,
                 captainCode: isCaptain ? captainCode.toUpperCase() : '',
                 teamCode: hasTeamCode ? teamCode.toUpperCase() : '',
-                registeredViaCode: (isCaptain && !!validatedCode) || (hasTeamCode && !!validatedTeamCode),
+                registeredViaCode: (isCaptain && !!validatedCode) || (hasTeamCode && !!validatedTeamCode) || !!validatedOrganiserCode,
+                organiserCode: validatedOrganiserCode ? validatedOrganiserCode.code.toUpperCase() : '',
                 paymentScreenshot: config?.paymentMethod === 'MANUAL' ? paymentScreenshot : '',
                 razorpayPaymentId: razorpayId || '',
                 submittedAt: Date.now(), status: isAutoApprove ? 'APPROVED' : 'PENDING'
@@ -769,6 +813,39 @@ const PlayerRegistration: React.FC = () => {
                 }
             }
 
+            // Update Organizer Code Usage if applicable
+            if (validatedOrganiserCode) {
+                try {
+                    console.log("Attempting to update organiser registration code usage for:", validatedOrganiserCode.id);
+                    const codeRef = db.collection('auctions').doc(id).collection('registrationCodes').doc(validatedOrganiserCode.id);
+                    
+                    await db.runTransaction(async (transaction) => {
+                        const codeDoc = await transaction.get(codeRef);
+                        if (!codeDoc.exists) {
+                            throw new Error("Registration code document not found during update");
+                        }
+                        const data = codeDoc.data();
+                        const currentVal = data?.currentUsage || 0;
+                        const redemptions = data?.redemptions || [];
+                        
+                        transaction.update(codeRef, { 
+                            currentUsage: currentVal + 1,
+                            redemptions: [
+                                ...redemptions,
+                                {
+                                    playerName: formData.fullName,
+                                    registeredAt: Date.now(),
+                                    registrationID: generatedID
+                                }
+                            ]
+                        });
+                    });
+                    console.log("Organizer registration code usage updated successfully via transaction");
+                } catch (codeErr) {
+                    console.error("Error updating organiser registration code usage:", codeErr);
+                }
+            }
+
             setSuccess(true);
         } catch (e: any) { 
             handleFirestoreError(e, 'CREATE_REGISTRATION', `auctions/${id}/registrations`);
@@ -802,8 +879,8 @@ const PlayerRegistration: React.FC = () => {
         e.preventDefault();
 
         // 1. Check Slot Availability
-        if (isFull && !isCaptain && !hasTeamCode) {
-            return alert("Registrations are currently full. Only Captains or Team Members with codes can register.");
+        if (isFull && !isCaptain && !hasTeamCode && !validatedOrganiserCode) {
+            return alert("Registrations are currently full. Only Captains, Team members, or Players with direct Organizer codes can register.");
         }
 
         // 2. Code Validation
@@ -816,6 +893,9 @@ const PlayerRegistration: React.FC = () => {
         }
         if (hasTeamCode && !validatedTeamCode) {
             return alert("Please verify a valid team code first.");
+        }
+        if (validatedOrganiserCode && validatedOrganiserCode.code !== organiserCode.toUpperCase()) {
+            return alert("Please verify your registration code again.");
         }
 
         // 3. Comprehensive Field Validation
@@ -900,21 +980,56 @@ const PlayerRegistration: React.FC = () => {
                     </p>
 
                     <div className={`mb-8 p-6 ${isClassicNeon ? 'bg-[#A6FF00]/5 border-[#A6FF00]/20' : 'bg-amber-500/5 border-amber-500/20'} rounded-3xl text-left`}>
-                        <p className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-widest mb-4`}>Do you have a code provided by captain?</p>
-                        <div className="flex gap-2">
+                        <p className={`text-[10px] font-black ${isClassicNeon ? 'text-[#A6FF00]' : 'text-amber-500'} uppercase tracking-widest mb-4`}>Do you have a registration code provided by organizer?</p>
+                        
+                        {!showOrganiserCodeEntry ? (
                             <button 
-                                onClick={() => { setIsClosed(false); setHasTeamCode(true); }}
-                                className={`flex-1 py-3 ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33]' : 'bg-amber-500 hover:bg-amber-400'} text-black font-black rounded-xl text-[10px] uppercase tracking-widest transition-all`}
+                                type="button"
+                                onClick={() => setShowOrganiserCodeEntry(true)}
+                                className={`w-full py-4 ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33]' : 'bg-amber-500 hover:bg-amber-400'} text-black font-black rounded-2xl text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95`}
                             >
-                                Yes, I have code
+                                I have registration code
                             </button>
-                            <button 
-                                onClick={() => { setIsClosed(false); setIsCaptain(true); }}
-                                className={`flex-1 py-3 border-2 ${isClassicNeon ? 'border-[#A6FF00]/30 text-[#A6FF00] hover:bg-[#A6FF00]/10' : 'border-amber-500/30 text-amber-500 hover:bg-amber-500/10'} font-black rounded-xl text-[10px] uppercase tracking-widest transition-all`}
-                            >
-                                I am Captain
-                            </button>
-                        </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <input 
+                                        type="text"
+                                        value={organiserCode}
+                                        onChange={e => {
+                                            setOrganiserCode(e.target.value.toUpperCase());
+                                            setOrganiserCodeStatus({ type: null, message: '' });
+                                        }}
+                                        placeholder="ENTER REGISTRATION CODE"
+                                        className={`w-full ${isClassicNeon ? 'bg-black/40 border-[#A6FF00]/30 text-white focus:border-[#A6FF00]' : 'bg-black/65 border-2 border-amber-950 text-amber-100 focus:border-amber-500'} rounded-2xl pl-5 pr-24 py-4 text-xs font-black outline-none uppercase font-mono`}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => validateOrganiserCode(organiserCode)}
+                                        className={`absolute right-2 top-2 bottom-2 ${isClassicNeon ? 'bg-[#A6FF00] hover:bg-[#b8ff33] text-black' : 'bg-amber-600 hover:bg-amber-500 text-white'} px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all`}
+                                    >
+                                        VERIFY
+                                    </button>
+                                </div>
+                                
+                                {organiserCodeStatus.type && (
+                                    <p className={`text-[9px] font-black uppercase tracking-widest leading-relaxed ${
+                                        organiserCodeStatus.type === 'success' ? 'text-green-400' :
+                                        organiserCodeStatus.type === 'error' ? 'text-red-400' : 'text-amber-400'
+                                    }`}>
+                                        {organiserCodeStatus.message}
+                                    </p>
+                                )}
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOrganiserCodeEntry(false)}
+                                    className="text-[9px] font-black text-gray-400 hover:text-white uppercase tracking-widest transition-colors block text-center w-full"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {config?.enableWaitlist ? (
@@ -2525,6 +2640,14 @@ const PlayerRegistration: React.FC = () => {
                 
                 <form onSubmit={handleSubmit} className="p-10 space-y-8">
                     <div className={`space-y-6 ${isNavyGolden ? 'bg-[#001f3f]' : ''}`}>
+                        {validatedOrganiserCode && (
+                            <div className={`p-5 rounded-3xl border-2 font-black text-xs uppercase tracking-widest text-center flex flex-col md:flex-row items-center justify-center gap-3 ${
+                                isClassicNeon ? 'bg-[#A6FF00]/10 border-[#A6FF00]/30 text-[#A6FF00]' : 'bg-green-500/10 border-green-500/30 text-green-400'
+                            }`}>
+                                <CheckCircle className="w-5 h-5" />
+                                <span>VERIFIED ORGANIZER REGISTRATION : <span className="font-mono text-white bg-black/40 px-3 py-1.5 rounded-xl ml-1">{validatedOrganiserCode.code}</span></span>
+                            </div>
+                        )}
                         {/* DEFAULT FIELDS */}
                         {(!config?.basicFields || config.basicFields.name?.show !== false) && (
                                 <motion.div

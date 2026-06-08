@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { AuctionSetup, Team, Player, AuctionCategory, Sponsor, PlayerRole, RegistrationConfig, FormField, RegisteredPlayer, BidIncrementSlab, CaptainCode } from '../types';
+import { AuctionSetup, Team, Player, AuctionCategory, Sponsor, PlayerRole, RegistrationConfig, FormField, RegisteredPlayer, BidIncrementSlab, CaptainCode, RegistrationCode } from '../types';
 import { getEffectiveBasePrice } from '../utils';
 import { 
     ArrowLeft, Plus, Trash2, Edit, Save, X, Upload, Users, Layers, Trophy, 
@@ -128,7 +128,7 @@ const AuctionManage: React.FC = () => {
     const { userProfile } = useAuction();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'SETTINGS' | 'TEAMS' | 'PLAYERS' | 'REQUESTS' | 'CATEGORIES' | 'ROLES' | 'SPONSORS' | 'REGISTRATION' | 'WAITLIST' | 'CAPTAIN_CODES' | 'RECOLLECTION' | 'EXPORT'>('SETTINGS');
+    const [activeTab, setActiveTab] = useState<'SETTINGS' | 'TEAMS' | 'PLAYERS' | 'REQUESTS' | 'CATEGORIES' | 'ROLES' | 'SPONSORS' | 'REGISTRATION' | 'WAITLIST' | 'CAPTAIN_CODES' | 'REG_CODES' | 'RECOLLECTION' | 'EXPORT'>('SETTINGS');
     const [loading, setLoading] = useState(true);
     const [auction, setAuction] = useState<AuctionSetup | null>(null);
 
@@ -140,6 +140,10 @@ const AuctionManage: React.FC = () => {
     const [registrations, setRegistrations] = useState<RegisteredPlayer[]>([]);
     const [waitlist, setWaitlist] = useState<any[]>([]);
     const [captainCodes, setCaptainCodes] = useState<CaptainCode[]>([]);
+    const [registrationCodes, setRegistrationCodes] = useState<RegistrationCode[]>([]);
+    
+    const [showRegCodeModal, setShowRegCodeModal] = useState(false);
+    const [editRegCode, setEditRegCode] = useState<any>(null); // { code: '', assignedTo: '', usageLimit: 1, isActive: true }
     
     const [regConfig, setRegConfig] = useState<RegistrationConfig>(DEFAULT_REG_CONFIG);
 
@@ -430,6 +434,7 @@ const AuctionManage: React.FC = () => {
         const unsubRegs = db.collection('auctions').doc(id).collection('registrations').onSnapshot(s => setRegistrations(s.docs.map(d => ({id: d.id, ...d.data()}) as RegisteredPlayer)));
         const unsubWaitlist = db.collection('auctions').doc(id).collection('waitlist').onSnapshot(s => setWaitlist(s.docs.map(d => ({id: d.id, ...d.data()}))));
         const unsubCodes = db.collection('auctions').doc(id).collection('captainCodes').onSnapshot(s => setCaptainCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as CaptainCode)));
+        const unsubRegCodes = db.collection('auctions').doc(id).collection('registrationCodes').onSnapshot(s => setRegistrationCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as RegistrationCode)));
 
         const unsubBranding = db.collection('appConfig').doc('globalSettings').onSnapshot(doc => {
             if (doc.exists) {
@@ -442,7 +447,7 @@ const AuctionManage: React.FC = () => {
         });
 
         return () => {
-            unsubAuction(); unsubTeams(); unsubPlayers(); unsubCats(); unsubRoles(); unsubSponsors(); unsubRegs(); unsubWaitlist(); unsubCodes(); unsubBranding();
+            unsubAuction(); unsubTeams(); unsubPlayers(); unsubCats(); unsubRoles(); unsubSponsors(); unsubRegs(); unsubWaitlist(); unsubCodes(); unsubRegCodes(); unsubBranding();
         };
     }, [id]);
 
@@ -1442,6 +1447,65 @@ const AuctionManage: React.FC = () => {
         });
     };
 
+    const handleSaveRegCode = async () => {
+        if (!id || !editRegCode?.code) return;
+        try {
+            const codeData = {
+                code: editRegCode.code.toUpperCase().trim(),
+                assignedTo: editRegCode.assignedTo || 'General Player',
+                usageLimit: Number(editRegCode.usageLimit) || 1,
+                isActive: editRegCode.isActive ?? true,
+                updatedAt: Date.now()
+            };
+            if (editRegCode.id) {
+                await db.collection('auctions').doc(id).collection('registrationCodes').doc(editRegCode.id).update(codeData);
+                showNotification("Registration Code updated successfully!", "success");
+            } else {
+                const existing = registrationCodes.find(c => c.code === codeData.code);
+                if (existing) {
+                    showNotification("A code with this name already exists!", "error");
+                    return;
+                }
+                await db.collection('auctions').doc(id).collection('registrationCodes').add({
+                    ...codeData,
+                    currentUsage: 0,
+                    redemptions: [],
+                    createdAt: Date.now()
+                });
+                showNotification("Registration Code created successfully!", "success");
+            }
+            setShowRegCodeModal(false);
+            setEditRegCode(null);
+        } catch (err: any) { showNotification("Save failed: " + err.message); }
+    };
+
+    const handleDeleteRegCode = async (codeId: string) => {
+        setConfirmAction({
+            title: "Delete Registration Code",
+            message: "Are you sure you want to delete this organizer registration code?",
+            onConfirm: async () => {
+                await db.collection('auctions').doc(id!).collection('registrationCodes').doc(codeId).delete();
+                setConfirmAction(null);
+                showNotification("Registration Code deleted successfully!", "success");
+            }
+        });
+    };
+
+    const handleResetRegCodeUsage = async (codeId: string) => {
+        setConfirmAction({
+            title: "Reset Registration Code",
+            message: "Are you sure you want to reset usage tracking for this registration code?",
+            onConfirm: async () => {
+                await db.collection('auctions').doc(id!).collection('registrationCodes').doc(codeId).update({ 
+                    currentUsage: 0, 
+                    redemptions: []
+                });
+                setConfirmAction(null);
+                showNotification("Registration Code usage wiped!", "success");
+            }
+        });
+    };
+
     if (loading) return <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : 'bg-gray-50'}`}><Loader2 className={`animate-spin ${isDark ? 'text-accent' : 'text-blue-600'}`}/></div>;
 
     return (
@@ -1514,7 +1578,7 @@ const AuctionManage: React.FC = () => {
                                         className={`mt-2 rounded-2xl border-2 overflow-hidden z-[40] ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-xl'}`}
                                     >
                                         <div className="p-2 grid grid-cols-2 gap-2">
-                                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
+                                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'REG_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
                                                 <button 
                                                     key={`mob-tab-${tab}`} 
                                                     onClick={() => {
@@ -1527,7 +1591,7 @@ const AuctionManage: React.FC = () => {
                                                         : (isDark ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700')
                                                     }`}
                                                 >
-                                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests` : tab === 'WAITLIST' ? `Waitlist` : tab.replace('_', ' ')}
+                                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests` : tab === 'WAITLIST' ? `Waitlist` : tab === 'REG_CODES' ? 'REG CODES' : tab.replace('_', ' ')}
                                                     {activeTab === tab && <CheckCircle className="w-3 h-3" />}
                                                 </button>
                                             ))}
@@ -1538,14 +1602,14 @@ const AuctionManage: React.FC = () => {
                         </div>
 
                         <div className={`hidden md:flex p-0.5 rounded-xl border overflow-x-auto no-scrollbar ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-100 border-gray-200'}`}>
-                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
+                            {['SETTINGS', 'TEAMS', 'PLAYERS', 'REQUESTS', 'CATEGORIES', 'ROLES', 'SPONSORS', 'REGISTRATION', 'WAITLIST', 'CAPTAIN_CODES', 'REG_CODES', 'RECOLLECTION', 'EXPORT'].map(tab => (
                                 <button key={tab} onClick={() => setActiveTab(tab as any)}
                                     className={`px-4 py-2 text-[10px] font-black uppercase transition-all rounded-lg whitespace-nowrap ${
                                         activeTab === tab 
                                         ? 'btn-golden' 
                                         : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-400 hover:text-gray-600')
                                     }`}>
-                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests (${registrations.length})` : tab === 'WAITLIST' ? `Waitlist (${waitlist.length})` : tab === 'CAPTAIN_CODES' ? 'CAPTAIN CODES' : tab}
+                                    {tab === 'REGISTRATION' ? 'REG CONFIG' : tab === 'REQUESTS' ? `Requests (${registrations.length})` : tab === 'WAITLIST' ? `Waitlist (${waitlist.length})` : tab === 'CAPTAIN_CODES' ? 'CAPTAIN CODES' : tab === 'REG_CODES' ? 'REG CODES' : tab}
                                 </button>
                             ))}
                         </div>
@@ -3550,6 +3614,149 @@ const AuctionManage: React.FC = () => {
                         </div>
                     </div>
                 )}
+                {activeTab === 'REG_CODES' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <div className={`flex justify-between items-center p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                            <div>
+                                <h2 className={`text-xl font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Organizer Registration Codes</h2>
+                                <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Provide custom organizer codes to bypass slot limits or waitlist rules for friends.</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setEditRegCode({ code: '', assignedTo: '', usageLimit: 1, isActive: true });
+                                    setShowRegCodeModal(true);
+                                }} 
+                                className="btn-golden px-4 py-2 text-[10px] uppercase font-black tracking-widest rounded-xl flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> Create Code
+                            </button>
+                        </div>
+
+                        <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className={`${isDark ? 'bg-zinc-800/50 border-b border-zinc-800' : 'bg-gray-50 border-b border-gray-100'}`}>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Code Key</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned To</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Usages (Used / Limit)</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className={`divide-y ${isDark ? 'divide-zinc-800' : 'divide-gray-50'}`}>
+                                        {registrationCodes.map(code => (
+                                            <tr key={code.id} className={`group hover:${isDark ? 'bg-zinc-850' : 'bg-gray-50/50'} transition-all`}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`px-3 py-1.5 rounded-lg border-2 font-mono text-xs font-black uppercase tracking-wider ${
+                                                            isDark ? 'bg-black/40 border-accent/25 text-accent' : 'bg-blue-50 border-blue-100 text-blue-600'
+                                                        }`}>
+                                                            {code.code}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`font-black text-sm uppercase ${isDark ? 'text-white' : 'text-gray-800'}`}>{code.assignedTo}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`text-[10px] font-black uppercase ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{code.currentUsage || 0} / {code.usageLimit}</span>
+                                                        <div className={`w-28 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-gray-100'}`}>
+                                                            <div 
+                                                                className={`h-full transition-all ${(code.currentUsage || 0) >= code.usageLimit ? 'bg-red-500' : 'bg-green-500'}`} 
+                                                                style={{ width: `${Math.min(100, (((code.currentUsage || 0) / code.usageLimit) * 100))}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                                                        !code.isActive ? (isDark ? 'bg-zinc-850 text-zinc-500 border-zinc-800' : 'bg-gray-100 text-gray-400 border-gray-200') :
+                                                        (code.currentUsage || 0) >= code.usageLimit ? (isDark ? 'bg-red-900/20 text-red-500 border-red-900/40' : 'bg-red-50 text-red-500 border-red-100') :
+                                                        (isDark ? 'bg-green-900/20 text-green-500 border-green-900/40' : 'bg-green-50 text-green-600 border-green-100')
+                                                    }`}>
+                                                        {!code.isActive ? 'INACTIVE' : (code.currentUsage || 0) >= code.usageLimit ? 'EXHAUSTED' : 'ACTIVE'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleResetRegCodeUsage(code.id!)} className={`p-2 rounded-lg transition-colors ${isDark ? 'text-amber-500 hover:bg-zinc-800' : 'text-amber-500 hover:bg-amber-50'}`} title="Reset Usage"><RefreshCw className="w-4 h-4"/></button>
+                                                        <button onClick={() => { setEditRegCode(code); setShowRegCodeModal(true); }} className={`p-2 rounded-lg transition-colors ${isDark ? 'text-blue-500 hover:bg-zinc-800' : 'text-blue-500 hover:bg-blue-50'}`}><Edit className="w-4 h-4"/></button>
+                                                        <button onClick={() => handleDeleteRegCode(code.id!)} className={`p-2 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-zinc-800' : 'text-red-400 hover:bg-red-50'}`}><Trash2 className="w-4 h-4"/></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {registrationCodes.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center">
+                                                    <div className="max-w-xs mx-auto">
+                                                        <Key className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                                                        <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No Organizer Codes Established</p>
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Generate codes to give late slot allocation to select players.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* REDEMPTIONS VIEW */}
+                        <div className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                            <h3 className={`text-md font-black uppercase tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>Code Redemptions Log</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className={`${isDark ? 'bg-zinc-800 border-b border-zinc-700' : 'bg-gray-50 border-b border-gray-100'}`}>
+                                            <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Code Key</th>
+                                            <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Player Name</th>
+                                            <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Redeemed At</th>
+                                            <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Reg ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className={`divide-y ${isDark ? 'divide-zinc-800' : 'divide-gray-50'}`}>
+                                        {registrationCodes.flatMap(code => 
+                                            (code.redemptions || []).map((red, rIdx) => ({
+                                                id: `${code.id}-${rIdx}`,
+                                                code: code.code,
+                                                playerName: red.playerName,
+                                                registeredAt: red.registeredAt,
+                                                registrationID: red.registrationID
+                                            }))
+                                        ).sort((a,b) => b.registeredAt - a.registeredAt).map(red => (
+                                            <tr key={red.id} className={`hover:${isDark ? 'bg-zinc-850' : 'bg-gray-50/50'}`}>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-1 rounded font-mono text-[10px] font-black border uppercase ${
+                                                        isDark ? 'bg-black/30 border-accent/20 text-accent' : 'bg-blue-50 border-blue-100 text-blue-600'
+                                                    }`}>
+                                                        {red.code}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`font-black text-xs uppercase ${isDark ? 'text-white' : 'text-gray-800'}`}>{red.playerName}</span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`text-[10px] font-bold text-gray-500 uppercase`}>{new Date(red.registeredAt).toLocaleString()}</span>
+                                                </td>
+                                                <td className="px-4 py-3 font-mono text-[9px] text-gray-400 lowercase">{red.registrationID || '-'}</td>
+                                            </tr>
+                                        ))}
+                                        {registrationCodes.every(code => !code.redemptions || code.redemptions.length === 0) && (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-6 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                    No redemptions logged yet.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {activeTab === 'WAITLIST' && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
@@ -3961,6 +4168,108 @@ const AuctionManage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {showRegCodeModal && editRegCode && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className={`${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white text-gray-800'} rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl border animate-scale-in`}>
+                        <div className={`p-8 border-b flex justify-between items-center ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-gray-100 bg-gray-50/50'}`}>
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-500 rounded-2xl text-white shadow-lg shadow-amber-500/20">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-lg font-black uppercase tracking-tighter">{editRegCode.id ? 'Edit Reg Code' : 'New Reg Code'}</h3>
+                            </div>
+                            <button onClick={() => setShowRegCodeModal(false)} className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-gray-400'}`}><X className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Registration Code</label>
+                                    <input 
+                                        required 
+                                        type="text" 
+                                        className={`w-full rounded-xl px-4 py-3 font-black outline-none transition-all uppercase font-mono ${
+                                            isDark 
+                                            ? 'bg-zinc-850 border-2 border-zinc-800 text-amber-400 focus:bg-zinc-900 focus:border-amber-500' 
+                                            : 'bg-gray-50 border-2 border-gray-100 text-amber-600 focus:bg-white focus:border-amber-400'
+                                        }`} 
+                                        value={editRegCode.code} 
+                                        onChange={e => setEditRegCode({...editRegCode, code: e.target.value.toUpperCase()})} 
+                                        placeholder="e.g. FRIENDVIP15" 
+                                    />
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1 ml-1">Will be entered by player in registration form.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Allocated For / Player Name</label>
+                                    <input 
+                                        required 
+                                        type="text" 
+                                        className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all ${
+                                            isDark 
+                                            ? 'bg-zinc-850 border-2 border-zinc-800 text-white focus:bg-zinc-900 focus:border-amber-400' 
+                                            : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white focus:border-blue-400'
+                                        }`} 
+                                        value={editRegCode.assignedTo} 
+                                        onChange={e => setEditRegCode({...editRegCode, assignedTo: e.target.value})} 
+                                        placeholder="e.g. Rahul Sharma" 
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Usage Limit</label>
+                                        <input 
+                                            required 
+                                            type="number" 
+                                            min="1" 
+                                            className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all ${
+                                                isDark 
+                                                ? 'bg-zinc-850 border-2 border-zinc-800 text-white focus:bg-zinc-900' 
+                                                : 'bg-gray-50 border-2 border-gray-100 text-gray-700 focus:bg-white'
+                                            }`} 
+                                            value={editRegCode.usageLimit} 
+                                            onChange={e => setEditRegCode({...editRegCode, usageLimit: Number(e.target.value)})} 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Active Status</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setEditRegCode({...editRegCode, isActive: true})} 
+                                                className={`py-3 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all border-2 ${
+                                                    editRegCode.isActive 
+                                                    ? 'bg-green-500/10 border-green-500 text-green-500 shadow-md' 
+                                                    : 'bg-gray-500/5 border-transparent text-gray-400 hover:border-zinc-700'
+                                                }`}
+                                            >
+                                                Active
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setEditRegCode({...editRegCode, isActive: false})} 
+                                                className={`py-3 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all border-2 ${
+                                                    !editRegCode.isActive 
+                                                    ? 'bg-red-500/10 border-red-500 text-red-500 shadow-md' 
+                                                    : 'bg-gray-500/5 border-transparent text-gray-400 hover:border-zinc-700'
+                                                }`}
+                                            >
+                                                Muted
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={handleSaveRegCode} 
+                                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-4 rounded-xl shadow-xl transition-all uppercase text-xs tracking-widest active:scale-95"
+                            >
+                                {editRegCode.id ? 'Update Code' : 'Create Code'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full overflow-hidden border border-gray-200 animate-slide-up">
