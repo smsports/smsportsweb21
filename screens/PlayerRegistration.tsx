@@ -409,13 +409,14 @@ const PlayerRegistration: React.FC = () => {
 
     useEffect(() => {
         if (config?.isEnabled) {
-            if (isFull && !isCaptain && !hasTeamCode) {
+            const isManuallyClosed = config?.registrationStatus === 'CLOSED';
+            if ((isFull || isManuallyClosed) && !isCaptain && !hasTeamCode) {
                 setIsClosed(true);
-            } else if (!isFull) {
+            } else if (!isFull && !isManuallyClosed) {
                 setIsClosed(false);
             }
         }
-    }, [isFull, isCaptain, hasTeamCode, config?.isEnabled]);
+    }, [isFull, isCaptain, hasTeamCode, config?.isEnabled, config?.registrationStatus]);
 
     const [formData, setFormData] = useState<any>({
         fullName: '', playerType: '', gender: '', mobile: '', dob: '', battleOath: false,
@@ -546,7 +547,8 @@ const PlayerRegistration: React.FC = () => {
                             
                             const currentReserveCount = regConfig.reserveSlotsEnabled && regConfig.reserveSlotsCount ? regConfig.reserveSlotsCount : 0;
                             const currentEffectiveLimit = Math.max(0, (regConfig.maxRegistrations || 36) - currentReserveCount);
-                            if (regConfig.maxRegistrations > 0 && playersSnap.size >= currentEffectiveLimit) {
+                            const isManuallyClosed = regConfig.registrationStatus === 'CLOSED';
+                            if (isManuallyClosed || (regConfig.maxRegistrations > 0 && playersSnap.size >= currentEffectiveLimit)) {
                                 setIsClosed(true);
                             }
                         } catch (regErr) {

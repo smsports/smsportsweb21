@@ -86,6 +86,7 @@ const compressImage = async (file: File, isBanner: boolean = false): Promise<str
 
 const DEFAULT_REG_CONFIG: RegistrationConfig = {
     isEnabled: false,
+    registrationStatus: 'OPEN',
     autoApprove: false,
     includePayment: false,
     paymentMethod: 'MANUAL',
@@ -2113,8 +2114,31 @@ const AuctionManage: React.FC = () => {
                                         <Share2 className="w-4 h-4" /> {copySuccess ? 'Link Copied!' : 'Share Form Link'}
                                     </button>
                                     <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-6 py-3 shadow-sm">
-                                        <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Registration Open</label>
+                                        <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Form URL Enabled</label>
                                         <button onClick={() => setRegConfig({...regConfig, isEnabled: !regConfig.isEnabled})} className={`transition-all active:scale-90 ${regConfig.isEnabled ? 'text-blue-600' : 'text-gray-300'}`}>{regConfig.isEnabled ? <ToggleRight className="w-10 h-10"/> : <ToggleLeft className="w-10 h-10"/>}</button>
+                                    </div>
+                                    <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-6 py-3 shadow-sm">
+                                        <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Accepting Players</label>
+                                        <select 
+                                            value={regConfig.registrationStatus || 'OPEN'}
+                                            onChange={async (e) => {
+                                                const val = e.target.value as 'OPEN' | 'CLOSED';
+                                                const updatedConfig = { ...regConfig, registrationStatus: val };
+                                                setRegConfig(updatedConfig);
+                                                if (id) {
+                                                    try {
+                                                        await db.collection('auctions').doc(id).update({ registrationConfig: updatedConfig });
+                                                        showNotification(val === 'OPEN' ? "Registrations Accepted/Open!" : "Registrations Manually Closed!", "success");
+                                                    } catch (err: any) {
+                                                        showNotification("Failed to update status: " + err.message);
+                                                    }
+                                                }
+                                            }}
+                                            className="bg-gray-50 border border-gray-200 text-xs font-black text-gray-700 py-1.5 px-3 rounded-xl focus:border-blue-500 focus:outline-none transition-all cursor-pointer"
+                                        >
+                                            <option value="OPEN">Accept Registrations</option>
+                                            <option value="CLOSED">Close Registrations</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
