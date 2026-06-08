@@ -100,6 +100,7 @@ const DEFAULT_REG_CONFIG: RegistrationConfig = {
     welcomePopup: { isEnabled: false, message: '', autoCloseTimer: 0 },
     welcomePosterUrl: '',
     maxRegistrations: 36,
+    hideProgressBar: false,
     reserveSlotsEnabled: false,
     reserveSlotsCount: 0,
     customFields: [],
@@ -2607,6 +2608,20 @@ const AuctionManage: React.FC = () => {
                                                 value={regConfig.closedMessage || ''}
                                                 onChange={e => setRegConfig({...regConfig, closedMessage: e.target.value})}
                                             />
+                                        </div>
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Slots Filling Progress Bar Display</label>
+                                            <select
+                                                className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-gray-700 focus:border-orange-400 outline-none transition-all"
+                                                value={regConfig.hideProgressBar ? "hide" : "show"}
+                                                onChange={e => setRegConfig({...regConfig, hideProgressBar: e.target.value === "hide"})}
+                                            >
+                                                <option value="show">Show Progress Bar</option>
+                                                <option value="hide">Hide Progress Bar</option>
+                                            </select>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 ml-2 tracking-widest">
+                                                Control whether players can see the real-time slot filling progress bar on the registration form.
+                                            </p>
                                         </div>
                                         <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                                             <div>

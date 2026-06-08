@@ -382,6 +382,7 @@ export interface RegistrationConfig {
     welcomePopup?: WelcomePopupConfig;
     welcomePosterUrl?: string;
     maxRegistrations?: number;
+    hideProgressBar?: boolean;
     reserveSlotsEnabled?: boolean;
     reserveSlotsCount?: number;
     rules?: string;

@@ -614,7 +614,7 @@ const PlayerRegistration: React.FC = () => {
                 setCodeStatus({ type: 'success', message: 'Captain verified successfully!' });
                 setValidatedCode(codeData);
                 // Auto-fill name if assigned
-                if (codeData.assignedTo) {
+                if (codeData.assignedTo && codeData.assignedTo.trim() !== '' && codeData.assignedTo.toLowerCase() !== 'general code') {
                     setFormData(prev => ({ ...prev, fullName: codeData.assignedTo }));
                 }
             }
@@ -649,7 +649,7 @@ const PlayerRegistration: React.FC = () => {
                 setOrganiserCodeStatus({ type: 'success', message: 'Registration Code accepted! Loading form...' });
                 setValidatedOrganiserCode(codeData);
                 // Auto-fill name if assigned
-                if (codeData.assignedTo) {
+                if (codeData.assignedTo && codeData.assignedTo.trim() !== '' && codeData.assignedTo.toLowerCase() !== 'general code') {
                     setFormData(prev => ({ ...prev, fullName: codeData.assignedTo }));
                 }
                 // Automatically open form
@@ -1551,7 +1551,7 @@ const PlayerRegistration: React.FC = () => {
                         </motion.div>
 
                         {/* Slot System UI */}
-                        {config?.maxRegistrations && (
+                        {config?.maxRegistrations && !config?.hideProgressBar && (
                             <div className={`${isClassicNeon ? 'max-w-4xl' : 'max-w-2xl'} mx-auto mb-10 space-y-4`}>
                                 <div className="flex justify-between items-end mb-2">
                                     <div className="text-left">
