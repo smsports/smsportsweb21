@@ -90,6 +90,38 @@ const MyTeamPanel: React.FC = () => {
         {isLeading && <p className="text-green-500 text-[9px] mt-2 text-center font-black uppercase tracking-widest animate-pulse">You are the highest bidder!</p>}
       </div>
 
+      {state.autoReserveFunds && !state.unlimitedPurse && state.categories && state.categories.length > 0 && (
+        <div className={`mb-6 p-4 rounded-2xl border transition-all ${isDark ? 'bg-black/20 border-accent/15' : 'bg-gray-50 border-gray-100'}`}>
+          <div className="flex items-center justify-between mb-3 border-b pb-1.5 border-white/5">
+            <h4 className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-accent' : 'text-blue-600'}`}>Max Bid By Category</h4>
+            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${isDark ? 'bg-accent/10 text-accent' : 'bg-blue-100 text-blue-700'}`}>RESERVE ACTIVE</span>
+          </div>
+          <div className="space-y-1.5">
+            {state.categories.map((cat, idx) => {
+              const dummyPlayer = {
+                id: 'dummy_' + cat.name,
+                name: 'Dummy',
+                category: cat.name,
+                basePrice: cat.basePrice,
+                status: 'UNSOLD',
+              };
+              const result = calculateMaxBid(userTeam, state, dummyPlayer as any);
+              return (
+                <div key={idx} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${result.allowBid ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className={`font-black uppercase text-[9px] ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>{cat.name} (₹{cat.basePrice})</span>
+                  </div>
+                  <span className={`font-black tracking-tight ${result.allowBid ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-500 text-[10px]'}`}>
+                    {result.allowBid ? `₹${Math.max(0, Math.floor(result.maxBid))}` : (result.reason || 'LOCKED')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className={`flex p-1 rounded-2xl mb-4 transition-colors ${isDark ? 'bg-zinc-900/50' : 'bg-gray-100'}`}>
           <button 
             onClick={() => setActiveTab('MY_SQUAD')} 

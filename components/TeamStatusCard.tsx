@@ -30,9 +30,9 @@ const TeamStatusCard: React.FC<Props> = ({ team }) => {
 
         // 2. Check Category Specific Max Limit
         if (currentPlayer && currentPlayer.category) {
-            const catConfig = categories.find(c => c.name === currentPlayer.category);
+            const catConfig = categories.find(c => c.name?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim());
             if (catConfig && catConfig.maxPerTeam > 0) {
-                const count = (team.players || []).filter(p => p.category === currentPlayer.category).length;
+                const count = (team.players || []).filter(p => p.category?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim()).length;
                 if (count >= catConfig.maxPerTeam) {
                     return { isLimitReached: true, limitReason: "Cat. Full", biddingCapacity: 0 };
                 }

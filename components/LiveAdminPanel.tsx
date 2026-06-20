@@ -587,10 +587,10 @@ const LiveAdminPanel: React.FC = () => {
                         else if ((team.players || []).length >= (maxPlayersPerTeam || 25)) { allowed = false; reason = 'FULL'; }
                         else if (currentPlayer) {
                             if (currentPlayer.category) {
-                                const catConfig = categories.find(c => c.name === currentPlayer.category);
+                                const catConfig = categories.find(c => c.name?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim());
                                 if (catConfig && catConfig.maxPerTeam > 0) {
                                     const playersList = team.players || [];
-                                    const count = playersList.filter(p => p.category === currentPlayer.category).length;
+                                    const count = playersList.filter(p => p.category?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim()).length;
                                     if (count >= catConfig.maxPerTeam) { allowed = false; reason = 'CAT LIMIT'; }
                                 }
                             }

@@ -2611,14 +2611,39 @@ const AuctionManage: React.FC = () => {
                                         </div>
                                         <div className="pt-4 border-t border-gray-100">
                                             <label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Slots Filling Progress Bar Display</label>
-                                            <select
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRegConfig({...regConfig, hideProgressBar: false})}
+                                                    className={`flex-1 py-3 px-4 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
+                                                        !regConfig.hideProgressBar 
+                                                            ? 'bg-orange-500/10 border-orange-500 text-orange-600' 
+                                                            : 'bg-gray-50 border-gray-100 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    Show Progress Bar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRegConfig({...regConfig, hideProgressBar: true})}
+                                                    className={`flex-1 py-3 px-4 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
+                                                        regConfig.hideProgressBar 
+                                                            ? 'bg-orange-500/10 border-orange-500 text-orange-600' 
+                                                            : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    Hide Progress Bar
+                                                </button>
+                                            </div>
+                                            {/*
                                                 className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-gray-700 focus:border-orange-400 outline-none transition-all"
                                                 value={regConfig.hideProgressBar ? "hide" : "show"}
                                                 onChange={e => setRegConfig({...regConfig, hideProgressBar: e.target.value === "hide"})}
                                             >
                                                 <option value="show">Show Progress Bar</option>
                                                 <option value="hide">Hide Progress Bar</option>
-                                            </select>
+                                            */}<div className="hidden pointer-events-none select-none opacity-0" style={{display: 'none'}}>
+                                            </div>
                                             <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 ml-2 tracking-widest">
                                                 Control whether players can see the real-time slot filling progress bar on the registration form.
                                             </p>

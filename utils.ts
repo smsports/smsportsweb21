@@ -47,15 +47,16 @@ export const calculateMaxBid = (
     if (autoReserveFunds) {
         categories.forEach(cat => {
             const playersList = team.players || [];
-            const countInTeam = playersList.filter(p => p.category === cat.name).length;
+            // Case-insensitive, robust matching
+            const countInTeam = playersList.filter(p => p.category?.toLowerCase().trim() === cat.name?.toLowerCase().trim()).length;
             let neededForMin = Math.max(0, (cat.minPerTeam || 0) - countInTeam);
 
             // If current player is in this category, they help fulfill the requirement
-            if (currentPlayer && currentPlayer.category === cat.name) {
+            if (currentPlayer && currentPlayer.category?.toLowerCase().trim() === cat.name?.toLowerCase().trim()) {
                 neededForMin = Math.max(0, neededForMin - 1);
             }
 
-            const catBasePrice = (cat.basePrice && cat.basePrice > 0) ? cat.basePrice : globalBasePrice;
+            const catBasePrice = (cat.basePrice !== undefined && cat.basePrice !== null) ? Number(cat.basePrice) : Number(globalBasePrice);
             const reservation = neededForMin * catBasePrice;
             
             totalReservedFunds += reservation;
@@ -63,7 +64,7 @@ export const calculateMaxBid = (
 
             categoryStatus.push({
                 name: cat.name,
-                current: countInTeam + (currentPlayer?.category === cat.name ? 1 : 0),
+                current: countInTeam + ((currentPlayer && currentPlayer.category?.toLowerCase().trim() === cat.name?.toLowerCase().trim()) ? 1 : 0),
                 min: cat.minPerTeam || 0,
                 reserved: reservation
             });
@@ -71,7 +72,12 @@ export const calculateMaxBid = (
 
         // Flexible slots (any category) to reach max squad size
         const flexibleSlots = Math.max(0, remainingSlotsIfBought - mandatorySlotsAfterCurrent);
-        totalReservedFunds += (flexibleSlots * globalBasePrice);
+        // Find minimum base price among all configured categories for flexible slots, falling back to global base price
+        const minCatPrice = categories.length > 0
+            ? Math.min(...categories.map(c => (c.basePrice !== undefined && c.basePrice !== null) ? Number(c.basePrice) : Number(globalBasePrice)))
+            : Number(globalBasePrice);
+        const flexibleBasePrice = Math.max(minCatPrice, Number(globalBasePrice));
+        totalReservedFunds += (flexibleSlots * flexibleBasePrice);
     }
 
     const maxPossibleBid = team.budget - totalReservedFunds;
@@ -86,12 +92,18 @@ export const calculateMaxBid = (
         reason = "Squad is full";
     }
 
+    // Check Slot Feasibility (Can we fulfill remaining mandatory requirements?)
+    if (allowBid && autoReserveFunds && remainingSlotsIfBought < mandatorySlotsAfterCurrent) {
+        allowBid = false;
+        reason = "Reserve required for other categories";
+    }
+
     // Check Category Max Limit
     if (allowBid && currentPlayer && currentPlayer.category) {
-        const catConfig = categories.find(c => c.name === currentPlayer.category);
+        const catConfig = categories.find(c => c.name?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim());
         if (catConfig && catConfig.maxPerTeam > 0) {
             const playersList = team.players || [];
-            const countInCat = playersList.filter(p => p.category === currentPlayer.category).length;
+            const countInCat = playersList.filter(p => p.category?.toLowerCase().trim() === currentPlayer.category?.toLowerCase().trim()).length;
             if (countInCat >= catConfig.maxPerTeam) {
                 allowBid = false;
                 reason = `Limit for ${catConfig.name} reached`;
