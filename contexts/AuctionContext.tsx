@@ -544,7 +544,7 @@ const addLog = async (log: Omit<AuctionLog, 'id'>) => {
         const player = state.players.find(p => String(p.id) === String(nextPlayerId));
         const startLog = { message: `Bidding started for ${player?.name}`, timestamp: Date.now(), type: 'SYSTEM' as const };
         await db.collection('auctions').doc(activeAuctionId).update({
-            currentPlayerId: nextPlayerId, currentBid: 0, highestBidder: null, status: AuctionStatus.InProgress, timer: 10
+            currentPlayerId: nextPlayerId, currentBid: 0, highestBidderId: null, status: AuctionStatus.InProgress, timer: 10
         });
         await addLog(startLog);
         return true;
@@ -552,7 +552,7 @@ const addLog = async (log: Omit<AuctionLog, 'id'>) => {
 
     const undoPlayerSelection = async () => {
         if (!activeAuctionId) return;
-        await db.collection('auctions').doc(activeAuctionId).update({ currentPlayerId: null, currentBid: 0, highestBidder: null, status: AuctionStatus.NotStarted });
+        await db.collection('auctions').doc(activeAuctionId).update({ currentPlayerId: null, currentBid: 0, highestBidderId: null, status: AuctionStatus.NotStarted });
     };
 
     const resetCurrentPlayer = async () => {
