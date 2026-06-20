@@ -155,6 +155,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                             email: user.email || '',
                             name: user.displayName || userData?.name || 'System Operator',
                             role: isGlobalAdmin ? UserRole.SUPER_ADMIN : (userData?.role || UserRole.ADMIN),
+                            teamId: userData?.teamId,
                             plan: userData?.plan || { type: 'FREE', maxTeams: 2, maxAuctions: 1 }
                         };
                         setUserProfile(profile);

@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
   const isAuctionCreator = state.createdBy === userProfile?.uid;
   const isAdmin = userProfile?.role === UserRole.ADMIN || isSuperAdmin || isAuctionCreator;
   const isTeamOwner = userProfile?.role === UserRole.TEAM_OWNER;
-  const myTeam = isTeamOwner ? state.teams.find(t => t.id === userProfile.teamId) : null;
+  const myTeam = isTeamOwner ? state.teams.find(t => String(t.id) === String(userProfile?.teamId)) : null;
   const [view, setView] = React.useState<'AUCTION' | 'TRADE'>('AUCTION');
 
   // If there is a critical error (like auction not found), show a clean error state

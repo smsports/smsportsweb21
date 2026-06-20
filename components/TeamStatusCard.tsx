@@ -108,6 +108,17 @@ const TeamStatusCard: React.FC<Props> = ({ team }) => {
                         {(team.players || []).length} / {maxPlayersPerTeam || '-'}
                     </span>
                 </div>
+                {currentPlayer && (
+                    <div className={`flex items-center justify-between p-2 rounded-xl transition-colors ${isDark ? 'bg-zinc-900/50' : 'bg-gray-50'}`}>
+                        <div className="flex items-center">
+                            <Gavel className={`w-3.5 h-3.5 mr-2 ${isDark ? 'text-accent' : 'text-blue-600'}`} />
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Max Bid</span>
+                        </div>
+                        <span className={`text-xs font-black tabular-nums ${isDark ? 'text-accent font-black' : 'text-blue-600 font-black'}`}>
+                            ₹{state.unlimitedPurse ? team.budget : Math.max(0, Math.floor(biddingCapacity))}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {isAdmin && isAuctionLive && (

@@ -582,6 +582,9 @@ const LiveAdminPanel: React.FC = () => {
                     {teams.map(team => {
                         let allowed = true;
                         let reason = '';
+                        const maxBidResult = currentPlayer ? calculateMaxBid(team, state, currentPlayer) : null;
+                        const maxPossibleBid = maxBidResult ? (state.unlimitedPurse ? team.budget : Math.max(0, Math.floor(maxBidResult.maxBid))) : team.budget;
+
                         if (team.budget < nextBid) { allowed = false; reason = 'NO FUNDS'; }
                         else if (state.highestBidder?.id === team.id) { allowed = false; reason = 'LEADING'; }
                         else if ((team.players || []).length >= (maxPlayersPerTeam || 25)) { allowed = false; reason = 'FULL'; }
@@ -594,9 +597,12 @@ const LiveAdminPanel: React.FC = () => {
                                     if (count >= catConfig.maxPerTeam) { allowed = false; reason = 'CAT LIMIT'; }
                                 }
                             }
-                            if (allowed) {
-                                const { maxBid } = calculateMaxBid(team, state, currentPlayer);
-                                if (nextBid > maxBid) { allowed = false; reason = 'MAX BID'; }
+                            if (allowed && maxBidResult && !maxBidResult.allowBid) {
+                                allowed = false;
+                                reason = maxBidResult.reason || 'LIMIT HIT';
+                            } else if (allowed && nextBid > maxPossibleBid) {
+                                allowed = false;
+                                reason = 'MAX BID';
                             }
                         }
 
@@ -622,7 +628,12 @@ const LiveAdminPanel: React.FC = () => {
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className={`text-[10px] font-black uppercase tracking-tighter truncate leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>{team.name}</span>
-                                        <span className={`text-[8px] font-black tabular-nums leading-none mt-1 ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>₹{team.budget}</span>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <span className={`text-[8px] font-black tabular-nums leading-none ${isDark ? 'text-zinc-650' : 'text-gray-400'}`}>₹{team.budget}</span>
+                                            <span className={`text-[8px] font-black leading-none px-1 rounded-sm ${isDark ? 'bg-accent/15 text-accent' : 'bg-blue-100 text-blue-700'}`}>
+                                                Max: ₹{maxPossibleBid}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 

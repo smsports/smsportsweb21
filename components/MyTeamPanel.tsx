@@ -22,6 +22,27 @@ const MyTeamPanel: React.FC = () => {
     return { maxBidAllowed: result.maxBid };
   }, [userTeam, state, currentPlayer]);
 
+  const teamPlayers = React.useMemo(() => {
+    if (!userTeam) return [];
+    const merged = [...(userTeam.players || [])];
+    const soldToMe = (players || []).filter(p => p.status === 'SOLD' && (String(p.soldTo).toLowerCase() === userTeam.name.toLowerCase() || String((p as any).soldToId) === String(userTeam.id)));
+    soldToMe.forEach(sp => {
+      if (!merged.some(mp => String(mp.id) === String(sp.id))) {
+        merged.push({
+          id: sp.id,
+          name: sp.name,
+          role: sp.role || '',
+          category: sp.category || '',
+          soldPrice: sp.soldPrice || 0,
+          soldTo: sp.soldTo || userTeam.name,
+          status: 'SOLD',
+          isTraded: (sp as any).isTraded || false
+        } as any);
+      }
+    });
+    return merged;
+  }, [userTeam, players]);
+
   if (!userTeam) return (
       <div className={`rounded-[2rem] p-8 text-center border-2 border-dashed ${isDark ? 'bg-secondary/50 border-zinc-800 text-zinc-500' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
           <p className="text-xs font-black uppercase tracking-widest">Team data not found.</p>
@@ -36,7 +57,7 @@ const MyTeamPanel: React.FC = () => {
         try {
              await placeBid(userTeam.id, nextBid);
         } catch (e) {
-            console.error(e);
+             console.error(e);
         }
     }
   };
@@ -142,10 +163,10 @@ const MyTeamPanel: React.FC = () => {
              <>
                 <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center border-b pb-2 ${isDark ? 'text-accent border-accent/10' : 'text-blue-600 border-blue-500/10'}`}>
                     <Shirt className="w-4 h-4 mr-2"/>
-                    Players ({userTeam.players?.length || 0})
+                    Players ({teamPlayers.length})
                 </h4>
                 <div className="space-y-2 pr-1 flex-grow overflow-y-auto custom-scrollbar">
-                    {userTeam.players && userTeam.players.length > 0 ? userTeam.players.map(player => (
+                    {teamPlayers.length > 0 ? teamPlayers.map(player => (
                         <div key={player.id} className={`p-3 rounded-2xl border-l-4 flex justify-between items-center transition-all ${isDark ? 'bg-zinc-900/40 border-accent/50 hover:bg-zinc-800/60' : 'bg-gray-50 border-blue-500/50 hover:bg-white hover:shadow-md'}`}>
                             <div>
                                 <div className="flex items-center gap-1.5">

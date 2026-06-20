@@ -57,7 +57,7 @@ const PlayerFocus: React.FC<PlayerFocusProps> = ({ player }) => {
             <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 mb-6 md:mb-8">
                 <div className="relative group">
                     <div className={`absolute -inset-1 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 ${isDark ? 'bg-accent' : 'bg-blue-600'}`}></div>
-                    <img src={player.photoUrl} alt={player.name} className={`relative w-28 h-28 md:w-44 md:h-44 rounded-full border-4 object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105 ${isDark ? 'border-accent' : 'border-blue-600'}`} />
+                    <img src={player.photoUrl || null} alt={player.name} className={`relative w-28 h-28 md:w-44 md:h-44 rounded-full border-4 object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105 ${isDark ? 'border-accent' : 'border-blue-600'}`} />
                 </div>
                 <div>
                     <h2 className={`text-3xl md:text-5xl font-black uppercase tracking-tighter italic leading-tight pb-1 ${isDark ? 'advaya-text' : 'text-gray-900'}`}>{player.name}</h2>

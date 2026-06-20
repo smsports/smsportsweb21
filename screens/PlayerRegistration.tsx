@@ -1296,7 +1296,7 @@ const PlayerRegistration: React.FC = () => {
                             >
                                 <div className={`relative z-20 max-w-2xl w-full bg-black border-4 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/40 shadow-[0_0_50px_rgba(166,255,0,0.2)]' : 'border-amber-500/30 shadow-[0_0_50px_rgba(251,191,36,0.2)]'} rounded-[3rem] overflow-hidden`}>
                                     <div className="w-full overflow-y-auto max-h-[90vh] custom-scrollbar">
-                                        <img src={config?.bannerUrl} className="w-full h-auto block" referrerPolicy="no-referrer" />
+                                        <img src={config?.bannerUrl || null} className="w-full h-auto block" referrerPolicy="no-referrer" />
                                         
                                         {/* Showcase Gallery after Banner/Poster */}
                                         {config?.showcaseImages && config.showcaseImages.length > 0 && (
@@ -2497,7 +2497,7 @@ const PlayerRegistration: React.FC = () => {
                                 className="relative z-20 max-w-2xl w-full bg-black border-4 border-amber-500/30 rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(251,191,36,0.2)]"
                             >
                                 <div className="w-full overflow-y-auto max-h-[90vh] custom-scrollbar">
-                                    <img src={config?.bannerUrl} referrerPolicy="no-referrer" className="w-full h-auto block" />
+                                    <img src={config?.bannerUrl || null} referrerPolicy="no-referrer" className="w-full h-auto block" />
                                     <div className="p-8 bg-black/95 border-t border-amber-500/20 text-center">
                                         <button 
                                             onClick={() => setShowPoster(false)}
