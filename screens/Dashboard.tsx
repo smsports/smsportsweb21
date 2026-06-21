@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import LiveAdminPanel from '../components/LiveAdminPanel';
 import AuctionRoom from './AuctionRoom';
 import TradingPanel from '../components/TradingPanel';
@@ -8,6 +8,7 @@ import { useAuction } from '../hooks/useAuction';
 import { AuctionStatus, UserRole } from '../types';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, Wallet, Users, LogOut, Trophy, Home, ShieldAlert, ArrowRightLeft } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 import { useTheme } from '../contexts/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
@@ -19,6 +20,25 @@ const Dashboard: React.FC = () => {
   const { id: auctionId } = useParams<{ id: string }>();
 
   useEffect(() => { if (auctionId) joinAuction(auctionId); }, [auctionId]);
+
+  const lastStateStatusRef = useRef<AuctionStatus | null>(null);
+  const lastPlayerIdRef = useRef<string | number | null>(null);
+
+  useEffect(() => {
+    if (state.status === AuctionStatus.Sold && state.currentPlayerId) {
+      const isNewSold = lastStateStatusRef.current !== AuctionStatus.Sold || lastPlayerIdRef.current !== state.currentPlayerId;
+      if (isNewSold) {
+        // Trigger high-fidelity paper blast confetti
+        confetti({
+          particleCount: 150,
+          spread: 85,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+    lastStateStatusRef.current = state.status;
+    lastPlayerIdRef.current = state.currentPlayerId;
+  }, [state.status, state.currentPlayerId]);
 
   const isDark = theme === 'dark';
   const isSuperAdmin = userProfile?.role === UserRole.SUPER_ADMIN;

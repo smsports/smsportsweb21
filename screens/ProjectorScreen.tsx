@@ -6,6 +6,7 @@ import { Globe, User, TrendingUp, Wallet, Trophy, Star, AlertTriangle, Users, Za
 import { motion, AnimatePresence } from 'motion/react';
 import { Team, Player, AuctionStatus, ProjectorLayout } from '../types';
 import { getEffectiveBasePrice } from '../utils';
+import confetti from 'canvas-confetti';
 
 interface DisplayState {
     player: Player | null;
@@ -142,6 +143,13 @@ const ProjectorScreen: React.FC = () => {
   useEffect(() => {
     if (display.status === 'SOLD' && display.player) {
         setSoldAnimationPlayer({ player: display.player, bid: display.bid, bidder: display.bidder });
+        if (!showSoldOverlay) {
+            confetti({
+                particleCount: 180,
+                spread: 90,
+                origin: { y: 0.65 }
+            });
+        }
         setShowSoldOverlay(true);
         const timer = setTimeout(() => {
             setShowSoldOverlay(false);
@@ -149,7 +157,7 @@ const ProjectorScreen: React.FC = () => {
         }, 4000); // 3 seconds + 1s for fade out
         return () => clearTimeout(timer);
     }
-  }, [display.status, display.player]);
+  }, [display.status, display.player, showSoldOverlay]);
 
   useEffect(() => {
       const { currentPlayerId, players, currentBid, highestBidder, status, teams, auctionLog } = state;

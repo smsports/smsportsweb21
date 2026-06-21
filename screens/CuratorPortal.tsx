@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuction } from '../hooks/useAuction';
 import { useTheme } from '../contexts/ThemeContext';
 import { calculateMaxBid, getEffectiveBasePrice } from '../utils';
 import { Player, Team, AuctionStatus } from '../types';
 import { db } from '../firebase';
+import confetti from 'canvas-confetti';
 import { 
     Trophy, Search, Filter, Compass, AlertCircle, RefreshCw, 
     TrendingUp, Users, HeartPulse, Wallet, ArrowLeft, ArrowUpRight,
@@ -29,6 +30,24 @@ const CuratorPortal: React.FC = () => {
             joinAuction(auctionId);
         }
     }, [auctionId]);
+
+    const lastStateStatusRef = useRef<AuctionStatus | null>(null);
+    const lastPlayerIdRef = useRef<string | number | null>(null);
+
+    useEffect(() => {
+        if (state.status === AuctionStatus.Sold && state.currentPlayerId) {
+            const isNewSold = lastStateStatusRef.current !== AuctionStatus.Sold || lastPlayerIdRef.current !== state.currentPlayerId;
+            if (isNewSold) {
+                confetti({
+                    particleCount: 150,
+                    spread: 85,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+        lastStateStatusRef.current = state.status;
+        lastPlayerIdRef.current = state.currentPlayerId;
+    }, [state.status, state.currentPlayerId]);
 
     // Active Player reference
     const currentPlayer = useMemo(() => {

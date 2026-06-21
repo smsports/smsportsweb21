@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuction } from '../hooks/useAuction';
 import { useParams } from 'react-router-dom';
-import { User, Gavel, DollarSign, Trophy } from 'lucide-react';
+import { User, Gavel, DollarSign, Trophy, CheckCircle2, XCircle } from 'lucide-react';
 import { getEffectiveBasePrice } from '../utils';
 import { Player, Team, AuctionStatus, AuctionState } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -195,6 +195,57 @@ const OBSOverlay: React.FC = () => {
   const { id: auctionId } = useParams<{ id: string }>();
   const [display, setDisplay] = useState<OverlayState>({ player: null, bid: 0, bidder: null, status: 'WAITING' });
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
+
+  const [activeAlert, setActiveAlert] = useState<{
+      show: boolean;
+      type: 'SOLD' | 'UNSOLD';
+      playerName: string;
+      playerPhoto?: string;
+      playerCategory?: string;
+      playerRole?: string;
+      teamName?: string;
+      teamLogo?: string;
+      price?: number;
+  } | null>(null);
+
+  const lastOverlayStatusRef = useRef<'WAITING' | 'LIVE' | 'SOLD' | 'UNSOLD' | 'FINISHED' | null>(null);
+  const lastOverlayPlayerIdRef = useRef<string | number | null>(null);
+
+  useEffect(() => {
+      if (!display.player) return;
+      const currentStatus = display.status;
+      const currentPlayerId = display.player.id;
+
+      // Detect if we transitioned into SOLD or UNSOLD status
+      const isNewTransition = currentStatus !== lastOverlayStatusRef.current || currentPlayerId !== lastOverlayPlayerIdRef.current;
+
+      if (isNewTransition && (currentStatus === 'SOLD' || currentStatus === 'UNSOLD')) {
+          setActiveAlert({
+              show: true,
+              type: currentStatus,
+              playerName: display.player.name,
+              playerPhoto: display.player.photoUrl,
+              playerCategory: display.player.category,
+              playerRole: display.player.role,
+              teamName: display.bidder?.name || display.player.soldTo || undefined,
+              teamLogo: display.bidder?.logoUrl || undefined,
+              price: display.bid
+          });
+
+          // Auto close after 3 seconds (3000ms)
+          const timer = setTimeout(() => {
+              setActiveAlert(prev => prev ? { ...prev, show: false } : null);
+          }, 3000);
+
+          lastOverlayStatusRef.current = currentStatus;
+          lastOverlayPlayerIdRef.current = currentPlayerId;
+
+          return () => clearTimeout(timer);
+      } else {
+          lastOverlayStatusRef.current = currentStatus;
+          lastOverlayPlayerIdRef.current = currentPlayerId;
+      }
+  }, [display]);
   const loopInterval = state.sponsorConfig?.loopInterval || 5;
   const sponsorsLength = state.sponsors.length;
 
@@ -891,6 +942,105 @@ const OBSOverlay: React.FC = () => {
             </div>
         )}
         <Marquee show={state.sponsorConfig?.showTickerOnOBS ?? state.sponsorConfig?.showHighlights ?? false} content={marqueeContent} layout={state.obsLayout} />
+
+        {/* Full Bottom-Covering Announcement Overlay (3-second duration) */}
+        <AnimatePresence>
+            {activeAlert && activeAlert.show && (
+                <motion.div 
+                    initial={{ y: 250, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 250, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 20 }}
+                    className={`fixed bottom-0 left-0 w-full z-[999] flex flex-col bg-zinc-950 font-sans border-t-4 transition-all duration-300 ${
+                        activeAlert.type === 'SOLD' 
+                            ? 'border-amber-500 shadow-[0_-15px_40px_rgba(234,179,8,0.45)]' 
+                            : 'border-red-500 shadow-[0_-15px_40px_rgba(239,68,68,0.45)]'
+                    }`}
+                    style={{ height: '220px' }}
+                >
+                    {/* Marquee Stripe */}
+                    <div className={`w-full overflow-hidden whitespace-nowrap py-1.5 font-black uppercase text-xs tracking-[0.3em] relative z-20 ${
+                        activeAlert.type === 'SOLD' 
+                            ? 'bg-amber-500 text-black' 
+                            : 'bg-red-500 text-white'
+                    }`}>
+                        <div className="flex animate-marquee-fast w-max will-change-transform">
+                            {Array(18).fill(activeAlert.type).map((t, i) => (
+                                <span key={i} className="mx-8 flex items-center">
+                                    ★ {t} ★
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Announcement Main Content Area */}
+                    <div className="flex-1 flex items-center justify-between px-16 relative z-10 bg-slate-950/95">
+                        {activeAlert.type === 'SOLD' ? (
+                            <>
+                                <div className="flex items-center gap-8">
+                                    <div className="w-24 h-24 bg-white/95 rounded-2xl p-2 border-4 border-amber-500 flex items-center justify-center shadow-2xl shrink-0">
+                                         {activeAlert.teamLogo ? (
+                                             <img src={activeAlert.teamLogo} className="w-full h-full object-contain" alt="" />
+                                         ) : (
+                                             <div className="w-full h-full bg-blue-900 rounded-xl flex items-center justify-center text-4xl font-extrabold text-white">{activeAlert.teamName?.charAt(0)}</div>
+                                         )}
+                                    </div>
+                                    <div>
+                                        <div className="text-amber-500 font-extrabold text-xs tracking-[0.3em] uppercase mb-1 flex items-center gap-1.5">
+                                            <CheckCircle2 className="w-4 h-4 text-amber-400" /> CONGRATULATIONS
+                                        </div>
+                                        <h2 className="text-white text-5xl font-black italic tracking-tighter leading-none uppercase">
+                                            {activeAlert.teamName}
+                                        </h2>
+                                        <div className="text-zinc-400 font-bold text-sm mt-1 uppercase">
+                                            SIGNED PLAYER: <span className="text-white font-black text-lg tracking-tight bg-white/5 py-0.5 px-2.5 rounded border border-white/10 ml-1.5">{activeAlert.playerName}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-right">
+                                    <div className="text-amber-500/70 font-extrabold text-[10px] tracking-widest uppercase mb-1">WINNING INVEST</div>
+                                    <p className="text-amber-400 font-black text-6xl italic tracking-tighter leading-none glow-text-gold drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+                                        ₹ {activeAlert.price?.toLocaleString()}
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="w-full flex items-center justify-between">
+                                <div className="flex items-center gap-8">
+                                    <div className="w-24 h-24 bg-red-500/10 rounded-2xl border-4 border-red-500 flex items-center justify-center shadow-2xl shrink-0">
+                                         <XCircle className="w-14 h-14 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <div className="text-red-500 font-extrabold text-xs tracking-[0.3em] uppercase mb-1">LOT STATUS PASS</div>
+                                        <h2 className="text-red-500 text-5xl font-black italic tracking-tighter leading-none glow-text-red uppercase">
+                                            UNSOLD
+                                        </h2>
+                                        <div className="text-zinc-400 font-bold text-sm mt-1 uppercase">
+                                            PLAYER: <span className="text-white font-black text-lg tracking-tight bg-white/5 py-0.5 px-2.5 rounded border border-white/10 ml-1.5">{activeAlert.playerName}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-zinc-500 font-black uppercase text-xl italic tracking-widest bg-red-500/5 px-6 py-3 rounded-2xl border border-red-500/15">
+                                    No Bids Received
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Repeating marquee helper styles */}
+                    <style>{`
+                        @keyframes marquee-fast {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-50%); }
+                        }
+                        .animate-marquee-fast {
+                            animation: marquee-fast 12s linear infinite;
+                        }
+                    `}</style>
+                </motion.div>
+            )}
+        </AnimatePresence>
     </>
   );
 };
