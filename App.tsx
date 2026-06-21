@@ -13,6 +13,7 @@ import CreateAuction from './screens/CreateAuction';
 import AuctionManage from './screens/AuctionManage';
 import CategoryArrangement from './screens/CategoryArrangement';
 import PlayerRegistration from './screens/PlayerRegistration';
+import CuratorPortal from './screens/CuratorPortal';
 import ScoringDashboard from './screens/ScoringDashboard';
 import MatchScorer from './screens/MatchScorer';
 import MatchOverlay from './screens/MatchOverlay';
@@ -129,6 +130,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/guide" element={<PlatformGuide />} />
           <Route path="/auction/:id" element={<Dashboard />} />
+          <Route path="/auction/:id/curator" element={<CuratorPortal />} />
           <Route path="/auction/:id/register" element={<PlayerRegistration />} />
 
           <Route path="/auth" element={

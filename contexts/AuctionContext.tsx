@@ -201,7 +201,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 const data = doc.data();
                 if (data) {
                     setState(prev => {
-                        const highestBidderId = data.highestBidderId || (data.highestBidder?.id);
+                        const highestBidderId = (data.highestBidderId !== undefined) ? data.highestBidderId : (data.highestBidder?.id || null);
                         return {
                             ...prev,
                             ...data,
