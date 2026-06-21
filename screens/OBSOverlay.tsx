@@ -52,36 +52,9 @@ const Marquee = React.memo(({ content, show, layout }: { content: string[], show
     );
 });
 
-const SystemLogoFrame = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => (
-    <div className="absolute top-6 left-6 h-16 bg-slate-950 rounded-xl border-2 border-yellow-500 p-2 shadow-2xl flex items-center gap-3 z-50 overflow-hidden pr-6">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-        <div className="flex flex-col relative z-10">
-            <span className="text-white font-black text-lg tracking-tighter leading-none">{tournamentName || "AUCTION"}</span>
-            <span className="text-yellow-500 text-[6px] font-bold uppercase tracking-[0.2em] mt-0.5 italic text-right">Live System</span>
-        </div>
-        {systemLogoUrl ? (
-            <img src={systemLogoUrl} className="h-full object-contain relative z-10" alt="Logo" />
-        ) : (
-            <Trophy className="h-6 w-6 text-yellow-500 opacity-40 shrink-0" />
-        )}
-    </div>
-));
+const SystemLogoFrame = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => null);
 
-const TopCenterLogo = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => (
-  <div className="absolute top-4 left-1/2 -translate-x-1/2 h-32 z-50 animate-fade-in">
-      {systemLogoUrl ? (
-          <img src={systemLogoUrl} className="h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" alt="Center Logo" />
-      ) : (
-          <div className="flex items-center gap-6 bg-black/90 px-12 py-5 rounded-3xl border-2 border-white/10 shadow-2xl">
-              <Trophy className="w-16 h-16 text-yellow-500" />
-              <div className="flex flex-col">
-                  <span className="text-white text-4xl font-black italic tracking-tighter leading-none uppercase">{tournamentName || "AUCTION"}</span>
-                  <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-1 text-right">Live Engine</span>
-              </div>
-          </div>
-      )}
-  </div>
-));
+const TopCenterLogo = React.memo(({ tournamentName, systemLogoUrl }: { tournamentName?: string, systemLogoUrl?: string }) => null);
 
 const SponsorLogo = React.memo(({ show, currentSponsor, sponsorsCount }: { show: boolean, currentSponsor: any, sponsorsCount: number }) => (
     show && sponsorsCount > 0 && currentSponsor && (
@@ -791,30 +764,138 @@ const OBSOverlay: React.FC = () => {
                         </motion.div>
                     )}
                  </AnimatePresence>
-
                  <IPLTicker teams={state.teams} systemLogoUrl={state.systemLogoUrl} />
             </div>
         )}
-        {layout === 'STANDARD' && (
-            <div className="min-h-screen w-full relative font-sans overflow-hidden">
-                {status === 'SOLD' && bidder && (
-                    <div className="min-h-screen w-full relative font-sans p-10 flex items-center justify-end animate-slide-in-right">
-                         <div className="w-[420px] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 relative mr-10 mt-20">
-                              <div className="bg-indigo-900 p-4 text-center border-b border-white/10"><h2 className="text-2xl font-black text-white uppercase tracking-wider leading-none">{player.name}</h2><p className="text-indigo-300 text-xs font-bold uppercase tracking-[0.2em] mt-1">{player.category}</p></div>
-                              <div className="h-[360px] w-full bg-gray-800 relative overflow-hidden"><img src={player.photoUrl} className="w-full h-full object-cover object-top" /><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div></div>
-                              <div className="bg-green-600 h-24 flex items-center px-6 relative overflow-visible"><div className="flex flex-col z-10"><div className="flex items-center gap-2 mb-0"><span className="text-green-900/80 font-black text-lg italic uppercase bg-white/20 px-2 rounded leading-none">SOLD</span><span className="text-green-100 text-[10px] font-bold uppercase tracking-widest">To {bidder.name}</span></div><p className="text-6xl font-black text-white drop-shadow-md tracking-tighter leading-none mt-1">{bid.toLocaleString()}</p></div><div className="absolute -top-8 right-6 w-32 h-32 bg-white rounded-full p-2 shadow-2xl border-4 border-green-600 flex items-center justify-center overflow-hidden z-20">{bidder.logoUrl ? <img src={bidder.logoUrl} className="w-full h-full object-contain p-1" /> : <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-gray-400">{bidder.name.charAt(0)}</div>}</div></div>
-                         </div>
-                    </div>
-                )}
-                {status !== 'SOLD' && (
+        {layout === 'STANDARD' && (() => {
+            const isSold = status === 'SOLD';
+            const isUnsold = status === 'UNSOLD';
+            const isSoldOrUnsold = isSold || isUnsold;
+            return (
+                <div className="min-h-screen w-full relative font-sans overflow-hidden">
+                    <style>{`
+                        @keyframes marquee-very-fast {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-33.333%); }
+                        }
+                    `}</style>
                     <div className="absolute bottom-16 w-full px-2 md:px-6 flex items-end justify-between gap-4 animate-slide-up">
-                        <div className="flex-1 flex flex-col items-end mr-2 min-w-0"><div className="w-full bg-gradient-to-r from-blue-900 via-indigo-900 to-indigo-800 text-white py-4 px-6 rounded-l-lg border-l-8 border-cyan-400 shadow-2xl transform skew-x-[-12deg] origin-bottom-right flex items-center justify-end"><div className="transform skew-x-[12deg] text-right truncate w-full"><h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate drop-shadow-md leading-tight">{player?.name}</h1></div></div><div className="flex gap-2 mt-[-4px] mr-8 transform skew-x-[-12deg] z-10"><div className="bg-cyan-500 text-black py-1.5 px-6 rounded-b shadow-lg border-b-2 border-white"><div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.category}</div></div><div className="bg-white text-blue-900 py-1.5 px-6 rounded-b shadow-lg border-b-2 border-cyan-500"><div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.role || player?.speciality || player?.category}</div></div></div></div>
-                        <div className="shrink-0 flex flex-col items-center relative z-20 -mb-4 mx-2"><div className="w-56 h-56 rounded-full border-[6px] border-white bg-slate-200 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative z-10 bg-gradient-to-b from-gray-100 to-gray-300"><img src={player?.photoUrl} alt={player?.name} className="w-full h-full object-cover object-top" />{status === 'UNSOLD' && <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]"><span className="font-black text-3xl uppercase -rotate-12 border-4 px-3 py-1 tracking-wider shadow-xl text-red-500 border-red-500">UNSOLD</span></div>}</div><div className="relative z-30 mt-6"><div className="flex items-stretch shadow-2xl rounded-full overflow-hidden border-4 border-white min-w-[280px] transform hover:scale-105 transition-transform"><div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-center border-r border-gray-700"><span className="text-xs font-bold uppercase tracking-widest text-cyan-400">{bidder ? 'Current Bid' : 'Base Price'}</span></div><div className="bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2 flex items-center justify-center flex-grow"><span className={`text-5xl font-black text-white leading-none tabular-nums drop-shadow-sm ${!bidder ? 'animate-pulse text-cyan-200' : ''}`}>{bid.toLocaleString()}</span></div></div></div></div>
-                        <div className="flex-1 flex flex-col items-start ml-2 relative min-w-0"><div className="w-full bg-gradient-to-l from-blue-900 via-indigo-900 to-indigo-800 text-white py-4 px-6 rounded-r-lg border-r-8 border-cyan-400 shadow-2xl transform skew-x-[12deg] origin-bottom-left flex items-center relative h-[88px] z-20"><div className="transform skew-x-[-12deg] w-full pl-4 pr-32"><h2 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate drop-shadow-md leading-tight text-left">{bidder ? bidder.name : "NO BIDS YET"}</h2></div></div><div className="bg-white text-indigo-900 py-1.5 px-8 rounded-b-lg shadow-lg mt-[-4px] ml-8 transform skew-x-[12deg] border-b-2 border-cyan-500 z-10 min-w-[220px]"><div className="transform skew-x-[-12deg] flex items-center gap-3"><span className="font-bold text-sm uppercase text-gray-500">Balance:</span><span className="font-extrabold text-2xl">{bidder ? bidder.budget.toLocaleString() : "-"}</span></div></div><div className="absolute bottom-6 right-8 z-30"><div className="w-28 h-28 bg-white rounded-full shadow-2xl border-4 border-cyan-400 p-2 flex items-center justify-center transform hover:scale-105 transition-transform overflow-hidden">{bidder?.logoUrl ? <img src={bidder.logoUrl} className="w-full h-full object-contain" /> : <span className="text-4xl font-bold text-gray-300">?</span>}</div></div></div>
+                        {/* Left Box */}
+                        <div className="flex-1 flex flex-col items-end mr-2 min-w-0">
+                            <div className={`w-full text-white py-4 px-6 rounded-l-lg border-l-8 shadow-2xl transform skew-x-[-12deg] origin-bottom-right flex items-center justify-end relative overflow-hidden h-[88px] transition-all duration-300 ${
+                                isSold 
+                                    ? 'bg-gradient-to-r from-violet-950 via-[#3b1180]/90 to-indigo-950 border-amber-400' 
+                                    : isUnsold 
+                                    ? 'bg-gradient-to-r from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500'
+                                    : 'bg-gradient-to-r from-[#171936] via-[#1d2044] to-[#171936] border-cyan-400 border-2 border-white/5'
+                            }`}>
+                                {isSoldOrUnsold ? (
+                                    <div className="absolute inset-0 overflow-hidden flex items-center w-full h-full z-10">
+                                        <div className="flex animate-[marquee-very-fast_4s_linear_infinite] whitespace-nowrap select-none w-max uppercase italic font-black">
+                                            {Array(8).fill(isSold ? "SOLD. " : "UNSOLD. ").map((t, idx) => (
+                                                <span 
+                                                    key={idx} 
+                                                    className="mx-3 text-3xl md:text-4xl tracking-widest text-white"
+                                                    style={{
+                                                        textShadow: isSold 
+                                                            ? '0 0 4px #fff, 0 0 12px #a855f7, 0 0 24px #a855f7, 0 0 32px #c084fc'
+                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #f43f5e, 0 0 32px #fda4af'
+                                                    }}
+                                                >
+                                                    {t}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="transform skew-x-[12deg] text-right truncate w-full z-10">
+                                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight truncate drop-shadow-md leading-tight">{player?.name}</h1>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2 mt-[-4px] mr-8 transform skew-x-[-12deg] z-10">
+                                <div className="bg-cyan-500 text-black py-1.5 px-6 rounded-b shadow-lg border-b-2 border-white">
+                                    <div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.category}</div>
+                                </div>
+                                <div className="bg-white text-blue-900 py-1.5 px-6 rounded-b shadow-lg border-b-2 border-cyan-500">
+                                    <div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.role || player?.speciality || player?.category}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Center Box */}
+                        <div className="shrink-0 flex flex-col items-center relative z-20 -mb-4 mx-2">
+                            <div className="w-56 h-56 rounded-full border-[6px] border-white bg-slate-200 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative z-10 bg-gradient-to-b from-gray-100 to-gray-300">
+                                <img src={player?.photoUrl} alt={player?.name} className="w-full h-full object-cover object-top" />
+                                {isUnsold && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-full">
+                                        <span className="font-black text-3xl uppercase -rotate-12 border-4 px-3 py-1 tracking-wider shadow-xl text-red-500 border-red-500">UNSOLD</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="relative z-30 mt-6">
+                                <div className="flex items-stretch shadow-2xl rounded-full overflow-hidden border-4 border-white min-w-[280px] transform hover:scale-105 transition-transform">
+                                    <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-center border-r border-gray-700">
+                                        <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">{bidder ? 'Current Bid' : 'Base Price'}</span>
+                                    </div>
+                                    <div className="bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2 flex items-center justify-center flex-grow">
+                                        <span className={`text-5xl font-black text-white leading-none tabular-nums drop-shadow-sm ${!bidder ? 'animate-pulse text-cyan-200' : ''}`}>{bid.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Box */}
+                        <div className="flex-1 flex flex-col items-start ml-2 relative min-w-0">
+                            <div className={`w-full text-white py-4 px-6 rounded-r-lg border-r-8 shadow-2xl transform skew-x-[12deg] origin-bottom-left flex items-center relative h-[88px] z-20 transition-all duration-300 ${
+                                isSold 
+                                    ? 'bg-gradient-to-l from-violet-950 via-[#3b1180]/90 to-indigo-950 border-amber-400' 
+                                    : isUnsold 
+                                    ? 'bg-gradient-to-l from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500'
+                                    : 'bg-gradient-to-l from-[#171936] via-[#1d2044] to-[#171936] border-cyan-400 border-2 border-white/5'
+                            }`}>
+                                {isSoldOrUnsold ? (
+                                    <div className="absolute inset-0 overflow-hidden flex items-center w-full h-full z-10">
+                                        <div className="flex animate-[marquee-very-fast_4s_linear_infinite] whitespace-nowrap select-none w-max uppercase italic font-black">
+                                            {Array(8).fill(isSold ? "SOLD. " : "UNSOLD. ").map((t, idx) => (
+                                                <span 
+                                                    key={idx} 
+                                                    className="mx-3 text-3xl md:text-4xl tracking-widest text-white"
+                                                    style={{
+                                                        textShadow: isSold 
+                                                            ? '0 0 4px #fff, 0 0 12px #a855f7, 0 0 24px #a855f7, 0 0 32px #c084fc'
+                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #f43f5e, 0 0 32px #fda4af'
+                                                    }}
+                                                >
+                                                    {t}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="transform skew-x-[-12deg] w-full pl-4 pr-32 z-10">
+                                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight truncate drop-shadow-md leading-tight text-left">{bidder ? bidder.name : "NO BIDS YET"}</h2>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="bg-white text-indigo-900 py-1.5 px-8 rounded-b-lg shadow-lg mt-[-4px] ml-8 transform skew-x-[12deg] border-b-2 border-cyan-500 z-10 min-w-[220px]">
+                                <div className="transform skew-x-[12deg] flex items-center gap-3">
+                                    <span className="font-bold text-sm uppercase text-gray-500">Balance:</span>
+                                    <span className="font-extrabold text-2xl">{bidder ? bidder.budget.toLocaleString() : "-"}</span>
+                                </div>
+                            </div>
+                            {bidder && !isSoldOrUnsold && (
+                                <div className="absolute bottom-6 right-8 z-30">
+                                    <div className="w-28 h-28 bg-white rounded-full shadow-2xl border-4 border-cyan-400 p-2 flex items-center justify-center transform hover:scale-105 transition-transform overflow-hidden font-sans">
+                                        {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-full h-full object-contain" /> : <span className="text-4xl font-bold text-gray-300">?</span>}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                )}
-            </div>
-        )}
+                </div>
+            );
+        })()}
         {layout === 'MINIMAL' && <div className="min-h-screen w-full relative"><div className="absolute bottom-12 left-0 right-0 flex justify-center"><div className="bg-gradient-to-r from-indigo-900 to-blue-900 backdrop-blur-md rounded-full px-6 py-2 flex items-center gap-6 border-2 border-cyan-500 shadow-xl"><div className="flex items-center gap-3"><img src={player?.photoUrl} className="w-12 h-12 rounded-full border-2 border-white object-cover" /><div><h1 className="text-white font-bold text-lg leading-none">{player?.name}</h1><span className="text-xs text-cyan-400 uppercase font-bold">{player?.category}</span></div></div><div className="w-px h-8 bg-white/20"></div><div className="flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-400" /><span className="text-3xl font-black text-white tabular-nums">{bid.toLocaleString()}</span></div>{bidder && (<><div className="w-px h-8 bg-white/20"></div><div className="flex items-center gap-2">{bidder.logoUrl && <img src={bidder.logoUrl} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" />}<span className="text-white font-bold">{bidder.name}</span></div></>)}{status !== 'LIVE' && (<div className={`px-3 py-1 rounded-full font-bold text-xs ${status === 'SOLD' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{status}</div>)}</div></div></div>}
         {layout === 'VERTICAL' && <div className="min-h-screen w-full relative"><div className="absolute top-0 right-0 h-full w-[300px] bg-gradient-to-b from-indigo-900 to-slate-900 border-l-4 border-cyan-500 flex flex-col p-6 shadow-2xl"><div className="bg-white/10 rounded-full p-2 mb-4 flex justify-center mx-auto w-36 h-36 border-4 border-cyan-500 relative"><img src={player?.photoUrl} className="w-full h-full rounded-full object-cover" /></div><h1 className="text-white text-2xl font-black text-center mb-1 leading-tight">{player?.name}</h1><p className="text-cyan-400 text-center text-sm font-bold uppercase mb-6 tracking-widest">{player?.role || player?.speciality || player?.category}</p><div className="bg-white/10 p-4 rounded-xl text-center mb-6 border border-white/20"><p className="text-gray-300 text-xs uppercase mb-1 font-bold">Current Bid</p><p className="text-4xl font-black text-white">{bid.toLocaleString()}</p></div>{bidder ? (<div className="bg-indigo-800 p-4 rounded-xl border border-indigo-600"><p className="text-xs text-gray-300 uppercase mb-2 font-bold">Highest Bidder</p><div className="flex items-center gap-3">{bidder.logoUrl ? <img src={bidder.logoUrl} className="w-10 h-10 rounded-full bg-white p-0.5"/> : <div className="w-10 h-10 bg-gray-600 rounded-full"/>}<p className="font-bold text-white leading-tight">{bidder.name}</p></div></div>) : (<div className="text-center text-gray-500 italic mt-4">Waiting for bids...</div>)}<div className="mt-auto">{status === 'SOLD' && <div className="bg-green-600 text-white text-center py-2 font-black text-xl rounded uppercase animate-pulse shadow-lg">SOLD</div>}{status === 'UNSOLD' && <div className="bg-red-600 text-white text-center py-2 font-black text-xl rounded uppercase shadow-lg">UNSOLD</div>}</div></div></div>}
         
@@ -945,7 +1026,7 @@ const OBSOverlay: React.FC = () => {
 
         {/* Full Bottom-Covering Announcement Overlay (3-second duration) */}
         <AnimatePresence>
-            {activeAlert && activeAlert.show && (
+            {activeAlert && activeAlert.show && layout !== 'STANDARD' && (
                 <motion.div 
                     initial={{ y: 250, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}

@@ -441,37 +441,63 @@ const CuratorPortal: React.FC = () => {
 
                                 {/* Dual Filter list (Available only on Pending Upcoming tab) */}
                                 {activeTab === 'upcoming' && (
-                                    <div className="grid grid-cols-2 gap-2.5">
-                                        <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex flex-col gap-1.5">
                                             <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Role Filter</p>
-                                            <select 
-                                                value={roleFilter} 
-                                                onChange={(e) => setRoleFilter(e.target.value)}
-                                                className={`py-1.5 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border cursor-pointer focus:outline-none ${
-                                                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300' : 'bg-white border-slate-200 text-slate-700'
-                                                }`}
-                                            >
-                                                <option value="ALL">ALL ROLES</option>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <button
+                                                    onClick={() => setRoleFilter('ALL')}
+                                                    className={`py-1 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                                        roleFilter === 'ALL'
+                                                            ? (isDark ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_10px_rgba(37,99,235,0.3)] font-bold' : 'bg-blue-600 border-blue-600 text-white font-bold')
+                                                            : (isDark ? 'bg-zinc-900 border-zinc-800/80 text-zinc-300 hover:text-white hover:border-zinc-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200')
+                                                    }`}
+                                                >
+                                                    ALL
+                                                </button>
                                                 {rolesList.map(r => (
-                                                    <option key={`opt-role-${r}`} value={r}>{r.toUpperCase()}</option>
+                                                    <button
+                                                        key={`btn-role-${r}`}
+                                                        onClick={() => setRoleFilter(r)}
+                                                        className={`py-1 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                                            roleFilter === r
+                                                                ? (isDark ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_10px_rgba(37,99,235,0.3)] font-bold' : 'bg-blue-600 border-blue-600 text-white font-bold')
+                                                                : (isDark ? 'bg-zinc-900 border-zinc-800/80 text-zinc-300 hover:text-white hover:border-zinc-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200')
+                                                        }`}
+                                                    >
+                                                        {r}
+                                                    </button>
                                                 ))}
-                                            </select>
+                                            </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-1">
+                                        <div className="flex flex-col gap-1.5">
                                             <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Category Filter</p>
-                                            <select 
-                                                value={categoryFilter} 
-                                                onChange={(e) => setCategoryFilter(e.target.value)}
-                                                className={`py-1.5 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border cursor-pointer focus:outline-none ${
-                                                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300' : 'bg-white border-slate-200 text-slate-700'
-                                                }`}
-                                            >
-                                                <option value="ALL">ALL CATEGORIES</option>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <button
+                                                    onClick={() => setCategoryFilter('ALL')}
+                                                    className={`py-1 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                                        categoryFilter === 'ALL'
+                                                            ? (isDark ? 'bg-amber-500 border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)] font-black' : 'bg-amber-500 border-amber-500 text-black font-black')
+                                                            : (isDark ? 'bg-zinc-900 border-zinc-800/80 text-zinc-300 hover:text-white hover:border-zinc-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200')
+                                                    }`}
+                                                >
+                                                    ALL
+                                                </button>
                                                 {categoriesList.map(c => (
-                                                    <option key={`opt-cat-${c}`} value={c}>{c.toUpperCase()}</option>
+                                                    <button
+                                                        key={`btn-cat-${c}`}
+                                                        onClick={() => setCategoryFilter(c)}
+                                                        className={`py-1 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                                            categoryFilter === c
+                                                                ? (isDark ? 'bg-amber-500 border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)] font-black' : 'bg-amber-500 border-amber-500 text-black font-black')
+                                                                : (isDark ? 'bg-zinc-900 border-zinc-800/80 text-zinc-300 hover:text-white hover:border-zinc-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200')
+                                                        }`}
+                                                    >
+                                                        {c}
+                                                    </button>
                                                 ))}
-                                            </select>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
