@@ -747,16 +747,17 @@ const LiveAdminPanel: React.FC = () => {
               </div>
               <div className="w-full sm:flex-1">
                 <label className={`block text-[8px] uppercase font-black tracking-[0.2em] mb-1.5 ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>OBS Theme</label>
-                <div className={`flex flex-wrap gap-1 p-1 rounded-xl border ${isDark ? 'bg-zinc-900 border-accent/10' : 'bg-white border-blue-500/10'}`}>
-                  {['STANDARD', 'MINIMAL', 'VERTICAL', 'ADVAYA'].map(l => (
+                <div className={`flex flex-wrap gap-1.5 p-1 rounded-xl border ${isDark ? 'bg-zinc-900 border-accent/10' : 'bg-white border-blue-500/10'}`}>
+                  {['STANDARD', 'EMERALD_GOLD', 'ADVAYA', 'MINIMAL', 'VERTICAL'].map(l => (
                     <button
                       key={l}
                       onClick={() => updateTheme('OBS', l)}
-                      className={`flex-1 px-2 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${state.obsLayout === l
-                          ? 'bg-accent text-primary'
-                          : (isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-400 hover:text-blue-600')}`}
+                      className={`px-2 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all border
+                        ${state.obsLayout === l
+                          ? l === 'STANDARD' ? 'bg-[#2A0A5E] border-[#00E5FF] text-white shadow-lg' : l === 'EMERALD_GOLD' ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg' : 'bg-accent border-accent text-primary'
+                          : (isDark ? 'bg-zinc-900/40 border-transparent text-zinc-500 hover:text-white' : 'bg-white border-gray-150 text-gray-400 hover:text-blue-600')}`}
                     >
-                      {l.slice(0, 4)}
+                      {l === 'STANDARD' ? '💜 Purple' : l === 'EMERALD_GOLD' ? '💚 Green' : l.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
