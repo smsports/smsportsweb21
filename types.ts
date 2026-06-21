@@ -141,7 +141,7 @@ export interface SponsorConfig {
 }
 
 export type ProjectorLayout = 'STANDARD' | 'IPL' | 'MODERN' | 'ADVAYA' | 'NEON' | 'FUTURISTIC';
-export type OBSLayout = 'STANDARD' | 'MINIMAL' | 'VERTICAL' | 'ADVAYA' | 'IPL';
+export type OBSLayout = 'STANDARD' | 'EMERALD_GOLD' | 'MINIMAL' | 'VERTICAL' | 'ADVAYA' | 'IPL';
 
 export type AdminViewType = 'SQUAD' | 'PURSES' | 'UNSOLD' | 'SOLD' | 'TOP_BUY' | 'TOP_5' | 'TRADING' | 'NONE';
 

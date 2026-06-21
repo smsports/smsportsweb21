@@ -759,21 +759,20 @@ const LiveAdminPanel: React.FC = () => {
                           ))}
                       </div>
                   </div>
-                  
-                  <div className="space-y-2">
+                                  <div className="space-y-2">
                       <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">OBS Overlay Theme</span>
                       <div className="flex flex-wrap gap-1.5">
-                          {['STANDARD', 'ADVAYA', 'MINIMAL', 'VERTICAL'].map(l => (
+                          {['STANDARD', 'EMERALD_GOLD', 'ADVAYA', 'MINIMAL', 'VERTICAL'].map(l => (
                               <button
                                 key={l}
                                 onClick={() => updateTheme('OBS', l as OBSLayout)}
                                 className={`px-2 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border
                                     ${state.obsLayout === l 
-                                        ? 'bg-green-600 border-green-400 text-white shadow-lg shadow-green-500/20' 
+                                        ? l === 'STANDARD' ? 'bg-[#2A0A5E] border-[#00E5FF] text-white shadow-lg shadow-[#00E5FF]/20' : l === 'EMERALD_GOLD' ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-green-600 border-green-400 text-white shadow-lg shadow-green-500/20' 
                                         : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'}
                                 `}
                               >
-                                  {l}
+                                  {l.replace('_', ' ')}
                               </button>
                           ))}
                       </div>

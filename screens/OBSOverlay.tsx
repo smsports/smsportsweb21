@@ -184,6 +184,41 @@ const OBSOverlay: React.FC = () => {
   const lastOverlayStatusRef = useRef<'WAITING' | 'LIVE' | 'SOLD' | 'UNSOLD' | 'FINISHED' | null>(null);
   const lastOverlayPlayerIdRef = useRef<string | number | null>(null);
 
+  const [hideBottomOverlay, setHideBottomOverlay] = useState(false);
+  const lastPlayerIdRef = useRef<string | number | null>(null);
+  const lastStatusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+      const currentPlayerId = display.player?.id;
+      const currentStatus = display.status;
+
+      if (!currentPlayerId) {
+          setHideBottomOverlay(false);
+          return;
+      }
+
+      // Reset bottom overlay if player changes
+      if (currentPlayerId !== lastPlayerIdRef.current) {
+          setHideBottomOverlay(false);
+          lastPlayerIdRef.current = currentPlayerId;
+      }
+
+      // Handle transition to SOLD/UNSOLD
+      if (currentStatus !== lastStatusRef.current) {
+          if (currentStatus === 'SOLD' || currentStatus === 'UNSOLD') {
+              setHideBottomOverlay(false); // make sure it's shown at the beginning of the 5s
+              const timer = setTimeout(() => {
+                  setHideBottomOverlay(true);
+              }, 5000);
+              lastStatusRef.current = currentStatus;
+              return () => clearTimeout(timer);
+          } else {
+              setHideBottomOverlay(false);
+          }
+          lastStatusRef.current = currentStatus;
+      }
+  }, [display.status, display.player?.id]);
+
   useEffect(() => {
       if (!display.player) return;
       const currentStatus = display.status;
@@ -767,10 +802,41 @@ const OBSOverlay: React.FC = () => {
                  <IPLTicker teams={state.teams} systemLogoUrl={state.systemLogoUrl} />
             </div>
         )}
-        {layout === 'STANDARD' && (() => {
+        {(layout === 'STANDARD' || layout === 'EMERALD_GOLD') && (() => {
             const isSold = status === 'SOLD';
             const isUnsold = status === 'UNSOLD';
             const isSoldOrUnsold = isSold || isUnsold;
+            const isPurple = layout === 'STANDARD';
+
+            // BASE COLORS CONFIGURATION
+            const normalBg = isPurple ? 'bg-[#2A0A5E]' : 'bg-[#101820]';
+            const accentTextClass = isPurple ? 'text-[#00E5FF]' : 'text-[#00C853]';
+            const accentBgClass = isPurple ? 'bg-[#00E5FF]' : 'bg-[#00C853]';
+
+            // LeftBox styling based on state
+            let leftBoxBgClass = '';
+            if (isSold) {
+                leftBoxBgClass = isPurple
+                    ? 'bg-gradient-to-r from-violet-950 via-[#2A0A5E]/90 to-violet-950 border-[#AEEA00] border-l-8'
+                    : 'bg-gradient-to-r from-emerald-950 via-[#101820]/90 to-emerald-950 border-[#FFD700] border-l-8';
+            } else if (isUnsold) {
+                leftBoxBgClass = 'bg-gradient-to-r from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500 border-l-8';
+            } else {
+                leftBoxBgClass = `${normalBg} border-l-8 ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'} border-t border-b border-r border-white/10`;
+            }
+
+            // RightBox styling based on state
+            let rightBoxBgClass = '';
+            if (isSold) {
+                rightBoxBgClass = isPurple
+                    ? 'bg-gradient-to-l from-violet-950 via-[#2A0A5E]/90 to-violet-950 border-[#AEEA00] border-r-8'
+                    : 'bg-gradient-to-l from-emerald-950 via-[#101820]/90 to-emerald-950 border-[#FFD700] border-r-8';
+            } else if (isUnsold) {
+                rightBoxBgClass = 'bg-gradient-to-l from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500 border-r-8';
+            } else {
+                rightBoxBgClass = `${normalBg} border-r-8 ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'} border-t border-b border-l border-white/10`;
+            }
+
             return (
                 <div className="min-h-screen w-full relative font-sans overflow-hidden">
                     <style>{`
@@ -779,16 +845,96 @@ const OBSOverlay: React.FC = () => {
                             100% { transform: translateX(-33.333%); }
                         }
                     `}</style>
-                    <div className="absolute bottom-16 w-full px-2 md:px-6 flex items-end justify-between gap-4 animate-slide-up">
+
+                    {/* Right-mid Side Static/Fading Card showing sold/unsold details until new player is selected */}
+                    {isSoldOrUnsold && player && (
+                        <div className="absolute right-10 top-1/2 -translate-y-1/2 z-40 animate-slide-in-right">
+                            <div className={`w-[400px] border-4 rounded-[2rem] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.85)] relative transition-all duration-500 ${
+                                isPurple ? 'bg-[#2A0A5E] border-[#00E5FF]' : 'bg-[#101820] border-[#00C853]'
+                            }`}>
+                                {/* Header */}
+                                <div className={`p-4 text-center border-b ${
+                                    isPurple ? 'bg-[#150430] border-[#00E5FF]/20' : 'bg-[#060a0e] border-[#00C853]/20'
+                                }`}>
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-wider leading-none">{player.name}</h2>
+                                    <p className={`text-xs font-black uppercase tracking-[0.2em] mt-1.5 ${
+                                        isPurple ? 'text-[#00E5FF]' : 'text-[#00C853]'
+                                    }`}>{player.category} • {player.role || player.speciality}</p>
+                                </div>
+                                
+                                {/* Photo Container */}
+                                <div className="h-[320px] w-full bg-slate-950 relative overflow-hidden">
+                                    <img src={player.photoUrl} className="w-full h-full object-cover object-top" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-transparent"></div>
+                                    
+                                    {isUnsold && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[1.5px]">
+                                            <div className="bg-red-600 text-white font-black text-4xl uppercase px-6 py-2 border-4 border-white shadow-2xl skew-x-[-10deg] animate-pulse">
+                                                UNSOLD
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Bottom detail bar */}
+                                {isSold && bidder ? (
+                                    <div className={`h-24 flex items-center px-6 relative overflow-visible ${
+                                        isPurple ? 'bg-gradient-to-r from-[#AEEA00] to-[#00E5FF]' : 'bg-gradient-to-r from-[#FFD700] to-[#00C853]'
+                                    }`}>
+                                        <div className="flex flex-col z-10 text-black">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="bg-black text-white font-black text-[10px] italic uppercase px-2 py-0.5 rounded leading-none shadow">
+                                                    SOLD
+                                                </span>
+                                                <span className="font-extrabold text-[11px] uppercase tracking-wider">
+                                                    To {bidder.name}
+                                                </span>
+                                            </div>
+                                            <p className="text-5xl font-black tracking-tighter leading-none mt-1">
+                                                ₹ {bid.toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div className={`absolute -top-8 right-6 w-24 h-24 bg-white rounded-2xl p-1.5 shadow-2xl border-4 ${
+                                            isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'
+                                        } flex items-center justify-center overflow-hidden z-20`}>
+                                            {bidder.logoUrl ? (
+                                                <img src={bidder.logoUrl} className="w-full h-full object-contain" />
+                                            ) : (
+                                                <div className="w-full h-full bg-slate-800 flex items-center justify-center font-black text-2xl text-white">
+                                                    {bidder.name.charAt(0)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-red-600 h-24 flex items-center justify-between px-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-red-200 text-xs font-black uppercase tracking-widest leading-none">Status</span>
+                                            <span className="text-white text-3xl font-black uppercase tracking-wider leading-none mt-1">UNSOLD</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-red-200 text-xs font-black uppercase tracking-widest leading-none">Base Price</span>
+                                            <span className="text-white text-2xl font-black leading-none mt-1 block">₹ {bid.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bottom overlay designed strictly to have a smooth transition/fade downwards on hideBottomOverlay */}
+                    <motion.div 
+                        initial={{ y: 0, opacity: 1 }}
+                        animate={{ 
+                            y: hideBottomOverlay ? 220 : 0, 
+                            opacity: hideBottomOverlay ? 0 : 1 
+                        }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 22 }}
+                        className="fixed bottom-16 left-0 right-0 w-full px-2 md:px-6 flex items-end justify-between gap-4 z-30"
+                    >
                         {/* Left Box */}
                         <div className="flex-1 flex flex-col items-end mr-2 min-w-0">
-                            <div className={`w-full text-white py-4 px-6 rounded-l-lg border-l-8 shadow-2xl transform skew-x-[-12deg] origin-bottom-right flex items-center justify-end relative overflow-hidden h-[88px] transition-all duration-300 ${
-                                isSold 
-                                    ? 'bg-gradient-to-r from-violet-950 via-[#3b1180]/90 to-indigo-950 border-amber-400' 
-                                    : isUnsold 
-                                    ? 'bg-gradient-to-r from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500'
-                                    : 'bg-gradient-to-r from-[#171936] via-[#1d2044] to-[#171936] border-cyan-400 border-2 border-white/5'
-                            }`}>
+                            <div className={`w-full text-white py-4 px-6 rounded-l-lg shadow-2xl transform skew-x-[-12deg] origin-bottom-right flex items-center justify-end relative overflow-hidden h-[88px] transition-all duration-300 ${leftBoxBgClass}`}>
                                 {isSoldOrUnsold ? (
                                     <div className="absolute inset-0 overflow-hidden flex items-center w-full h-full z-10">
                                         <div className="flex animate-[marquee-very-fast_4s_linear_infinite] whitespace-nowrap select-none w-max uppercase italic font-black">
@@ -798,8 +944,8 @@ const OBSOverlay: React.FC = () => {
                                                     className="mx-3 text-3xl md:text-4xl tracking-widest text-white"
                                                     style={{
                                                         textShadow: isSold 
-                                                            ? '0 0 4px #fff, 0 0 12px #a855f7, 0 0 24px #a855f7, 0 0 32px #c084fc'
-                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #f43f5e, 0 0 32px #fda4af'
+                                                            ? (isPurple ? '0 0 4px #fff, 0 0 12px #AEEA00, 0 0 24px #00E5FF' : '0 0 4px #fff, 0 0 12px #FFD700, 0 0 24px #00C853')
+                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #ef4444'
                                                     }}
                                                 >
                                                     {t}
@@ -814,10 +960,10 @@ const OBSOverlay: React.FC = () => {
                                 )}
                             </div>
                             <div className="flex gap-2 mt-[-4px] mr-8 transform skew-x-[-12deg] z-10">
-                                <div className="bg-cyan-500 text-black py-1.5 px-6 rounded-b shadow-lg border-b-2 border-white">
+                                <div className={`${accentBgClass} ${isPurple ? 'text-black' : 'text-white'} py-1.5 px-6 rounded-b shadow-lg border-b-2 border-white`}>
                                     <div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.category}</div>
                                 </div>
-                                <div className="bg-white text-blue-900 py-1.5 px-6 rounded-b shadow-lg border-b-2 border-cyan-500">
+                                <div className={`bg-white ${isPurple ? 'text-[#2A0A5E]' : 'text-[#101820]'} py-1.5 px-6 rounded-b shadow-lg border-b-2 ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'}`}>
                                     <div className="transform skew-x-[12deg] text-center font-extrabold text-sm uppercase tracking-widest">{player?.role || player?.speciality || player?.category}</div>
                                 </div>
                             </div>
@@ -825,7 +971,7 @@ const OBSOverlay: React.FC = () => {
 
                         {/* Center Box */}
                         <div className="shrink-0 flex flex-col items-center relative z-20 -mb-4 mx-2">
-                            <div className="w-56 h-56 rounded-full border-[6px] border-white bg-slate-200 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative z-10 bg-gradient-to-b from-gray-100 to-gray-300">
+                            <div className={`w-56 h-56 rounded-full border-[6px] ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'} ${isPurple ? 'bg-[#2A0A5E]' : 'bg-[#101820]'} shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative z-10`}>
                                 <img src={player?.photoUrl} alt={player?.name} className="w-full h-full object-cover object-top" />
                                 {isUnsold && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-full">
@@ -835,10 +981,10 @@ const OBSOverlay: React.FC = () => {
                             </div>
                             <div className="relative z-30 mt-6">
                                 <div className="flex items-stretch shadow-2xl rounded-full overflow-hidden border-4 border-white min-w-[280px] transform hover:scale-105 transition-transform">
-                                    <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-center border-r border-gray-700">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">{bidder ? 'Current Bid' : 'Base Price'}</span>
+                                    <div className={`${normalBg} text-white px-5 py-3 flex items-center justify-center border-r border-gray-700`}>
+                                        <span className={`text-xs font-bold uppercase tracking-widest ${accentTextClass}`}>{bidder ? 'Current Bid' : 'Base Price'}</span>
                                     </div>
-                                    <div className="bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2 flex items-center justify-center flex-grow">
+                                    <div className={`bg-gradient-to-r ${isPurple ? 'from-[#00E5FF] to-blue-700' : 'from-[#00C853] to-emerald-800'} px-6 py-2 flex items-center justify-center flex-grow`}>
                                         <span className={`text-5xl font-black text-white leading-none tabular-nums drop-shadow-sm ${!bidder ? 'animate-pulse text-cyan-200' : ''}`}>{bid.toLocaleString()}</span>
                                     </div>
                                 </div>
@@ -847,13 +993,7 @@ const OBSOverlay: React.FC = () => {
 
                         {/* Right Box */}
                         <div className="flex-1 flex flex-col items-start ml-2 relative min-w-0">
-                            <div className={`w-full text-white py-4 px-6 rounded-r-lg border-r-8 shadow-2xl transform skew-x-[12deg] origin-bottom-left flex items-center relative h-[88px] z-20 transition-all duration-300 ${
-                                isSold 
-                                    ? 'bg-gradient-to-l from-violet-950 via-[#3b1180]/90 to-indigo-950 border-amber-400' 
-                                    : isUnsold 
-                                    ? 'bg-gradient-to-l from-red-950 via-[#7f1d1d]/90 to-red-950 border-red-500'
-                                    : 'bg-gradient-to-l from-[#171936] via-[#1d2044] to-[#171936] border-cyan-400 border-2 border-white/5'
-                            }`}>
+                            <div className={`w-full text-white py-4 px-6 rounded-r-lg shadow-2xl transform skew-x-[12deg] origin-bottom-left flex items-center relative h-[88px] z-20 transition-all duration-300 ${rightBoxBgClass}`}>
                                 {isSoldOrUnsold ? (
                                     <div className="absolute inset-0 overflow-hidden flex items-center w-full h-full z-10">
                                         <div className="flex animate-[marquee-very-fast_4s_linear_infinite] whitespace-nowrap select-none w-max uppercase italic font-black">
@@ -863,8 +1003,8 @@ const OBSOverlay: React.FC = () => {
                                                     className="mx-3 text-3xl md:text-4xl tracking-widest text-white"
                                                     style={{
                                                         textShadow: isSold 
-                                                            ? '0 0 4px #fff, 0 0 12px #a855f7, 0 0 24px #a855f7, 0 0 32px #c084fc'
-                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #f43f5e, 0 0 32px #fda4af'
+                                                            ? (isPurple ? '0 0 4px #fff, 0 0 12px #AEEA00, 0 0 24px #00E5FF' : '0 0 4px #fff, 0 0 12px #FFD700, 0 0 24px #00C853')
+                                                            : '0 0 4px #fff, 0 0 12px #ef4444, 0 0 24px #ef4444'
                                                     }}
                                                 >
                                                     {t}
@@ -878,7 +1018,7 @@ const OBSOverlay: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="bg-white text-indigo-900 py-1.5 px-8 rounded-b-lg shadow-lg mt-[-4px] ml-8 transform skew-x-[12deg] border-b-2 border-cyan-500 z-10 min-w-[220px]">
+                            <div className={`bg-white ${isPurple ? 'text-[#2A0A5E]' : 'text-[#101820]'} py-1.5 px-8 rounded-b-lg shadow-lg mt-[-4px] ml-8 transform skew-x-[12deg] border-b-2 ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'} z-10 min-w-[220px]`}>
                                 <div className="transform skew-x-[12deg] flex items-center gap-3">
                                     <span className="font-bold text-sm uppercase text-gray-500">Balance:</span>
                                     <span className="font-extrabold text-2xl">{bidder ? bidder.budget.toLocaleString() : "-"}</span>
@@ -886,13 +1026,13 @@ const OBSOverlay: React.FC = () => {
                             </div>
                             {bidder && !isSoldOrUnsold && (
                                 <div className="absolute bottom-6 right-8 z-30">
-                                    <div className="w-28 h-28 bg-white rounded-full shadow-2xl border-4 border-cyan-400 p-2 flex items-center justify-center transform hover:scale-105 transition-transform overflow-hidden font-sans">
+                                    <div className={`w-28 h-28 bg-white rounded-full shadow-2xl border-4 ${isPurple ? 'border-[#00E5FF]' : 'border-[#00C853]'} p-2 flex items-center justify-center transform hover:scale-105 transition-transform overflow-hidden font-sans`}>
                                         {bidder.logoUrl ? <img src={bidder.logoUrl} className="w-full h-full object-contain" /> : <span className="text-4xl font-bold text-gray-300">?</span>}
                                     </div>
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             );
         })()}
@@ -1026,7 +1166,7 @@ const OBSOverlay: React.FC = () => {
 
         {/* Full Bottom-Covering Announcement Overlay (3-second duration) */}
         <AnimatePresence>
-            {activeAlert && activeAlert.show && layout !== 'STANDARD' && (
+            {activeAlert && activeAlert.show && layout !== 'STANDARD' && layout !== 'EMERALD_GOLD' && (
                 <motion.div 
                     initial={{ y: 250, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
