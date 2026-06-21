@@ -772,7 +772,7 @@ const LiveAdminPanel: React.FC = () => {
                                         : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'}
                                 `}
                               >
-                                  {l.replace('_', ' ')}
+                                  {l === 'STANDARD' ? '💜 Purple (Standard)' : l === 'EMERALD_GOLD' ? '💚 Green (Emerald Gold)' : l.replace('_', ' ')}
                               </button>
                           ))}
                       </div>
