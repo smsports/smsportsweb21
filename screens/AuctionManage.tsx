@@ -123,6 +123,17 @@ const DEFAULT_REG_CONFIG: RegistrationConfig = {
     }
 };
 
+const TabLoader: React.FC<{ message: string; isDark: boolean }> = ({ message, isDark }) => (
+    <div className={`flex flex-col items-center justify-center py-20 px-6 rounded-[2.5rem] border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-sm'} animate-pulse`}>
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className={`w-10 h-10 animate-spin ${isDark ? 'text-accent' : 'text-blue-600'}`} />
+            <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-center ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                {message}
+            </p>
+        </div>
+    </div>
+);
+
 const AuctionManage: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -142,6 +153,16 @@ const AuctionManage: React.FC = () => {
     const [waitlist, setWaitlist] = useState<any[]>([]);
     const [captainCodes, setCaptainCodes] = useState<CaptainCode[]>([]);
     const [registrationCodes, setRegistrationCodes] = useState<RegistrationCode[]>([]);
+    
+    const [teamsLoaded, setTeamsLoaded] = useState(false);
+    const [playersLoaded, setPlayersLoaded] = useState(false);
+    const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+    const [rolesLoaded, setRolesLoaded] = useState(false);
+    const [sponsorsLoaded, setSponsorsLoaded] = useState(false);
+    const [registrationsLoaded, setRegistrationsLoaded] = useState(false);
+    const [waitlistLoaded, setWaitlistLoaded] = useState(false);
+    const [captainCodesLoaded, setCaptainCodesLoaded] = useState(false);
+    const [registrationCodesLoaded, setRegistrationCodesLoaded] = useState(false);
     
     const [showRegCodeModal, setShowRegCodeModal] = useState(false);
     const [editRegCode, setEditRegCode] = useState<any>({ code: '', assignedTo: 'General Code', usageLimit: 1, isActive: true });
@@ -427,15 +448,42 @@ const AuctionManage: React.FC = () => {
             setLoading(false);
         });
 
-        const unsubTeams = db.collection('auctions').doc(id).collection('teams').onSnapshot(s => setTeams(s.docs.map(d => ({id: d.id, ...d.data()}) as Team)));
-        const unsubPlayers = db.collection('auctions').doc(id).collection('players').onSnapshot(s => setPlayers(s.docs.map(d => ({id: d.id, ...d.data()}) as Player)));
-        const unsubCats = db.collection('auctions').doc(id).collection('categories').onSnapshot(s => setCategories(s.docs.map(d => ({id: d.id, ...d.data()}) as AuctionCategory)));
-        const unsubRoles = db.collection('auctions').doc(id).collection('roles').onSnapshot(s => setRoles(s.docs.map(d => ({id: d.id, ...d.data()}) as PlayerRole)));
-        const unsubSponsors = db.collection('auctions').doc(id).collection('sponsors').onSnapshot(s => setSponsors(s.docs.map(d => ({id: d.id, ...d.data()}) as Sponsor)));
-        const unsubRegs = db.collection('auctions').doc(id).collection('registrations').onSnapshot(s => setRegistrations(s.docs.map(d => ({id: d.id, ...d.data()}) as RegisteredPlayer)));
-        const unsubWaitlist = db.collection('auctions').doc(id).collection('waitlist').onSnapshot(s => setWaitlist(s.docs.map(d => ({id: d.id, ...d.data()}))));
-        const unsubCodes = db.collection('auctions').doc(id).collection('captainCodes').onSnapshot(s => setCaptainCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as CaptainCode)));
-        const unsubRegCodes = db.collection('auctions').doc(id).collection('registrationCodes').onSnapshot(s => setRegistrationCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as RegistrationCode)));
+        const unsubTeams = db.collection('auctions').doc(id).collection('teams').onSnapshot(s => {
+            setTeams(s.docs.map(d => ({id: d.id, ...d.data()}) as Team));
+            setTeamsLoaded(true);
+        });
+        const unsubPlayers = db.collection('auctions').doc(id).collection('players').onSnapshot(s => {
+            setPlayers(s.docs.map(d => ({id: d.id, ...d.data()}) as Player));
+            setPlayersLoaded(true);
+        });
+        const unsubCats = db.collection('auctions').doc(id).collection('categories').onSnapshot(s => {
+            setCategories(s.docs.map(d => ({id: d.id, ...d.data()}) as AuctionCategory));
+            setCategoriesLoaded(true);
+        });
+        const unsubRoles = db.collection('auctions').doc(id).collection('roles').onSnapshot(s => {
+            setRoles(s.docs.map(d => ({id: d.id, ...d.data()}) as PlayerRole));
+            setRolesLoaded(true);
+        });
+        const unsubSponsors = db.collection('auctions').doc(id).collection('sponsors').onSnapshot(s => {
+            setSponsors(s.docs.map(d => ({id: d.id, ...d.data()}) as Sponsor));
+            setSponsorsLoaded(true);
+        });
+        const unsubRegs = db.collection('auctions').doc(id).collection('registrations').onSnapshot(s => {
+            setRegistrations(s.docs.map(d => ({id: d.id, ...d.data()}) as RegisteredPlayer));
+            setRegistrationsLoaded(true);
+        });
+        const unsubWaitlist = db.collection('auctions').doc(id).collection('waitlist').onSnapshot(s => {
+            setWaitlist(s.docs.map(d => ({id: d.id, ...d.data()})));
+            setWaitlistLoaded(true);
+        });
+        const unsubCodes = db.collection('auctions').doc(id).collection('captainCodes').onSnapshot(s => {
+            setCaptainCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as CaptainCode));
+            setCaptainCodesLoaded(true);
+        });
+        const unsubRegCodes = db.collection('auctions').doc(id).collection('registrationCodes').onSnapshot(s => {
+            setRegistrationCodes(s.docs.map(d => ({id: d.id, ...d.data()}) as RegistrationCode));
+            setRegistrationCodesLoaded(true);
+        });
 
         const unsubBranding = db.collection('appConfig').doc('globalSettings').onSnapshot(doc => {
             if (doc.exists) {
@@ -1004,14 +1052,16 @@ const AuctionManage: React.FC = () => {
                 // Determine grid columns based on playersPerPage
                 let gridCols = 1;
                 let gridRows = '1fr';
-                let cardHeight = '100%';
+                let cardHeight = '235mm';
                 
-                if (playersPerPage === 1) { gridCols = 1; gridRows = '1fr'; cardHeight = '100%'; }
-                else if (playersPerPage === 2) { gridCols = 1; gridRows = 'repeat(2, 1fr)'; cardHeight = '100%'; }
-                else if (playersPerPage === 4) { gridCols = 2; gridRows = 'repeat(2, 1fr)'; cardHeight = '100%'; }
-                else if (playersPerPage === 6) { gridCols = 2; gridRows = 'repeat(3, 1fr)'; cardHeight = '100%'; }
-                else if (playersPerPage === 9) { gridCols = 3; gridRows = 'repeat(3, 1fr)'; cardHeight = '100%'; }
+                if (playersPerPage === 1) { gridCols = 1; gridRows = '1fr'; cardHeight = '235mm'; }
+                else if (playersPerPage === 2) { gridCols = 1; gridRows = 'repeat(2, 1fr)'; cardHeight = '116mm'; }
+                else if (playersPerPage === 4) { gridCols = 2; gridRows = 'repeat(2, 1fr)'; cardHeight = '116mm'; }
+                else if (playersPerPage === 6) { gridCols = 2; gridRows = 'repeat(3, 1fr)'; cardHeight = '76mm'; }
+                else if (playersPerPage === 9) { gridCols = 3; gridRows = 'repeat(3, 1fr)'; cardHeight = '76mm'; }
                 else if (playersPerPage === 'LIST') { gridCols = 1; gridRows = 'none'; cardHeight = 'auto'; }
+
+                const isSinglePage = playersPerPage === 1;
 
                 // Render page content
                 pdfContainer.innerHTML = `
@@ -1053,7 +1103,8 @@ const AuctionManage: React.FC = () => {
 
                         <!-- Players Grid -->
                         <div style="
-                            flex: 1;
+                            height: 238mm;
+                            max-height: 238mm;
                             display: ${playersPerPage === 'LIST' ? 'flex' : 'grid'};
                             ${playersPerPage === 'LIST' ? 'flex-direction: column;' : ''}
                             grid-template-columns: repeat(${gridCols}, 1fr);
@@ -1062,6 +1113,7 @@ const AuctionManage: React.FC = () => {
                             align-content: start;
                             min-height: 0;
                             box-sizing: border-box;
+                            overflow: hidden;
                         ">
                             ${pageRegs.map((reg, idx) => {
                                 const currentCat = playerCategoryMap[reg.id] || 'Uncategorized';
@@ -1098,8 +1150,12 @@ const AuctionManage: React.FC = () => {
                                     ">
                                         <div style="font-size: 10pt; font-weight: 900; width: 10mm; color: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#3b82f6'};">#${playerNum}</div>
                                         ${selectedFields.includes('profilePic') ? `
-                                            <div style="width: 10mm; height: 10mm; border-radius: 1mm; overflow: hidden; flex-shrink: 0;">
-                                                <img src="${reg.profilePic}" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: cover;" />
+                                            <div style="width: 10mm; height: 10mm; border-radius: 1mm; overflow: hidden; flex-shrink: 0; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                                ${reg.profilePic ? `
+                                                    <img src="${reg.profilePic}" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: cover;" />
+                                                ` : `
+                                                    <span style="font-size: 6pt; font-weight: bold; color: #94a3b8; font-family: sans-serif;">${reg.fullName ? reg.fullName.charAt(0).toUpperCase() : '?'}</span>
+                                                `}
                                             </div>
                                         ` : ''}
                                         <div style="flex: 1; min-width: 0;">
@@ -1124,53 +1180,81 @@ const AuctionManage: React.FC = () => {
                                 } else {
                                     itemHtml = `
                                     <div style="
-                                        background: ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.03)' : '#f9fafb'};
-                                        border: 2px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.15)' : '#e2e8f0'};
-                                        border-radius: ${isSingle ? '10mm' : '3mm'};
-                                        padding: ${isSingle ? '12mm' : isDense ? '2mm' : '5mm'};
+                                        background: ${pdfTheme === 'ADVAYA' ? '#0f172a' : '#ffffff'};
+                                        border: 2px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.2)' : '#e2e8f0'};
+                                        border-radius: ${isSingle ? '10mm' : '3.5mm'};
+                                        padding: ${isSingle ? '8mm 10mm' : isDense ? '3mm' : '5.5mm'};
                                         display: flex;
                                         flex-direction: column;
-                                        gap: ${isSingle ? '8mm' : isDense ? '1mm' : '2.5mm'};
+                                        justify-content: space-between;
                                         position: relative;
                                         overflow: hidden;
                                         height: ${cardHeight};
                                         box-sizing: border-box;
-                                        ${isSingle ? 'justify-content: center;' : ''}
+                                        box-shadow: ${pdfTheme === 'ADVAYA' ? 'none' : '0 4px 6px -1px rgb(0 0 0 / 0.05)'};
                                     ">
                                         ${selectedFields.includes('playerNumber') ? `
-                                            <div style="position: absolute; top: 0; right: 0; padding: ${isSingle ? '4mm 12mm' : '1mm 3mm'}; background: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#3b82f6'}; color: ${pdfTheme === 'ADVAYA' ? '#000000' : '#ffffff'}; font-size: ${isSingle ? '24pt' : isDense ? '8pt' : '11pt'}; font-weight: 900; border-bottom-left-radius: 3mm; z-index: 5;">
+                                            <div style="position: absolute; top: 0; right: 0; padding: ${isSingle ? '4mm 12mm' : '1.5mm 4mm'}; background: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#2563eb'}; color: ${pdfTheme === 'ADVAYA' ? '#000000' : '#ffffff'}; font-size: ${isSingle ? '24pt' : isDense ? '8pt' : '10pt'}; font-weight: 900; border-bottom-left-radius: 3mm; z-index: 5; font-family: monospace;">
                                                 #${playerNum}
                                             </div>
                                         ` : ''}
-                                        <div style="display: flex; gap: ${isSingle ? '12mm' : '4mm'}; align-items: ${isSingle ? 'center' : 'start'};">
+                                        <div style="display: flex; gap: ${isSingle ? '12mm' : '4mm'}; align-items: start;">
                                             ${selectedFields.includes('profilePic') ? `
-                                                <div style="width: ${isSingle ? '70mm' : isDense ? '18mm' : '30mm'}; height: ${isSingle ? '85mm' : isDense ? '22mm' : '38mm'}; border-radius: ${isSingle ? '8mm' : '2mm'}; overflow: hidden; border: ${isSingle ? '6px' : '2px'} solid ${pdfTheme === 'ADVAYA' ? '#fbbf2444' : '#cbd5e1'}; flex-shrink: 0;">
-                                                    <img src="${reg.profilePic}" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: cover;" />
+                                                <div style="width: ${isSingle ? '68mm' : isDense ? '18mm' : '30mm'}; height: ${isSingle ? '80mm' : isDense ? '22mm' : '38mm'}; border-radius: ${isSingle ? '8mm' : '2.5mm'}; overflow: hidden; border: ${isSingle ? '6px' : '2px'} solid ${pdfTheme === 'ADVAYA' ? '#fbbf2444' : '#f1f5f9'}; flex-shrink: 0; background: ${pdfTheme === 'ADVAYA' ? '#1e293b' : '#f1f5f9'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                                    ${reg.profilePic ? `
+                                                        <img src="${reg.profilePic}" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: cover;" />
+                                                    ` : `
+                                                        <span style="font-size: ${isSingle ? '48pt' : '18pt'}; font-weight: 900; color: #94a3b8; font-family: sans-serif;">${reg.fullName ? reg.fullName.charAt(0).toUpperCase() : '?'}</span>
+                                                    `}
                                                 </div>
                                             ` : ''}
-                                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: ${isSingle ? '6mm' : '1.5mm'}; overflow: hidden;">
-                                                ${selectedFields.includes('fullName') ? `<h3 style="margin: 0; font-size: ${isSingle ? '36pt' : isDense ? '9pt' : '14pt'}; font-weight: 900; text-transform: uppercase; line-height: 1.1; color: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#0f172a'}; word-break: break-all; margin-bottom: 2px; padding: 1mm 0;">${reg.fullName}</h3>` : ''}
+                                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                                                ${selectedFields.includes('fullName') ? `
+                                                    <h3 style="margin: 0 0 1.5mm 0; font-size: ${isSingle ? '32pt' : isDense ? '8.5pt' : '11.5pt'}; font-weight: 900; text-transform: uppercase; line-height: 1.25; color: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#0f172a'}; word-wrap: break-word; overflow-wrap: break-word; word-break: normal; letter-spacing: -0.2px;">
+                                                        ${reg.fullName}
+                                                    </h3>
+                                                ` : ''}
                                                 ${selectedFields.includes('playerType') ? `
-                                                    <div style="display: inline-block; width: fit-content; padding: ${isSingle ? '3mm 8mm' : '0.5mm 2mm'}; background: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#3b82f6'}; color: ${pdfTheme === 'ADVAYA' ? '#000000' : '#ffffff'}; border-radius: ${isSingle ? '4mm' : '1mm'}; font-size: ${isSingle ? '18pt' : isDense ? '6pt' : '8pt'}; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;">
+                                                    <div style="font-size: ${isSingle ? '18pt' : isDense ? '6.5pt' : '8.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? '#e2e8f0' : '#2563eb'}; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 2mm;">
                                                         ${reg.playerType}
-                                                        ${exportCategorizedPDF ? `<span style="font-size: 0.8em; opacity: 0.8; margin-left: 2mm;">(${currentCat})</span>` : ''}
+                                                        ${exportCategorizedPDF ? `<span style="font-size: 0.85em; opacity: 0.7; margin-left: 2mm; font-weight: 600;">(${currentCat})</span>` : ''}
                                                     </div>
                                                 ` : ''}
                                                 
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: ${isSingle ? '10mm' : '1.5mm'}; margin-top: ${isSingle ? '10mm' : isDense ? '0.5mm' : '2mm'};">
-                                                    ${selectedFields.includes('mobile') ? `<div><p style="margin: 0; font-size: ${isSingle ? '12pt' : '3.5pt'}; font-weight: 900; opacity: 0.6; text-transform: uppercase;">Mobile</p><p style="margin: 0; font-size: ${isSingle ? '20pt' : isDense ? '6.5pt' : '9pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'};">${reg.mobile}</p></div>` : ''}
-                                                    ${selectedFields.includes('dob') ? `<div><p style="margin: 0; font-size: ${isSingle ? '12pt' : '3.5pt'}; font-weight: 900; opacity: 0.6; text-transform: uppercase;">DOB</p><p style="margin: 0; font-size: ${isSingle ? '20pt' : isDense ? '6.5pt' : '9pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'};">${reg.dob}</p></div>` : ''}
-                                                    ${selectedFields.includes('gender') ? `<div><p style="margin: 0; font-size: ${isSingle ? '12pt' : '3.5pt'}; font-weight: 900; opacity: 0.6; text-transform: uppercase;">Gender</p><p style="margin: 0; font-size: ${isSingle ? '20pt' : isDense ? '6.5pt' : '9pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'};">${reg.gender}</p></div>` : ''}
-                                                    ${selectedFields.includes('status') ? `<div><p style="margin: 0; font-size: ${isSingle ? '12pt' : '3.5pt'}; font-weight: 900; opacity: 0.6; text-transform: uppercase;">Status</p><p style="margin: 0; font-size: ${isSingle ? '20pt' : isDense ? '6.5pt' : '9pt'}; font-weight: 900; color: ${reg.status === 'APPROVED' ? '#10b981' : '#f59e0b'};">${reg.status}</p></div>` : ''}
+                                                <div style="display: flex; flex-wrap: wrap; gap: ${isSingle ? '5mm 8mm' : '2mm 3mm'}; margin-top: ${isSingle ? '6mm' : '1.5mm'}; width: 100%; box-sizing: border-box;">
+                                                    ${selectedFields.includes('mobile') ? `
+                                                        <div style="width: calc(50% - ${isSingle ? '4mm' : '1.5mm'}); min-width: 0; box-sizing: border-box; position: relative; z-index: 10;">
+                                                            <p style="margin: 0; font-size: ${isSingle ? '10pt' : '6.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? 'rgba(255,255,255,0.45)' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">Mobile</p>
+                                                            <p style="margin: 1mm 0 0 0; font-size: ${isSingle ? '18pt' : isDense ? '7.5pt' : '9.5pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'}; line-height: 1.3; overflow: visible; display: block; word-wrap: break-word;">${reg.mobile || '-'}</p>
+                                                        </div>
+                                                    ` : ''}
+                                                    ${selectedFields.includes('dob') ? `
+                                                        <div style="width: calc(50% - ${isSingle ? '4mm' : '1.5mm'}); min-width: 0; box-sizing: border-box; position: relative; z-index: 10;">
+                                                            <p style="margin: 0; font-size: ${isSingle ? '10pt' : '6.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? 'rgba(255,255,255,0.45)' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">DOB</p>
+                                                            <p style="margin: 1mm 0 0 0; font-size: ${isSingle ? '18pt' : isDense ? '7.5pt' : '9.5pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'}; line-height: 1.3; overflow: visible; display: block; word-wrap: break-word;">${reg.dob || '-'}</p>
+                                                        </div>
+                                                    ` : ''}
+                                                    ${selectedFields.includes('gender') ? `
+                                                        <div style="width: calc(50% - ${isSingle ? '4mm' : '1.5mm'}); min-width: 0; box-sizing: border-box; position: relative; z-index: 10;">
+                                                            <p style="margin: 0; font-size: ${isSingle ? '10pt' : '6.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? 'rgba(255,255,255,0.45)' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">Gender</p>
+                                                            <p style="margin: 1mm 0 0 0; font-size: ${isSingle ? '18pt' : isDense ? '7.5pt' : '9.5pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#334155'}; line-height: 1.3; overflow: visible; display: block; word-wrap: break-word;">${reg.gender || '-'}</p>
+                                                        </div>
+                                                    ` : ''}
+                                                    ${selectedFields.includes('status') ? `
+                                                        <div style="width: calc(50% - ${isSingle ? '4mm' : '1.5mm'}); min-width: 0; box-sizing: border-box; position: relative; z-index: 10;">
+                                                            <p style="margin: 0; font-size: ${isSingle ? '10pt' : '6.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? 'rgba(255,255,255,0.45)' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">Status</p>
+                                                            <p style="margin: 1mm 0 0 0; font-size: ${isSingle ? '18pt' : isDense ? '7.5pt' : '9.5pt'}; font-weight: 900; color: ${reg.status === 'APPROVED' ? '#10b981' : '#f59e0b'}; line-height: 1.3; overflow: visible; display: block; word-wrap: break-word;">${reg.status || '-'}</p>
+                                                        </div>
+                                                    ` : ''}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div style="display: grid; grid-template-columns: ${isSingle ? '1fr 1fr 1fr' : '1fr 1fr'}; gap: ${isSingle ? '6mm' : '1.5mm'}; margin-top: auto;">
+                                        <div style="display: flex; flex-wrap: wrap; gap: ${isSingle ? '6mm 8mm' : '3mm 4mm'}; padding-top: ${isSingle ? '8mm' : '3mm'}; border-top: 1.5px dashed ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.2)' : '#cbd5e1'}; margin-top: auto; width: 100%; box-sizing: border-box;">
                                             ${extraFieldsToDisplay.slice(0, 8).map(field => `
-                                                <div style="background: ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.06)' : '#ffffff'}; padding: ${isSingle ? '6mm' : '1.5mm'}; border-radius: ${isSingle ? '5mm' : '1.5mm'}; border: 1px solid ${pdfTheme === 'ADVAYA' ? 'rgba(251,191,36,0.1)' : '#e2e8f0'}; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-                                                    <p style="margin: 0; font-size: ${isSingle ? '10pt' : '4pt'}; font-weight: 900; opacity: 0.7; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${field.label}</p>
-                                                    <p style="margin: 0; font-size: ${isSingle ? '16pt' : isDense ? '6.5pt' : '8pt'}; font-weight: 700; word-break: break-all; line-height: 1.1; color: ${pdfTheme === 'ADVAYA' ? '#ffffff' : '#1e293b'};">${field.value || '-'}</p>
+                                                <div style="width: calc(33.333% - ${isSingle ? '6mm' : '3mm'}); min-width: 0; box-sizing: border-box; position: relative; z-index: 10; display: flex; flex-direction: column;">
+                                                    <p style="margin: 0; font-size: ${isSingle ? '10pt' : '6.5pt'}; font-weight: 800; color: ${pdfTheme === 'ADVAYA' ? 'rgba(255,255,255,0.45)' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">${field.label}</p>
+                                                    <p style="margin: 1mm 0 0 0; font-size: ${isSingle ? '16pt' : isDense ? '7.5pt' : '9pt'}; font-weight: 700; color: ${pdfTheme === 'ADVAYA' ? '#fbbf24' : '#1e293b'}; line-height: 1.3; overflow: visible; display: block; word-wrap: break-word;">${field.value || '-'}</p>
                                                 </div>
                                             `).join('')}
                                         </div>
@@ -1793,54 +1877,61 @@ const AuctionManage: React.FC = () => {
                 )}
 
                 {activeTab === 'TEAMS' && (
-                    <div className="space-y-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className={`text-xl font-black uppercase tracking-tighter ${isDark ? 'text-white' : 'text-gray-800'}`}>Franchise Registry ({teams.length})</h2>
-                            <div className="flex gap-2">
-                                <label className={`border px-4 py-2 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all flex items-center gap-2 shadow-sm ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                                    <FileUp className="w-4 h-4"/> Import XLSX
-                                    <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => handleExcelImport(e, 'TEAM')}/>
-                                </label>
-                                <button 
-                                    onClick={() => { setModalType('TEAM'); setEditItem({ name: '', owner: '', budget: settingsForm.purseValue }); setShowModal(true); }} 
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 border shadow-sm transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                    <Plus className="w-4 h-4"/> Add Team
-                                </button>
+                    !teamsLoaded ? (
+                        <TabLoader message="Loading Franchise Teams from database..." isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className={`text-xl font-black uppercase tracking-tighter ${isDark ? 'text-white' : 'text-gray-800'}`}>Franchise Registry ({teams.length})</h2>
+                                <div className="flex gap-2">
+                                    <label className={`border px-4 py-2 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all flex items-center gap-2 shadow-sm ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                        <FileUp className="w-4 h-4"/> Import XLSX
+                                        <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => handleExcelImport(e, 'TEAM')}/>
+                                    </label>
+                                    <button 
+                                        onClick={() => { setModalType('TEAM'); setEditItem({ name: '', owner: '', budget: settingsForm.purseValue }); setShowModal(true); }} 
+                                        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 border shadow-sm transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        <Plus className="w-4 h-4"/> Add Team
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {teams.map(team => (
+                                    <div key={team.id} className={`p-5 rounded-[1.5rem] border shadow-sm flex items-center justify-between group transition-all ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border p-1 ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-100'}`}>
+                                                {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-contain" referrerPolicy="no-referrer" /> : <Users className={`w-6 h-6 ${isDark ? 'text-zinc-700' : 'text-gray-300'}`}/>}
+                                            </div>
+                                            <div>
+                                                <p className={`font-black uppercase text-sm leading-none ${isDark ? 'text-white' : 'text-gray-800'}`}>{team.name}</p>
+                                                <p className={`text-[10px] font-black uppercase tracking-widest mt-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>Owner: <span className={isDark ? 'text-zinc-100' : 'text-gray-900'}>{team.owner || 'No Owner'}</span></p>
+                                                <div className="flex items-center gap-2 mt-2.5">
+                                                    <p className={`text-[10px] font-bold uppercase ${isDark ? 'text-accent' : 'text-blue-600'}`}>₹{team.budget}</p>
+                                                    <div className={`w-1 h-1 rounded-full ${isDark ? 'bg-zinc-800' : 'bg-gray-300'}`}></div>
+                                                    <p className={`text-[10px] font-black uppercase ${isDark ? 'text-accent' : 'text-blue-600'}`}>{team.teamCode || 'NO ID'}</p>
+                                                </div>
+                                                {team.password && (
+                                                    <p className={`text-[9px] font-black uppercase mt-1.5 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Pass: {team.password}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 items-center">
+                                            <button onClick={() => { setModalType('TEAM'); setEditItem(team); setPreviewImage(team.logoUrl); setShowModal(true); }} className={`p-3 rounded-xl transition-all shadow-sm ${isDark ? 'bg-zinc-800 text-amber-500 hover:bg-zinc-700' : 'bg-gray-50 text-blue-600 hover:bg-white border border-gray-100 hover:shadow-md'}`}><Edit className="w-4 h-4"/></button>
+                                            <button onClick={() => handleDelete('TEAM', String(team.id))} className={`p-3 rounded-xl transition-all shadow-sm ${isDark ? 'bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100'}`}><Trash2 className="w-4 h-4"/></button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {teams.map(team => (
-                                <div key={team.id} className={`p-5 rounded-[1.5rem] border shadow-sm flex items-center justify-between group transition-all ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border p-1 ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-100'}`}>
-                                            {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-contain" referrerPolicy="no-referrer" /> : <Users className={`w-6 h-6 ${isDark ? 'text-zinc-700' : 'text-gray-300'}`}/>}
-                                        </div>
-                                        <div>
-                                            <p className={`font-black uppercase text-sm leading-none ${isDark ? 'text-white' : 'text-gray-800'}`}>{team.name}</p>
-                                            <p className={`text-[10px] font-black uppercase tracking-widest mt-1.5 ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>Owner: <span className={isDark ? 'text-zinc-100' : 'text-gray-900'}>{team.owner || 'No Owner'}</span></p>
-                                            <div className="flex items-center gap-2 mt-2.5">
-                                                <p className={`text-[10px] font-bold uppercase ${isDark ? 'text-accent' : 'text-blue-600'}`}>₹{team.budget}</p>
-                                                <div className={`w-1 h-1 rounded-full ${isDark ? 'bg-zinc-800' : 'bg-gray-300'}`}></div>
-                                                <p className={`text-[10px] font-black uppercase ${isDark ? 'text-accent' : 'text-blue-600'}`}>{team.teamCode || 'NO ID'}</p>
-                                            </div>
-                                            {team.password && (
-                                                <p className={`text-[9px] font-black uppercase mt-1.5 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Pass: {team.password}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 items-center">
-                                        <button onClick={() => { setModalType('TEAM'); setEditItem(team); setPreviewImage(team.logoUrl); setShowModal(true); }} className={`p-3 rounded-xl transition-all shadow-sm ${isDark ? 'bg-zinc-800 text-amber-500 hover:bg-zinc-700' : 'bg-gray-50 text-blue-600 hover:bg-white border border-gray-100 hover:shadow-md'}`}><Edit className="w-4 h-4"/></button>
-                                        <button onClick={() => handleDelete('TEAM', String(team.id))} className={`p-3 rounded-xl transition-all shadow-sm ${isDark ? 'bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100'}`}><Trash2 className="w-4 h-4"/></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    )
                 )}
 
                 {activeTab === 'PLAYERS' && (
-                    <div className="space-y-6 animate-fade-in">
+                    !playersLoaded ? (
+                        <TabLoader message="Loading Registered Players from database..." isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
                         {/* Export Hub Section - Moved from Requests to Players for Source of Truth Edits */}
                         <div className={`${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-sm'} p-8 rounded-[3rem] border space-y-8`}>
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -2144,6 +2235,7 @@ const AuctionManage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    )
                 )}
 
                 {activeTab === 'REGISTRATION' && (
@@ -2184,26 +2276,40 @@ const AuctionManage: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-6 py-3 shadow-sm">
                                         <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Accepting Players</label>
-                                        <select 
-                                            value={regConfig.registrationStatus || 'OPEN'}
-                                            onChange={async (e) => {
-                                                const val = e.target.value as 'OPEN' | 'CLOSED';
-                                                const updatedConfig = { ...regConfig, registrationStatus: val };
-                                                setRegConfig(updatedConfig);
-                                                if (id) {
-                                                    try {
-                                                        await db.collection('auctions').doc(id).update({ registrationConfig: updatedConfig });
-                                                        showNotification(val === 'OPEN' ? "Registrations Accepted/Open!" : "Registrations Manually Closed!", "success");
-                                                    } catch (err: any) {
-                                                        showNotification("Failed to update status: " + err.message);
-                                                    }
-                                                }
-                                            }}
-                                            className="bg-gray-50 border border-gray-200 text-xs font-black text-gray-700 py-1.5 px-3 rounded-xl focus:border-blue-500 focus:outline-none transition-all cursor-pointer"
-                                        >
-                                            <option value="OPEN">Accept Registrations</option>
-                                            <option value="CLOSED">Close Registrations</option>
-                                        </select>
+                                        <div className="flex gap-1.5">
+                                            {[
+                                                { value: 'OPEN', label: 'Accept' },
+                                                { value: 'CLOSED', label: 'Close' }
+                                            ].map(opt => {
+                                                const isActive = (regConfig.registrationStatus || 'OPEN') === opt.value;
+                                                return (
+                                                    <button
+                                                        key={opt.value}
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            const val = opt.value as 'OPEN' | 'CLOSED';
+                                                            const updatedConfig = { ...regConfig, registrationStatus: val };
+                                                            setRegConfig(updatedConfig);
+                                                            if (id) {
+                                                                try {
+                                                                    await db.collection('auctions').doc(id).update({ registrationConfig: updatedConfig });
+                                                                    showNotification(val === 'OPEN' ? "Registrations Accepted/Open!" : "Registrations Manually Closed!", "success");
+                                                                } catch (err: any) {
+                                                                    showNotification("Failed to update status: " + err.message);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                                            isActive
+                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                                            : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3080,7 +3186,10 @@ const AuctionManage: React.FC = () => {
                 )}
                 
                 {activeTab === 'REQUESTS' && (
-                    <div className="space-y-6 animate-fade-in">
+                    !registrationsLoaded ? (
+                        <TabLoader message="Loading Player Registrations from database..." isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
                         <div className="flex flex-col lg:flex-row gap-4 mb-8 px-2">
                              <div className="relative flex-1 group">
                                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-all" />
@@ -3283,10 +3392,14 @@ const AuctionManage: React.FC = () => {
                             </div>
                         )}
                 </div>
+                )
             )}
 
                 {(activeTab === 'CATEGORIES' || activeTab === 'ROLES' || activeTab === 'SPONSORS') && (
-                    <div className="space-y-6 animate-fade-in">
+                    !(activeTab === 'CATEGORIES' ? categoriesLoaded : activeTab === 'ROLES' ? rolesLoaded : sponsorsLoaded) ? (
+                        <TabLoader message={`Loading ${activeTab.toLowerCase()} list...`} isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center">
                             <label className={`font-black uppercase text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>Manage {activeTab}</label>
                             <div className="flex gap-2">
@@ -3311,7 +3424,7 @@ const AuctionManage: React.FC = () => {
                         {/* Mobile-First Card View (Hidden on MD+) */}
                         <div className="md:hidden space-y-4 px-1">
                             {(activeTab === 'CATEGORIES' ? categories : activeTab === 'ROLES' ? roles : sponsors).map((item: any) => (
-                                <div key={item.id} className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                                <div key={`mob-item-${item.id}`} className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`}>
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center border overflow-hidden ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-100 border-gray-100'}`}>
                                             {item.imageUrl || item.photoUrl || item.logoUrl ? (
@@ -3367,7 +3480,7 @@ const AuctionManage: React.FC = () => {
                                             
                                             <div className="grid grid-cols-2 gap-2">
                                                 {players.filter(p => p.category === item.name).map(player => (
-                                                    <div key={player.id} className={`flex items-center gap-2 p-2 rounded-lg border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-100'}`}>
+                                                    <div key={`mob-player-${player.id}`} className={`flex items-center gap-2 p-2 rounded-lg border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-100'}`}>
                                                         <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-200">
                                                             {player.photoUrl && <img src={player.photoUrl} className="w-full h-full object-cover" />}
                                                         </div>
@@ -3397,7 +3510,7 @@ const AuctionManage: React.FC = () => {
                                     </thead>
                                     <tbody className={`divide-y ${isDark ? 'divide-zinc-800' : 'divide-gray-100'}`}>
                                         {(activeTab === 'CATEGORIES' ? categories : activeTab === 'ROLES' ? roles : sponsors).map((item: any) => (
-                                            <React.Fragment key={item.id}>
+                                            <React.Fragment key={`desk-item-${item.id}`}>
                                                 <tr 
                                                     onClick={() => {
                                                         if (activeTab === 'CATEGORIES') {
@@ -3480,7 +3593,7 @@ const AuctionManage: React.FC = () => {
                                                                             {players.filter(p => !p.category || p.category === 'Standard').filter(p => p.name.toLowerCase().includes(assignSearch.toLowerCase())).length > 0 ? (
                                                                                 players.filter(p => !p.category || p.category === 'Standard').filter(p => p.name.toLowerCase().includes(assignSearch.toLowerCase())).map(p => (
                                                                                     <div 
-                                                                                        key={p.id}
+                                                                                        key={`desk-assign-player-${p.id}`}
                                                                                         onClick={() => handleAssignPlayerToCategory(p.id, item.name)}
                                                                                         className={`flex items-center gap-3 p-3 cursor-pointer transition-colors border-b last:border-0 ${isDark ? 'hover:bg-zinc-800/50 border-zinc-800' : 'hover:bg-white border-gray-100'}`}
                                                                                     >
@@ -3505,7 +3618,7 @@ const AuctionManage: React.FC = () => {
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                                                 {players.filter(p => p.category === item.name).length > 0 ? (
                                                                     players.filter(p => p.category === item.name).map(player => (
-                                                                        <div key={player.id} className={`flex items-center gap-3 p-3 rounded-xl border relative group/card ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-sm'}`}>
+                                                                        <div key={`desk-assigned-player-${player.id}`} className={`flex items-center gap-3 p-3 rounded-xl border relative group/card ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100 shadow-sm'}`}>
                                                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-gray-50 border-gray-200'}`}>
                                                                                 {player.photoUrl ? (
                                                                                     <img src={player.photoUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -3545,6 +3658,7 @@ const AuctionManage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    )
                 )}
                 {activeTab === 'CAPTAIN_CODES' && (
                     <div className="space-y-6 animate-fade-in">
@@ -3655,7 +3769,10 @@ const AuctionManage: React.FC = () => {
                     </div>
                 )}
                 {activeTab === 'REG_CODES' && (
-                    <div className="space-y-6 animate-fade-in">
+                    !registrationCodesLoaded ? (
+                        <TabLoader message="Loading Organizer Registration Codes from database..." isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
                         <div className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
                             <div className="mb-6">
                                 <h2 className={`text-xl font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Organizer Registration Codes</h2>
@@ -3699,18 +3816,32 @@ const AuctionManage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
-                                        <select
-                                            className={`w-full rounded-xl px-4 py-3 font-bold outline-none transition-all text-xs ${
-                                                isDark 
-                                                ? 'bg-zinc-855 border border-zinc-800 text-white focus:bg-zinc-900' 
-                                                : 'bg-white border-2 border-gray-100 text-gray-700/80 focus:bg-white'
-                                            }`}
-                                            value={editRegCode.isActive === false ? 'false' : 'true'}
-                                            onChange={e => setEditRegCode({...editRegCode, isActive: e.target.value === 'true'})}
-                                        >
-                                            <option value="true">Active</option>
-                                            <option value="false">Muted</option>
-                                        </select>
+                                        <div className="flex gap-2">
+                                            {[
+                                                { value: 'true', label: 'Active' },
+                                                { value: 'false', label: 'Muted' }
+                                            ].map(opt => {
+                                                const isActive = (editRegCode.isActive === false ? 'false' : 'true') === opt.value;
+                                                return (
+                                                    <button
+                                                        key={opt.value}
+                                                        type="button"
+                                                        onClick={() => setEditRegCode({...editRegCode, isActive: opt.value === 'true'})}
+                                                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
+                                                            isActive
+                                                            ? isDark
+                                                                ? 'bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/25'
+                                                                : 'bg-amber-500 text-white border-amber-500 shadow-lg'
+                                                            : isDark
+                                                                ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-750'
+                                                                : 'bg-white border-2 border-gray-100 text-gray-400 hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-4 flex gap-2 justify-end">
@@ -3855,9 +3986,13 @@ const AuctionManage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    )
                 )}
                 {activeTab === 'WAITLIST' && (
-                    <div className="space-y-6 animate-fade-in">
+                    !waitlistLoaded ? (
+                        <TabLoader message="Loading Player Waitlist from database..." isDark={isDark} />
+                    ) : (
+                        <div className="space-y-6 animate-fade-in">
                         <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
                             <div>
                                 <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">Waitlist Registry</h2>
@@ -3930,6 +4065,7 @@ const AuctionManage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    )
                 )}
                 {activeTab === 'RECOLLECTION' && (
                     <div className="space-y-6 animate-fade-in">

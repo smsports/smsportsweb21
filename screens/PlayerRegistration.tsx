@@ -328,6 +328,7 @@ const PlayerRegistration: React.FC = () => {
     const [auction, setAuction] = useState<AuctionSetup | null>(null);
     const [config, setConfig] = useState<RegistrationConfig | null>(null);
     const [roles, setRoles] = useState<PlayerRole[]>([]);
+    const [dbPromoCodes, setDbPromoCodes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -434,9 +435,22 @@ const PlayerRegistration: React.FC = () => {
     const profileInputRef = useRef<HTMLInputElement>(null);
     const paymentInputRef = useRef<HTMLInputElement>(null);
 
+    // Promo / Coupon Code states
+    const [promoInput, setPromoInput] = useState('');
+    const [promoError, setPromoError] = useState('');
+    const [promoSuccess, setPromoSuccess] = useState('');
+    const [appliedDiscount, setAppliedDiscount] = useState(0);
+    const [couponCode, setCouponCode] = useState('');
+    const [isCouponApplied, setIsCouponApplied] = useState(false);
+
     const isAdvaya = config?.theme?.toUpperCase() === 'ADVAYA';
     const isNavyGolden = config?.theme?.toUpperCase() === 'NAVY_GOLDEN';
     const isClassicNeon = config?.theme?.toUpperCase() === 'CLASSIC_NEON';
+
+    const discountAmount = isCouponApplied 
+        ? appliedDiscount 
+        : (validatedOrganiserCode ? (config?.fee || 0) : 0);
+    const finalFee = Math.max(0, (config?.fee || 0) - discountAmount);
 
     useEffect(() => {
         if (config) {
@@ -585,7 +599,20 @@ const PlayerRegistration: React.FC = () => {
             console.error("Error fetching roles:", err);
         });
 
-        return () => unsubRoles();
+        // Real-time promo/registration codes fetching
+        const unsubPromo = db.collection('auctions').doc(id).collection('registrationCodes').onSnapshot(snap => {
+            const activeDbCodes = snap.docs
+                .map(d => ({ id: d.id, ...d.data() } as any))
+                .filter(code => code.isActive && (!code.usageLimit || (code.currentUsage || 0) < code.usageLimit));
+            setDbPromoCodes(activeDbCodes);
+        }, err => {
+            console.warn("Could not load registration codes from database:", err);
+        });
+
+        return () => {
+            unsubRoles();
+            unsubPromo();
+        };
     }, [id]);
 
     const validateCaptainCode = async (code: string) => {
@@ -705,6 +732,181 @@ const PlayerRegistration: React.FC = () => {
         }
     };
 
+    const handleApplyPromo = async (codeToApply: string) => {
+        const cleanCode = codeToApply.trim().toUpperCase();
+        if (!cleanCode) {
+            setPromoError('Please enter a coupon code.');
+            setPromoSuccess('');
+            return;
+        }
+        
+        setPromoError('');
+        setPromoSuccess('Verifying code...');
+        
+        // 1. Check Master Promo Codes (Hardcoded fallback for admin)
+        const masterCodes = ['ADMIN100', 'FREE100', 'ORGANIZER100'];
+        if (masterCodes.includes(cleanCode)) {
+            setAppliedDiscount(config?.fee || 0);
+            setCouponCode(cleanCode);
+            setIsCouponApplied(true);
+            setPromoSuccess(`100% Discount Applied! Fee is now ₹0.`);
+            setPromoError('');
+            return;
+        }
+        
+        if (cleanCode === 'DISCOUNT50') {
+            const halfFee = Math.round((config?.fee || 0) / 2);
+            setAppliedDiscount(halfFee);
+            setCouponCode(cleanCode);
+            setIsCouponApplied(true);
+            setPromoSuccess(`50% Discount Applied! Fee is now ₹${Math.max(0, (config?.fee || 0) - halfFee)}.`);
+            setPromoError('');
+            return;
+        }
+
+        // 2. Check Database Registration Codes
+        try {
+            const snap = await db.collection('auctions').doc(id).collection('registrationCodes')
+                .where('code', '==', cleanCode)
+                .get();
+
+            if (snap.empty) {
+                setPromoError('Invalid coupon or registration code.');
+                setPromoSuccess('');
+                setAppliedDiscount(0);
+                setIsCouponApplied(false);
+                setCouponCode('');
+                return;
+            }
+
+            const codeData = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
+
+            if (!codeData.isActive) {
+                setPromoError('This code is inactive.');
+                setPromoSuccess('');
+                return;
+            } 
+            
+            if (codeData.currentUsage >= codeData.usageLimit) {
+                setPromoError('This code has reached its usage limit.');
+                setPromoSuccess('');
+                return;
+            }
+
+            // Valid DB registration code!
+            setOrganiserCodeStatus({ type: 'success', message: 'Registration Code accepted!' });
+            setValidatedOrganiserCode(codeData);
+            
+            // Apply 100% discount
+            setAppliedDiscount(config?.fee || 0);
+            setCouponCode(cleanCode);
+            setIsCouponApplied(true);
+            setPromoSuccess('Organizer Registration Code Accepted! 100% Discount Applied.');
+            setPromoError('');
+        } catch (err) {
+            setPromoError('Verification failed. Please try again.');
+            setPromoSuccess('');
+        }
+    };
+
+    const handleRemovePromo = () => {
+        setPromoInput('');
+        setPromoError('');
+        setPromoSuccess('');
+        setAppliedDiscount(0);
+        setIsCouponApplied(false);
+        setCouponCode('');
+        if (validatedOrganiserCode && !showOrganiserCodeEntry) {
+            setValidatedOrganiserCode(null);
+        }
+    };
+
+    const renderPromoSection = (themeName: string) => {
+        const isNeon = themeName === 'CLASSIC_NEON';
+        const isNavy = themeName === 'NAVY_GOLDEN';
+        const isAdv = themeName === 'ADVAYA';
+        
+        return (
+            <div className={`p-6 rounded-[2rem] border-2 ${
+                isNeon || isNavy 
+                    ? 'bg-[#0F1413]/60 border-[#A6FF00]/20' 
+                    : isAdv 
+                        ? 'bg-black/60 border-amber-900/20' 
+                        : 'bg-white border-gray-200 shadow-sm'
+            } mb-6`}>
+                <h5 className={`text-xs font-black uppercase tracking-wider mb-3 ${
+                    isNeon || isNavy ? 'text-[#A6FF00]' : isAdv ? 'text-amber-500' : 'text-gray-700'
+                }`}>
+                    Have a Coupon or Promo Code?
+                </h5>
+                
+                {isCouponApplied ? (
+                    <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-green-500/30">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                            <div>
+                                <span className="text-xs font-black uppercase tracking-widest text-white">{couponCode}</span>
+                                <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest ml-2">Applied</span>
+                            </div>
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={handleRemovePromo}
+                            className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="flex gap-2">
+                            <select 
+                                value={promoInput}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setPromoInput(val);
+                                    if (val) {
+                                        handleApplyPromo(val);
+                                    }
+                                }}
+                                className={`flex-1 rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-widest outline-none transition-all ${
+                                    isNeon || isNavy 
+                                        ? 'bg-[#050807] border border-white/10 text-white focus:border-[#A6FF00]' 
+                                        : isAdv 
+                                            ? 'bg-black/40 border border-amber-950 text-amber-100 focus:border-amber-500' 
+                                            : 'bg-gray-50 border border-gray-300 text-gray-900 focus:border-blue-500 focus:bg-white'
+                                }`}
+                            >
+                                <option value="" className="text-gray-400 bg-zinc-900">-- SELECT PROMO/COUPON CODE --</option>
+                                <optgroup label="MASTER COUPONS" className="bg-zinc-900 text-amber-500 font-bold">
+                                    <option value="ADMIN100" className="bg-zinc-900 text-white">ADMIN100 (100% OFF)</option>
+                                    <option value="FREE100" className="bg-zinc-900 text-white">FREE100 (100% OFF)</option>
+                                    <option value="ORGANIZER100" className="bg-zinc-900 text-white">ORGANIZER100 (100% OFF)</option>
+                                    <option value="DISCOUNT50" className="bg-zinc-900 text-white">DISCOUNT50 (50% OFF)</option>
+                                </optgroup>
+                                {dbPromoCodes.length > 0 && (
+                                    <optgroup label="ORGANIZER COUPONS" className="bg-zinc-900 text-amber-500 font-bold">
+                                        {dbPromoCodes.map((code: any) => (
+                                            <option key={code.id} value={code.code} className="bg-zinc-900 text-white">
+                                                {code.code} (100% OFF)
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
+                            </select>
+                        </div>
+                        {promoError && (
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-red-400">{promoError}</p>
+                        )}
+                        {promoSuccess && (
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-green-400">{promoSuccess}</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const handleFirestoreError = (error: any, operation: string, path: string) => {
         const errInfo = {
             error: error.message || String(error),
@@ -736,8 +938,11 @@ const PlayerRegistration: React.FC = () => {
                 teamCode: hasTeamCode ? teamCode.toUpperCase() : '',
                 registeredViaCode: (isCaptain && !!validatedCode) || (hasTeamCode && !!validatedTeamCode) || !!validatedOrganiserCode,
                 organiserCode: validatedOrganiserCode ? validatedOrganiserCode.code.toUpperCase() : '',
-                paymentScreenshot: config?.paymentMethod === 'MANUAL' ? paymentScreenshot : '',
-                razorpayPaymentId: razorpayId || '',
+                paymentScreenshot: config?.paymentMethod === 'MANUAL' && finalFee > 0 ? paymentScreenshot : '',
+                razorpayPaymentId: finalFee > 0 ? (razorpayId || '') : 'Bypassed (Promo Applied)',
+                discountApplied: discountAmount,
+                finalFeePaid: finalFee,
+                promoCodeUsed: couponCode || (validatedOrganiserCode ? validatedOrganiserCode.code : ''),
                 submittedAt: Date.now(), status: isAutoApprove ? 'APPROVED' : 'PENDING'
             };
             
@@ -857,7 +1062,7 @@ const PlayerRegistration: React.FC = () => {
         if (!isRazorpayLoaded) { alert("Payment system not ready."); setSubmitting(false); return; }
         const options = {
             key: config?.razorpayKey || "", 
-            amount: (config?.fee || 0) * 100, 
+            amount: finalFee * 100, 
             currency: "INR",
             name: auction?.title || "Tournament Registration",
             description: `Player Enrollment Fee`,
@@ -938,7 +1143,7 @@ const PlayerRegistration: React.FC = () => {
         }
 
         // Payment
-        if (config?.fee > 0) {
+        if (config?.fee > 0 && finalFee > 0) {
             if (config.paymentMethod === 'MANUAL' && !paymentScreenshot) {
                 missingFields.push("Payment Proof/Screenshot");
             }
@@ -956,7 +1161,7 @@ const PlayerRegistration: React.FC = () => {
         setSubmitting(true);
         
         // Handle Razorpay if enabled
-        if (config?.fee > 0 && config.paymentMethod === 'RAZORPAY') {
+        if (config?.fee > 0 && config.paymentMethod === 'RAZORPAY' && finalFee > 0) {
             handleRazorpayModal();
             return;
         }
@@ -2156,72 +2361,85 @@ const PlayerRegistration: React.FC = () => {
                                     
                                     {config?.includePayment ? (
                                         <div className="space-y-8">
-                                        <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20 shadow-[0_0_40px_rgba(166,255,0,0.1)]' : 'border-amber-500/20 shadow-2xl'} rounded-[3rem] p-10 text-center relative overflow-hidden`}>
-                                                {(isAdvaya || isNavyGolden || isClassicNeon) && (
-                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]">
-                                                        <motion.div
-                                                            animate={{ rotate: 360 }}
-                                                            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                                                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
-                                                        />
-                                                        <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#070B0A]' : 'bg-black/80'} rounded-[inherit] z-0`} />
+                                            {renderPromoSection(config?.theme)}
+                                            
+                                            {finalFee === 0 ? (
+                                                <div className="p-12 text-center border-2 border-dashed border-green-500/20 bg-black/40 rounded-[3rem]">
+                                                    <div className="w-20 h-20 bg-green-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-green-500/20">
+                                                        <ShieldCheck className="w-10 h-10 text-green-400" />
                                                     </div>
-                                                )}
-                                                <div className="relative z-10">
-                                                    <div className="absolute top-0 right-0 p-6">
-                                                        <div className={`px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest`}>
-                                                            FEE: ₹{config.fee}
+                                                    <h4 className="text-2xl font-black text-green-400 uppercase tracking-tight mb-2">FEE WAIVED</h4>
+                                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Promo Code <span className="text-white font-mono bg-white/10 px-2 py-1 rounded-lg">{couponCode || (validatedOrganiserCode ? validatedOrganiserCode.code : '')}</span> applied successfully.</p>
+                                                    <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500 mt-2">You can proceed to the next step without any payment.</p>
+                                                </div>
+                                            ) : (
+                                                <div className={`bg-black/60 border-2 ${isClassicNeon || isNavyGolden ? 'border-[#A6FF00]/20 shadow-[0_0_40px_rgba(166,255,0,0.1)]' : 'border-amber-500/20 shadow-2xl'} rounded-[3rem] p-10 text-center relative overflow-hidden`}>
+                                                    {(isAdvaya || isNavyGolden || isClassicNeon) && (
+                                                        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]">
+                                                            <motion.div
+                                                                animate={{ rotate: 360 }}
+                                                                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                                                                className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-60 blur-[10px]`}
+                                                            />
+                                                            <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#070B0A]' : 'bg-black/80'} rounded-[inherit] z-0`} />
                                                         </div>
-                                                    </div>
-                                                    
-                                                    <div className="space-y-6 mb-10">
-                                                        <div className={`w-20 h-20 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-[2rem] flex items-center justify-center mx-auto border`}>
-                                                            <QrCode className={`w-10 h-10 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
+                                                    )}
+                                                    <div className="relative z-10">
+                                                        <div className="absolute top-0 right-0 p-6">
+                                                            <div className={`px-4 py-2 rounded-full ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20 text-[#A6FF00]' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'} text-[10px] font-black uppercase tracking-widest`}>
+                                                                FEE: ₹{config.fee}
+                                                            </div>
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            <h4 className={`text-xl font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Scan to Pay via UPI</h4>
-                                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receiver: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiName}</span> • UPI ID: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiId}</span></p>
+                                                        
+                                                        <div className="space-y-6 mb-10">
+                                                            <div className={`w-20 h-20 ${isClassicNeon || isNavyGolden ? 'bg-[#A6FF00]/10 border-[#A6FF00]/20' : 'bg-amber-500/10 border-amber-500/20'} rounded-[2rem] flex items-center justify-center mx-auto border`}>
+                                                                <QrCode className={`w-10 h-10 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`} />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <h4 className={`text-xl font-black ${isClassicNeon || isNavyGolden ? 'text-white' : 'text-amber-100'} uppercase tracking-tight`}>Scan to Pay via UPI</h4>
+                                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receiver: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiName}</span> • UPI ID: <span className={isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}>{config.upiId}</span></p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    
-                                                    <div className={`bg-white p-6 rounded-[2.5rem] shadow-2xl ${isClassicNeon || isNavyGolden ? 'shadow-[0_0_50px_rgba(166,255,0,0.3)] border-[#A6FF00]' : 'shadow-[0_0_50px_rgba(251,191,36,0.3)] border-amber-500'} border-8 inline-block mb-10`}>
-                                                        {config.qrCodeUrl && <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />}
-                                                    </div>
-                                                    
-                                                    <div className="space-y-4">
-                                                        <label className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}/50`}>Upload Payment Proof</label>
-                                        <div 
-                                            onClick={() => paymentInputRef.current?.click()}
-                                            className={`w-full max-w-sm mx-auto h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/30 hover:border-[#A6FF00]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'}`}
-                                        >
-                                                            {(isAdvaya || isNavyGolden || isClassicNeon) && (
-                                                                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
-                                                                    <motion.div
-                                                                        animate={{ rotate: 360 }}
-                                                                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                                                                        className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-20 blur-[8px]`}
-                                                                    />
-                                                                    <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413]' : 'bg-black/80'} rounded-[inherit] z-0`} />
-                                                                </div>
-                                                            )}
-                                                            <div className="relative z-10">
-                                                                {paymentScreenshot ? (
-                                                                    <div className={`flex items-center gap-3 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`}>
-                                                                        <CheckCircle className="w-8 h-8" />
-                                                                        <span className="text-xs font-black uppercase tracking-widest">Screenshot Verified</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="text-center group">
-                                                                        <Upload className={`w-8 h-8 mx-auto mb-2 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`} />
-                                                                        <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`}>Upload Screenshot</p>
+                                                        
+                                                        <div className={`bg-white p-6 rounded-[2.5rem] shadow-2xl ${isClassicNeon || isNavyGolden ? 'shadow-[0_0_50px_rgba(166,255,0,0.3)] border-[#A6FF00]' : 'shadow-[0_0_50px_rgba(251,191,36,0.3)] border-amber-500'} border-8 inline-block mb-10`}>
+                                                            {config.qrCodeUrl && <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />}
+                                                        </div>
+                                                        
+                                                        <div className="space-y-4">
+                                                            <label className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}/50`}>Upload Payment Proof</label>
+                                                            <div 
+                                                                onClick={() => paymentInputRef.current?.click()}
+                                                                className={`w-full max-w-sm mx-auto h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413] border-[#A6FF00]/30 hover:border-[#A6FF00]' : 'bg-black/40 border-amber-900/30 hover:border-amber-500'}`}
+                                                            >
+                                                                {(isAdvaya || isNavyGolden || isClassicNeon) && (
+                                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
+                                                                        <motion.div
+                                                                            animate={{ rotate: 360 }}
+                                                                            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                                                                            className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isClassicNeon || isNavyGolden ? '#A6FF00' : '#f59e0b'}_360deg)] opacity-20 blur-[8px]`}
+                                                                        />
+                                                                        <div className={`absolute inset-[2px] ${isClassicNeon || isNavyGolden ? 'bg-[#0F1413]' : 'bg-black/80'} rounded-[inherit] z-0`} />
                                                                     </div>
                                                                 )}
+                                                                <div className="relative z-10">
+                                                                    {paymentScreenshot ? (
+                                                                        <div className={`flex items-center gap-3 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]' : 'text-amber-500'}`}>
+                                                                            <CheckCircle className="w-8 h-8" />
+                                                                            <span className="text-xs font-black uppercase tracking-widest">Screenshot Verified</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-center group">
+                                                                            <Upload className={`w-8 h-8 mx-auto mb-2 ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`} />
+                                                                            <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon || isNavyGolden ? 'text-[#A6FF00]/50' : 'text-amber-900'} group-hover:text-${isClassicNeon || isNavyGolden ? '[#A6FF00]' : 'amber-500'} transition-colors`}>Upload Screenshot</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <input ref={paymentInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setPaymentScreenshot(await compressImage(e.target.files[0])); }} />
                                                             </div>
-                                                            <input ref={paymentInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setPaymentScreenshot(await compressImage(e.target.files[0])); }} />
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="p-20 text-center border-2 border-dashed border-amber-900/20 rounded-[3rem]">
@@ -2835,53 +3053,68 @@ const PlayerRegistration: React.FC = () => {
                                     transition={{ delay: 0.6 }}
                                     className="md:col-span-2"
                                 >
-                                    <label className={`block text-[10px] font-black uppercase tracking-widest mb-4 ml-1 text-center ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>{isAdvaya ? 'Verify Payment' : 'Payment Confirmation'} (₹{config.fee})</label>
-                                    <div className={`p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-8 ${isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/20' : isAdvaya ? 'bg-black/40 border-amber-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                                        <div className="text-center space-y-2">
-                                            <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-500' : 'text-blue-600'}`}>{isAdvaya ? 'Scan to Pay via UPI' : 'Scan to Pay'}</p>
-                                            <div className="space-y-1">
-                                                <p className={`text-[10px] font-bold uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-slate-400' : 'text-gray-500'}`}>{isAdvaya ? 'Receiver' : 'Pay to'}: <span className={isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-200' : 'text-gray-900'}>{config.upiName}</span></p>
-                                                <p className={`text-[10px] font-bold uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-slate-400' : 'text-gray-500'}`}>UPI ID: <span className={isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-200' : 'text-gray-900'}>{config.upiId}</span></p>
+                                    {renderPromoSection(config?.theme)}
+                                    
+                                    {finalFee === 0 ? (
+                                        <div className={`p-12 text-center border-2 border-dashed rounded-[3rem] ${isNavyGolden ? 'bg-[#001f3f]/40 border-green-500/20 text-green-400' : isAdvaya ? 'bg-black/40 border-green-500/20 text-green-400' : 'bg-green-50 border-green-100 text-green-700'}`}>
+                                            <div className="w-20 h-20 bg-green-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-green-500/20">
+                                                <ShieldCheck className="w-10 h-10" />
                                             </div>
+                                            <h4 className="text-2xl font-black uppercase tracking-tight mb-2">FEE WAIVED</h4>
+                                            <p className="text-xs font-bold uppercase tracking-widest opacity-80">Promo Code <span className="font-mono bg-black/20 px-2 py-1 rounded-lg text-white">{couponCode || (validatedOrganiserCode ? validatedOrganiserCode.code : '')}</span> applied successfully.</p>
+                                            <p className="text-[10px] font-medium uppercase tracking-widest opacity-60 mt-2">Registration is free. You can submit the form directly.</p>
                                         </div>
-                                        
-                                        <div className={`p-6 bg-white rounded-[2.5rem] shadow-2xl border-4 ${isNavyGolden ? 'border-[#ffd700]' : isAdvaya ? 'border-amber-500' : 'border-blue-600'}`}>
-                                            <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />
-                                        </div>
-
-                                        <div className="flex items-center gap-4 w-full max-w-xs">
-                                            <div className={`h-[1px] flex-1 ${isNavyGolden ? 'bg-[#ffd700]/20' : isAdvaya ? 'bg-amber-500/20' : 'bg-blue-200'}`} />
-                                            <span className={`text-[8px] font-black uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/50' : isAdvaya ? 'text-amber-500/50' : 'text-blue-400'}`}>{isAdvaya ? 'Then' : 'Next Step'}</span>
-                                            <div className={`h-[1px] flex-1 ${isNavyGolden ? 'bg-[#ffd700]/20' : isAdvaya ? 'bg-amber-500/20' : 'bg-blue-200'}`} />
-                                        </div>
-
-                                        <div onClick={() => paymentInputRef.current?.click()} className={`w-full max-w-sm h-24 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative border-2 border-dashed group ${isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 hover:border-[#ffd700]' : isAdvaya ? 'bg-black/40 border-amber-900/30 hover:border-amber-500' : 'bg-white border-blue-200 hover:bg-blue-50 hover:border-blue-400'}`}>
-                                            {(isAdvaya || isNavyGolden) && (
-                                                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                                                        className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isNavyGolden ? '#ffd700' : '#f59e0b'}_360deg)] opacity-60 blur-[8px]`}
-                                                    />
-                                                    <div className={`absolute inset-[2px] ${isNavyGolden ? 'bg-[#001f3f]/80' : 'bg-black/80'} rounded-[inherit] z-0`} />
+                                    ) : (
+                                        <>
+                                            <label className={`block text-[10px] font-black uppercase tracking-widest mb-4 ml-1 text-center ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-amber-500/70' : 'text-gray-400'}`}>{isAdvaya ? 'Verify Payment' : 'Payment Confirmation'} (₹{finalFee})</label>
+                                            <div className={`p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-8 ${isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/20' : isAdvaya ? 'bg-black/40 border-amber-500/20' : 'bg-blue-50 border-blue-100'}`}>
+                                                <div className="text-center space-y-2">
+                                                    <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-500' : 'text-blue-600'}`}>{isAdvaya ? 'Scan to Pay via UPI' : 'Scan to Pay'}</p>
+                                                    <div className="space-y-1">
+                                                        <p className={`text-[10px] font-bold uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-slate-400' : 'text-gray-500'}`}>{isAdvaya ? 'Receiver' : 'Pay to'}: <span className={isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-200' : 'text-gray-900'}>{config.upiName}</span></p>
+                                                        <p className={`text-[10px] font-bold uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/70' : isAdvaya ? 'text-slate-400' : 'text-gray-500'}`}>UPI ID: <span className={isNavyGolden ? 'text-[#ffd700]' : isAdvaya ? 'text-amber-200' : 'text-gray-900'}>{config.upiId}</span></p>
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
-                                                {paymentScreenshot ? (
-                                                    <div className="flex items-center gap-3 text-green-500">
-                                                        <CheckCircle className="w-6 h-6" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">{isClassicNeon || !isAdvaya ? 'Photo Uploaded' : 'Screenshot Attached'}</span>
+                                                
+                                                <div className={`p-6 bg-white rounded-[2.5rem] shadow-2xl border-4 ${isNavyGolden ? 'border-[#ffd700]' : isAdvaya ? 'border-amber-500' : 'border-blue-600'}`}>
+                                                    <img src={config.qrCodeUrl} referrerPolicy="no-referrer" className="w-64 h-64 object-contain" />
+                                                </div>
+
+                                                <div className="flex items-center gap-4 w-full max-w-xs">
+                                                    <div className={`h-[1px] flex-1 ${isNavyGolden ? 'bg-[#ffd700]/20' : isAdvaya ? 'bg-amber-500/20' : 'bg-blue-200'}`} />
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest ${isNavyGolden ? 'text-[#ffd700]/50' : isAdvaya ? 'text-amber-500/50' : 'text-blue-400'}`}>{isAdvaya ? 'Then' : 'Next Step'}</span>
+                                                    <div className={`h-[1px] flex-1 ${isNavyGolden ? 'bg-[#ffd700]/20' : isAdvaya ? 'bg-amber-500/20' : 'bg-blue-200'}`} />
+                                                </div>
+
+                                                <div onClick={() => paymentInputRef.current?.click()} className={`w-full max-w-sm h-24 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative border-2 border-dashed group ${isNavyGolden ? 'bg-[#001f3f]/40 border-[#ffd700]/30 hover:border-[#ffd700]' : isAdvaya ? 'bg-black/40 border-amber-900/30 hover:border-amber-500' : 'bg-white border-blue-200 hover:bg-blue-50 hover:border-blue-400'}`}>
+                                                    {(isAdvaya || isNavyGolden) && (
+                                                        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
+                                                            <motion.div
+                                                                animate={{ rotate: 360 }}
+                                                                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                                                                className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,${isNavyGolden ? '#ffd700' : '#f59e0b'}_360deg)] opacity-60 blur-[8px]`}
+                                                            />
+                                                            <div className={`absolute inset-[2px] ${isNavyGolden ? 'bg-[#001f3f]/80' : 'bg-black/80'} rounded-[inherit] z-0`} />
+                                                        </div>
+                                                    )}
+                                                    <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
+                                                        {paymentScreenshot ? (
+                                                            <div className="flex items-center gap-3 text-green-500">
+                                                                <CheckCircle className="w-6 h-6" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">{isClassicNeon || !isAdvaya ? 'Photo Uploaded' : 'Screenshot Attached'}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-center">
+                                                                <Upload className={`w-6 h-6 mx-auto mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-amber-900 group-hover:text-amber-500' : 'text-gray-300 group-hover:text-blue-500'} transition-colors`} />
+                                                                <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon ? 'text-[#A6FF00]/50' : isAdvaya ? 'text-amber-900 group-hover:text-amber-500' : 'text-gray-400 group-hover:text-blue-500'} transition-colors`}>{isClassicNeon || !isAdvaya ? 'Upload Payment Screenshot' : 'Upload Payment Proof'}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <div className="text-center">
-                                                        <Upload className={`w-6 h-6 mx-auto mb-2 ${isClassicNeon ? 'text-[#A6FF00]' : isAdvaya ? 'text-amber-900 group-hover:text-amber-500' : 'text-gray-300 group-hover:text-blue-500'} transition-colors`} />
-                                                        <p className={`text-[10px] font-black uppercase tracking-widest ${isClassicNeon ? 'text-[#A6FF00]/50' : isAdvaya ? 'text-amber-900 group-hover:text-amber-500' : 'text-gray-400 group-hover:text-blue-500'} transition-colors`}>{isClassicNeon || !isAdvaya ? 'Upload Payment Screenshot' : 'Upload Payment Proof'}</p>
-                                                    </div>
-                                                )}
+                                                    <input ref={paymentInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setPaymentScreenshot(await compressImage(e.target.files[0])); }} />
+                                                </div>
                                             </div>
-                                            <input ref={paymentInputRef} type="file" className="hidden" accept="image/*" onChange={async e => { if (e.target.files?.[0]) setPaymentScreenshot(await compressImage(e.target.files[0])); }} />
-                                        </div>
-                                    </div>
+                                        </>
+                                    )}
                                 </motion.div>
                             )}
                         </div>
@@ -2943,7 +3176,7 @@ const PlayerRegistration: React.FC = () => {
                     </div>
 
                                 <button disabled={!formData.battleOath || submitting} type="submit" className={`w-full font-black py-5 rounded-[1.5rem] shadow-2xl transition-all flex items-center justify-center gap-4 group active:scale-95 uppercase text-sm tracking-widest ${isClassicNeon ? 'bg-[#A6FF00] hover:shadow-[0_0_20px_rgba(166,255,0,0.4)] text-black' : isAdvaya ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-900/20'} ${!formData.battleOath ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        {submitting ? <Loader2 className="animate-spin" /> : (config?.includePayment && config.paymentMethod === 'RAZORPAY' ? <><CreditCard className="w-6 h-6"/> {isClassicNeon || !isAdvaya ? 'Pay' : 'Authorize'} ₹{config.fee}</> : 'REGISTER NOW')}
+                        {submitting ? <Loader2 className="animate-spin" /> : (config?.includePayment && config.paymentMethod === 'RAZORPAY' && finalFee > 0 ? <><CreditCard className="w-6 h-6"/> {isClassicNeon || !isAdvaya ? 'Pay' : 'Authorize'} ₹{finalFee}</> : 'REGISTER NOW')}
                     </button>
                     
                     <p className={`text-[9px] font-bold text-center uppercase tracking-widest leading-relaxed ${isClassicNeon ? 'text-white/40' : isAdvaya ? 'text-amber-900' : 'text-gray-400'}`}>
