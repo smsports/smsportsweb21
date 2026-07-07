@@ -196,6 +196,8 @@ export interface AuctionState {
   isAdPosterEnabled?: boolean; // Toggle for global ad poster
   globalJerseyUrl?: string; // Global plain jersey image
   globalJerseyOverlayUrl?: string; // Global transparent overlay image
+  defaultRetentionDays?: number; // Global default retention/deletion period in days
+  createdAt?: number; // Date when the auction was created
 }
 
 export enum UserRole {

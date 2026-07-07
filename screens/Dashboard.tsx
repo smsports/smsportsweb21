@@ -7,7 +7,7 @@ import AdminPostAuctionView from '../components/AdminPostAuctionView';
 import { useAuction } from '../hooks/useAuction';
 import { AuctionStatus, UserRole } from '../types';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, Wallet, Users, LogOut, Trophy, Home, ShieldAlert, ArrowRightLeft } from 'lucide-react';
+import { AlertCircle, Wallet, Users, LogOut, Trophy, Home, ShieldAlert, ArrowRightLeft, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import { useTheme } from '../contexts/ThemeContext';
@@ -15,6 +15,15 @@ import ThemeToggle from '../components/ThemeToggle';
 
 const Dashboard: React.FC = () => {
   const { state, userProfile, logout, error, joinAuction } = useAuction();
+  const getAutoDeleteRemainingDays = () => {
+    if (state.isLifetime) return 'Lifetime (Never deleted)';
+    const created = state.createdAt || Date.now();
+    const retentionLimit = state.defaultRetentionDays || 30;
+    const expiryTime = created + retentionLimit * 24 * 60 * 60 * 1000;
+    const remainingMs = expiryTime - Date.now();
+    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+    return remainingDays > 0 ? remainingDays : 0;
+  };
   const { theme } = useTheme();
   const navigate = useNavigate();
   const { id: auctionId } = useParams<{ id: string }>();
@@ -133,6 +142,20 @@ const Dashboard: React.FC = () => {
 
              <div className="hidden lg:block text-right">
                 <p className={`text-[9px] uppercase tracking-[0.3em] font-black ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Auction Status</p>
+              </div>
+              <div className="hidden lg:block text-right">
+                 <p className={`text-[9px] uppercase tracking-[0.3em] font-black ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Auto-Deletion</p>
+                 <div className="flex items-center justify-end gap-2">
+                     <Clock className={`w-3.5 h-3.5 ${typeof getAutoDeleteRemainingDays() === 'number' && (getAutoDeleteRemainingDays() as number) <= 5 ? 'text-red-500 animate-pulse' : (isDark ? 'text-zinc-500' : 'text-gray-400')}`} />
+                     <p className={`font-black text-[11px] uppercase tracking-widest ${typeof getAutoDeleteRemainingDays() === 'number' && (getAutoDeleteRemainingDays() as number) <= 5 ? 'text-red-500 font-bold animate-pulse' : (isDark ? 'text-zinc-300' : 'text-gray-700')}`}>
+                         {typeof getAutoDeleteRemainingDays() === 'number' 
+                             ? `${getAutoDeleteRemainingDays()} ${getAutoDeleteRemainingDays() === 1 ? 'day' : 'days'} left` 
+                             : getAutoDeleteRemainingDays()}
+                     </p>
+                 </div>
+              </div>
+              <div className="hidden lg:block text-right">
+                 <p className={`text-[9px] uppercase tracking-[0.3em] font-black ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Auction Status</p>
                 <div className="flex items-center justify-end gap-2">
                     <span className={`h-2 w-2 rounded-full ${state.status === AuctionStatus.InProgress ? 'bg-green-500 animate-pulse' : state.status === AuctionStatus.Finished ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
                     <p className={`font-black text-[11px] uppercase tracking-widest ${state.status === AuctionStatus.InProgress ? 'text-green-500' : state.status === AuctionStatus.Finished ? 'text-red-500' : 'text-yellow-500'}`}>
@@ -146,7 +169,15 @@ const Dashboard: React.FC = () => {
       </header>
       
       <div className={`lg:hidden border-b px-4 py-2 flex justify-between items-center text-[10px] font-black uppercase tracking-widest transition-colors ${isDark ? 'bg-secondary/50 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
-          <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${state.status === AuctionStatus.InProgress ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span><span className={`${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{state.status?.replace('_', ' ') || 'LOADING...'}</span></div>
+          <div className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${state.status === AuctionStatus.InProgress ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
+              <span className={`${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{state.status?.replace('_', ' ') || 'LOADING...'}</span>
+              <span className="text-zinc-600">|</span>
+              <Clock className="w-3.5 h-3.5 text-accent" />
+              <span className={`${typeof getAutoDeleteRemainingDays() === 'number' && (getAutoDeleteRemainingDays() as number) <= 5 ? 'text-red-500 font-bold' : (isDark ? 'text-zinc-400' : 'text-gray-500')}`}>
+                  {typeof getAutoDeleteRemainingDays() === 'number' ? `${getAutoDeleteRemainingDays()}d left` : 'Lifetime'}
+              </span>
+          </div>
           <div className={`${isDark ? 'text-accent' : 'text-accent'}`}>{isAdmin ? 'Admin Mode' : (isTeamOwner ? 'Live Bidding Enabled' : 'Read Only')}</div>
       </div>
 

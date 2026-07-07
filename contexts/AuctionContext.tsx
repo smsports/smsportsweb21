@@ -40,7 +40,8 @@ const initialState: AuctionState = {
     isPaid: false,
     basePrice: 0,
     globalJerseyUrl: '',
-    globalJerseyOverlayUrl: ''
+    globalJerseyOverlayUrl: '',
+    defaultRetentionDays: 30
 };
 
 export const AuctionContext = createContext<AuctionContextType | null>(null);
@@ -80,7 +81,8 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     isAdPosterEnabled: data?.isAdPosterEnabled !== undefined ? data.isAdPosterEnabled : true,
                     hideScoringSection: data?.hideScoringSection || false,
                     globalJerseyUrl: data?.globalJerseyUrl || '',
-                    globalJerseyOverlayUrl: data?.globalJerseyOverlayUrl || ''
+                    globalJerseyOverlayUrl: data?.globalJerseyOverlayUrl || '',
+                    defaultRetentionDays: data?.defaultRetentionDays || 30
                 }));
             } else {
                 // If it doesn't exist, we fallback to defaults but don't error

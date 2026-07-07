@@ -1143,7 +1143,7 @@ const PlayerRegistration: React.FC = () => {
         }
 
         // Payment
-        if (config?.fee > 0 && finalFee > 0) {
+        if (config?.includePayment && finalFee > 0) {
             if (config.paymentMethod === 'MANUAL' && !paymentScreenshot) {
                 missingFields.push("Payment Proof/Screenshot");
             }
@@ -1161,7 +1161,7 @@ const PlayerRegistration: React.FC = () => {
         setSubmitting(true);
         
         // Handle Razorpay if enabled
-        if (config?.fee > 0 && config.paymentMethod === 'RAZORPAY' && finalFee > 0) {
+        if (config?.includePayment && config.paymentMethod === 'RAZORPAY' && finalFee > 0) {
             handleRazorpayModal();
             return;
         }

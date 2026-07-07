@@ -71,6 +71,15 @@ const compressImage = async (file: File): Promise<string> => {
 
 const SuperAdminDashboard: React.FC = () => {
     const { state, logout, joinAuction } = useAuction();
+    const getAutoDeleteRemainingDays = (auction: AuctionSetup) => {
+        if (auction.isLifetime) return 'Lifetime (Never deleted)';
+        const created = auction.createdAt || Date.now();
+        const retentionLimit = state?.defaultRetentionDays || 30;
+        const expiryTime = created + retentionLimit * 24 * 60 * 60 * 1000;
+        const remainingMs = expiryTime - Date.now();
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        return remainingDays > 0 ? remainingDays : 0;
+    };
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'AUCTIONS' | 'PLANS' | 'COUPONS' | 'POPUP' | 'BROADCAST' | 'SYSTEM' | 'IMAGES'>('DASHBOARD');
     const [auctions, setAuctions] = useState<AuctionSetup[]>([]);
@@ -432,6 +441,16 @@ const SuperAdminDashboard: React.FC = () => {
                                                     <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-3 py-0.5 rounded-full border border-red-500/20">#{auction.id}</span>
                                                     <span className={`text-[9px] font-black px-3 py-0.5 rounded-full border ${auction.razorpayAuthorized ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-zinc-800 text-zinc-500 border-white/5'}`}>
                                                         {auction.razorpayAuthorized ? 'RAZORPAY AUTH' : 'PAYMENT LOCKED'}
+                                                    </span>
+                                                    <span className={`text-[9px] font-black px-3 py-0.5 rounded-full border flex items-center gap-1 ${
+                                                        typeof getAutoDeleteRemainingDays(auction) === 'number' && (getAutoDeleteRemainingDays(auction) as number) <= 5
+                                                            ? 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse' 
+                                                            : 'bg-zinc-800 text-zinc-500 border-white/5'
+                                                    }`}>
+                                                        <Clock className="w-3 h-3" />
+                                                        {typeof getAutoDeleteRemainingDays(auction) === 'number' 
+                                                            ? `${getAutoDeleteRemainingDays(auction)} ${getAutoDeleteRemainingDays(auction) === 1 ? 'day' : 'days'} left` 
+                                                            : getAutoDeleteRemainingDays(auction)}
                                                     </span>
                                                 </div>
                                             </div>

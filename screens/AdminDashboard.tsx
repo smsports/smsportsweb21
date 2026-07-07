@@ -45,6 +45,16 @@ const AdminDashboard: React.FC = () => {
 
   const isSuperAdmin = userProfile?.role === UserRole.SUPER_ADMIN;
 
+  const getAutoDeleteRemainingDays = (auction: AuctionSetup) => {
+    if (auction.isLifetime) return 'Lifetime (Never deleted)';
+    const created = auction.createdAt || Date.now();
+    const retentionLimit = state?.defaultRetentionDays || 30;
+    const expiryTime = created + retentionLimit * 24 * 60 * 60 * 1000;
+    const remainingMs = expiryTime - Date.now();
+    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+    return remainingDays > 0 ? remainingDays : 0;
+  };
+
   const COMMON_FEATURES = [
       { name: 'Online player registration', icon: <UserPlus2 className="w-4 h-4" /> },
       { name: 'Excel Data entry support', icon: <FileText className="w-4 h-4" /> },
@@ -474,6 +484,16 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                     <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
                                         <Users className="w-3.5 h-3.5" /> {auction.currentTeamCount || 0} / {auction.totalTeams} Teams
+                                    </div>
+                                    <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
+                                        typeof getAutoDeleteRemainingDays(auction) === 'number' && (getAutoDeleteRemainingDays(auction) as number) <= 5
+                                            ? 'text-red-500 font-bold animate-pulse' 
+                                            : (isDark ? 'text-zinc-500' : 'text-gray-400')
+                                    }`}>
+                                        <Clock className="w-3.5 h-3.5" /> 
+                                        {typeof getAutoDeleteRemainingDays(auction) === 'number' 
+                                            ? `${getAutoDeleteRemainingDays(auction)} ${getAutoDeleteRemainingDays(auction) === 1 ? 'day' : 'days'} left` 
+                                            : getAutoDeleteRemainingDays(auction)}
                                     </div>
                                 </div>
                             </div>
